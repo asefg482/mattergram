@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import type { MattermostPost, MattermostFileInfo } from '../../types/mattermost'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
@@ -18,6 +18,7 @@ import { mmApi } from '../../services/mattermostApi'
 import {
   Check,
   CheckCheck,
+  Clock,
   Reply,
   Edit2,
   Trash2,
@@ -67,8 +68,25 @@ function onMouseLeave() {
 const myId = computed(() => authStore.currentUser?.id)
 const isOutgoing = computed(() => props.post.user_id === myId.value)
 
-// Only animate recently sent/received messages (within 4 seconds) to avoid batch animation jank
-const isRecent = computed(() => Date.now() - props.post.create_at < 4000)
+const isPending = computed(() => !!props.post.id?.startsWith('temp_'))
+const isAnimated = ref(false)
+
+onMounted(() => {
+  if (
+    isPending.value ||
+    chatStore.animatedPostIds.has(props.post.id) ||
+    (props.post.pending_post_id && chatStore.animatedPostIds.has(props.post.pending_post_id))
+  ) {
+    isAnimated.value = true
+    setTimeout(() => {
+      isAnimated.value = false
+      chatStore.animatedPostIds.delete(props.post.id)
+      if (props.post.pending_post_id) {
+        chatStore.animatedPostIds.delete(props.post.pending_post_id)
+      }
+    }, 450)
+  }
+})
 
 const sender = computed(() => usersStore.getUser(props.post.user_id))
 const senderName = computed(() => usersStore.getUserDisplayName(props.post.user_id))
@@ -380,6 +398,11 @@ function handleSenderClick() {
     <!-- Bubble Wrapper with Hover Action Bar -->
     <div
       class="relative max-w-[88%] sm:max-w-[82%] md:max-w-[75%]"
+      :class="[
+        isAnimated
+          ? (isOutgoing ? 'tg-msg-send-glide' : 'tg-msg-receive-glide')
+          : ''
+      ]"
       @mouseenter="onMouseEnter"
       @mouseleave="onMouseLeave"
     >
@@ -453,8 +476,7 @@ function handleSenderClick() {
         :class="[
           isOutgoing
             ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#eeffde] text-white dark:text-white text-[#111827] rounded-br-xs bubble-out-tail mr-1'
-            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs bubble-in-tail ml-1',
-          isRecent ? 'msg-pop-in' : ''
+            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs bubble-in-tail ml-1'
         ]"
       >
         <!-- Sender Name (Incoming Group Message) -->
@@ -593,8 +615,10 @@ function handleSenderClick() {
 
           <!-- Telegram Read / Sent Ticks (Outgoing only) -->
           <div v-if="isOutgoing" class="flex items-center ml-0.5">
-            <!-- Double check for read, single check for sent -->
-            <CheckCheck class="w-3.5 h-3.5 text-emerald-400" />
+            <!-- Sending state: Clock icon -->
+            <Clock v-if="isPending" class="w-3 h-3 opacity-60 animate-pulse text-[#7f91a4]" />
+            <!-- Double check for read/sent -->
+            <CheckCheck v-else class="w-3.5 h-3.5 text-emerald-400" />
           </div>
         </div>
         <div class="clear-both"></div>

@@ -279,34 +279,60 @@ function handleInput() {
 async function handleSend() {
   const text = messageText.value.trim()
   const fileIds = attachedFiles.value.map((f) => f.id)
+  const filesCopy = [...attachedFiles.value]
 
   if (!text && fileIds.length === 0) return
   if (isSending.value) return
 
+  // Editing existing message
+  if (uiStore.editingPost) {
+    const editId = uiStore.editingPost.id
+    isSending.value = true
+    try {
+      await chatStore.editMessage(editId, text)
+      uiStore.setEditingPost(null)
+      messageText.value = ''
+      attachedFiles.value = []
+      showEmojiPicker.value = false
+      showMentions.value = false
+      if (textareaRef.value) textareaRef.value.style.height = 'auto'
+      focusInput()
+    } catch (err) {
+      console.error('Failed to edit:', err)
+    } finally {
+      isSending.value = false
+    }
+    return
+  }
+
+  // Normal Send: Capture inputs then immediately clear for instant snappy response
+  const currentText = text
+  const currentFileIds = fileIds
+  const rootId = uiStore.replyingTo?.id || ''
+
+  messageText.value = ''
+  attachedFiles.value = []
+  showEmojiPicker.value = false
+  showMentions.value = false
+  uiStore.setReplyingTo(null)
+
+  if (textareaRef.value) {
+    textareaRef.value.style.height = 'auto'
+  }
+
+  focusInput()
+  emit('sent')
+
   isSending.value = true
   try {
-    if (uiStore.editingPost) {
-      await chatStore.editMessage(uiStore.editingPost.id, text)
-      uiStore.setEditingPost(null)
-    } else {
-      const rootId = uiStore.replyingTo?.id || ''
-      await chatStore.sendMessage(props.channelId, text, rootId, fileIds)
-      uiStore.setReplyingTo(null)
-    }
-
-    messageText.value = ''
-    attachedFiles.value = []
-    showEmojiPicker.value = false
-    showMentions.value = false
-
-    if (textareaRef.value) {
-      textareaRef.value.style.height = 'auto'
-    }
-
-    emit('sent')
-    focusInput()
-  } catch (err) {
+    await chatStore.sendMessage(props.channelId, currentText, rootId, currentFileIds, filesCopy)
+  } catch (err: any) {
     console.error('Failed to send:', err)
+    // If failed, restore input so user's message is not lost
+    messageText.value = currentText
+    attachedFiles.value = filesCopy
+    autoResize()
+    alert(err?.message || 'Failed to send message. Please try again.')
   } finally {
     isSending.value = false
   }

@@ -166,14 +166,26 @@ function scrollToBottom(smooth = false) {
     if (!messagesContainer.value) return
     const el = messagesContainer.value
     const target = el.scrollHeight - el.clientHeight
-    fastAnimateScroll(target, 160)
+    fastAnimateScroll(target, 220)
   } else {
     performInstantScrollToBottom()
   }
 }
 
+// Smoothly scroll down when a new message enters so it flows in without hard snaps
+function scrollToNewMessageBottom(duration = 220) {
+  nextTick(() => {
+    if (!messagesContainer.value) return
+    const el = messagesContainer.value
+    const target = el.scrollHeight - el.clientHeight
+    fastAnimateScroll(target, duration)
+    showScrollBottom.value = false
+    chatStore.isScrolledUp = false
+  })
+}
+
 function onMessageSent() {
-  performInstantScrollToBottom()
+  scrollToNewMessageBottom(220)
   nextTick(() => {
     messageInputRef.value?.focus()
   })
@@ -254,11 +266,11 @@ watch(
     const isNewMessage = newLen > (oldLen || 0) && newLastId !== oldLastId
     if (isNewMessage) {
       const lastPost = posts.value[posts.value.length - 1]
-      const isMine = lastPost && lastPost.user_id === authStore.currentUser?.id
+      const isMine = lastPost && (lastPost.user_id === authStore.currentUser?.id || lastPost.id.startsWith('temp_'))
       const isAtBottom = !showScrollBottom.value
 
       if (isMine || isAtBottom) {
-        performInstantScrollToBottom()
+        scrollToNewMessageBottom(220)
       }
     }
   }
@@ -267,6 +279,7 @@ watch(
 let resizeObserver: ResizeObserver | null = null
 
 function onMediaLoad() {
+  if (currentScrollAnimation) return
   if (isChannelSwitching.value || !showScrollBottom.value) {
     performInstantScrollToBottom()
   }
@@ -281,7 +294,9 @@ watch(
     }
     if (newEl && resizeObserver) {
       resizeObserver.observe(newEl)
-      performInstantScrollToBottom()
+      if (!currentScrollAnimation) {
+        performInstantScrollToBottom()
+      }
     }
   }
 )
@@ -289,6 +304,7 @@ watch(
 onMounted(() => {
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(() => {
+      if (currentScrollAnimation) return
       if (isChannelSwitching.value || !showScrollBottom.value) {
         performInstantScrollToBottom()
       }
@@ -358,7 +374,7 @@ onUnmounted(() => {
 
         <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
         <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-1 sm:px-2 pt-2 pb-6 flex flex-col">
-          <template v-for="(post, index) in posts" :key="post.id">
+          <template v-for="(post, index) in posts" :key="post.pending_post_id || post.id">
             <!-- Date Divider -->
             <div
               v-if="isDifferentDay(post.create_at, posts[index - 1]?.create_at)"

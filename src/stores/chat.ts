@@ -23,6 +23,7 @@ export const useChatStore = defineStore('chat', () => {
   const firstUnreadPostIds = ref<Record<string, string | null>>({})
   const channelLastViewedAt = ref<Record<string, number>>({})
   const isScrolledUp = ref(false)
+  const animatedPostIds = ref<Set<string>>(new Set())
   const typingUsers = ref<Record<string, Record<string, string>>>({})
   const typingTimeouts = new Map<string, any>()
 
@@ -309,6 +310,7 @@ export const useChatStore = defineStore('chat', () => {
       // Sort chronologically (oldest first, newest at bottom)
       postList.sort((a, b) => a.create_at - b.create_at)
       posts.value[channelId] = postList
+      animatedPostIds.value.clear()
 
       // Keep channel's last_post updated
       const ch = channels.value.find((c) => c.id === channelId)
@@ -332,33 +334,81 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // Send Message
-  async function sendMessage(channelId: string, message: string, rootId = '', fileIds: string[] = []) {
+  // Send Message with Optimistic Transition & Animation
+  async function sendMessage(
+    channelId: string,
+    message: string,
+    rootId = '',
+    fileIds: string[] = [],
+    attachedFilesList: any[] = []
+  ) {
     if (!message.trim() && !fileIds.length) return
+
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)
+    const myUser = authStore.currentUser
+    const tempPost: MattermostPost = {
+      id: tempId,
+      create_at: Date.now(),
+      update_at: Date.now(),
+      edit_at: 0,
+      delete_at: 0,
+      is_pinned: false,
+      user_id: myUser?.id || '',
+      channel_id: channelId,
+      root_id: rootId,
+      original_id: '',
+      message: message,
+      type: '',
+      props: {},
+      hashtags: '',
+      file_ids: fileIds,
+      pending_post_id: tempId,
+      metadata: {
+        reactions: [],
+        files: attachedFilesList.length > 0 ? [...attachedFilesList] : undefined
+      }
+    }
+
+    if (!posts.value[channelId]) {
+      posts.value[channelId] = []
+    }
+
+    animatedPostIds.value.add(tempId)
+    posts.value[channelId].push(tempPost)
+
+    const ch = channels.value.find((c) => c.id === channelId)
+    if (ch) {
+      ch.last_post_at = tempPost.create_at
+      ch.last_post = tempPost
+      sortChannels()
+    }
+
     try {
       const newPost = await mmApi.createPost(channelId, message, rootId, fileIds)
-      
-      if (!posts.value[channelId]) {
-        posts.value[channelId] = []
-      }
-      // Add if not already present
-      if (!posts.value[channelId].some((p) => p.id === newPost.id)) {
+      newPost.pending_post_id = tempId
+      animatedPostIds.value.add(newPost.id)
+      setTimeout(() => {
+        animatedPostIds.value.delete(tempId)
+        animatedPostIds.value.delete(newPost.id)
+      }, 3000)
+
+      const idx = posts.value[channelId].findIndex((p) => p.id === tempId || p.pending_post_id === tempId)
+      if (idx !== -1) {
+        posts.value[channelId][idx] = newPost
+      } else if (!posts.value[channelId].some((p) => p.id === newPost.id)) {
         posts.value[channelId].push(newPost)
       }
 
-      // Update channel last_post_at
-      const ch = channels.value.find((c) => c.id === channelId)
       if (ch) {
         ch.last_post_at = newPost.create_at
         ch.last_post = newPost
-        sortChannels()
       }
 
-      // Play Telegram sent sound
       soundService.playSent()
-
       return newPost
     } catch (err) {
+      posts.value[channelId] = posts.value[channelId].filter((p) => p.id !== tempId)
+      animatedPostIds.value.delete(tempId)
       console.error('Failed to send message:', err)
       throw err
     }
@@ -507,7 +557,18 @@ export const useChatStore = defineStore('chat', () => {
 
       // Add to channel posts if already cached
       if (posts.value[channelId]) {
-        if (!posts.value[channelId].some((p) => p.id === post.id)) {
+        // Reconcile optimistic post if sent by current user
+        const tempIdx = posts.value[channelId].findIndex(
+          (p) => p.id.startsWith('temp_') && p.user_id === post.user_id && p.message === post.message
+        )
+        if (tempIdx !== -1) {
+          post.pending_post_id = posts.value[channelId][tempIdx].pending_post_id || posts.value[channelId][tempIdx].id
+          posts.value[channelId][tempIdx] = post
+        } else if (!posts.value[channelId].some((p) => p.id === post.id)) {
+          if (channelId === activeChannelId.value) {
+            animatedPostIds.value.add(post.id)
+            setTimeout(() => animatedPostIds.value.delete(post.id), 3000)
+          }
           posts.value[channelId].push(post)
         }
       }
@@ -681,6 +742,7 @@ export const useChatStore = defineStore('chat', () => {
     firstUnreadPostIds,
     channelLastViewedAt,
     isScrolledUp,
+    animatedPostIds,
     typingUsers,
     initWs,
     loadChannels,
