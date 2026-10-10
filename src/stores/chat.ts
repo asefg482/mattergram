@@ -97,6 +97,35 @@ export const useChatStore = defineStore('chat', () => {
         return ch
       })
 
+      // Fetch last post for each channel to display preview in sidebar
+      const authorIdsToFetch = new Set<string>()
+      await Promise.allSettled(
+        channels.value.map(async (ch) => {
+          try {
+            const pRes = await mmApi.getPosts(ch.id, 0, 1)
+            if (pRes.order && pRes.order.length > 0) {
+              const lastId = pRes.order[0]
+              const lastPost = pRes.posts[lastId]
+              if (lastPost && lastPost.delete_at === 0) {
+                ch.last_post = lastPost
+                if (lastPost.create_at) {
+                  ch.last_post_at = Math.max(ch.last_post_at || 0, lastPost.create_at)
+                }
+                if (lastPost.user_id) {
+                  authorIdsToFetch.add(lastPost.user_id)
+                }
+              }
+            }
+          } catch (e) {
+            // Channel may have no posts or restricted
+          }
+        })
+      )
+
+      if (authorIdsToFetch.size > 0) {
+        await usersStore.fetchUsers(Array.from(authorIdsToFetch))
+      }
+
       // Sort by last_post_at descending
       sortChannels()
     } catch (err) {
@@ -193,6 +222,14 @@ export const useChatStore = defineStore('chat', () => {
       // Sort chronologically (oldest first, newest at bottom)
       postList.sort((a, b) => a.create_at - b.create_at)
       posts.value[channelId] = postList
+
+      // Keep channel's last_post updated
+      const ch = channels.value.find((c) => c.id === channelId)
+      if (ch && postList.length > 0) {
+        const newest = postList[postList.length - 1]
+        ch.last_post = newest
+        ch.last_post_at = newest.create_at
+      }
     } catch (err) {
       console.error('Failed to load posts:', err)
     } finally {

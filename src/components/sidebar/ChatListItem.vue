@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MattermostChannel } from '../../types/mattermost'
+import type { MattermostChannel, MattermostPost, MattermostFileInfo } from '../../types/mattermost'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
@@ -52,23 +52,43 @@ const typingText = computed(() => {
 // Unread count
 const unreadCount = computed(() => chatStore.unreadCounts[props.channel.id] || 0)
 
+// Latest post computed from channel.last_post or cached chatStore.posts
+const lastPost = computed<MattermostPost | null>(() => {
+  if (props.channel.last_post) {
+    return props.channel.last_post
+  }
+  const channelPosts = chatStore.posts[props.channel.id]
+  if (channelPosts && channelPosts.length > 0) {
+    return channelPosts[channelPosts.length - 1]
+  }
+  return null
+})
+
 // Last message preview
 const lastMessagePreview = computed(() => {
   if (typingText.value) return typingText.value
 
-  const post = props.channel.last_post
+  const post = lastPost.value
   if (!post) {
-    return props.channel.purpose || props.channel.header || 'No messages yet'
+    return props.channel.purpose || props.channel.header || ''
   }
 
   const isMe = post.user_id === myId.value
   const prefix = isMe ? 'You: ' : (!isDirect.value ? `${usersStore.getUserDisplayName(post.user_id)}: ` : '')
 
-  if (post.message) {
-    return `${prefix}${post.message}`
+  if (post.message && post.message.trim()) {
+    const clean = post.message.replace(/[\r\n]+/g, ' ').trim()
+    return `${prefix}${clean}`
   }
 
   if (post.file_ids && post.file_ids.length > 0) {
+    const files = (post.metadata?.files || []) as MattermostFileInfo[]
+    if (files.some((f: MattermostFileInfo) => f.mime_type?.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v', 'mkv'].includes(f.extension?.toLowerCase() || ''))) {
+      return `${prefix}📹 Video`
+    }
+    if (files.some((f: MattermostFileInfo) => f.mime_type?.startsWith('image/'))) {
+      return `${prefix}🖼 Photo`
+    }
     return `${prefix}📎 Document/File`
   }
 
@@ -129,7 +149,7 @@ const avatarBg = computed(() => {
           class="text-xs shrink-0 ml-2"
           :class="isActive ? 'text-white/80' : 'text-[#7f91a4]'"
         >
-          {{ formatChatListTime(channel.last_post_at || channel.create_at) }}
+          {{ formatChatListTime(lastPost?.create_at || channel.last_post_at || channel.create_at) }}
         </span>
       </div>
 
