@@ -100,6 +100,12 @@ export function renderTelegramMarkdown(text: string): string {
     '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#3390ec] hover:underline">$1</a>'
   )
 
+  // User Mentions @username
+  escaped = escaped.replace(
+    /(^|[\s(])@([a-zA-Z0-9_.-]+)/g,
+    '$1<span class="text-[#3390ec] font-semibold hover:underline cursor-pointer">@$2</span>'
+  )
+
   // Line breaks
   escaped = escaped.replace(/\n/g, '<br/>')
 

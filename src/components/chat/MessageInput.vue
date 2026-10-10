@@ -6,7 +6,8 @@ import { useUsersStore } from '../../stores/users'
 import { useUiStore } from '../../stores/ui'
 import { mmApi } from '../../services/mattermostApi'
 import EmojiPicker from './EmojiPicker.vue'
-import type { MattermostFileInfo } from '../../types/mattermost'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
+import type { MattermostFileInfo, MattermostUser } from '../../types/mattermost'
 import {
   Paperclip,
   Smile,
@@ -16,7 +17,8 @@ import {
   FileText,
   Loader2,
   Edit2,
-  Reply
+  Reply,
+  AtSign
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -37,6 +39,13 @@ const attachedFiles = ref<MattermostFileInfo[]>([])
 const isUploading = ref(false)
 const isSending = ref(false)
 
+// Mentions State
+const channelMembers = ref<MattermostUser[]>([])
+const showMentions = ref(false)
+const mentionQuery = ref('')
+const mentionStartIndex = ref(-1)
+const selectedMentionIndex = ref(0)
+
 let lastTypingTime = 0
 
 // Watch editing post
@@ -53,6 +62,73 @@ watch(
   }
 )
 
+// Load channel members for mention autocomplete
+async function loadChannelMembers() {
+  if (!props.channelId) return
+  try {
+    const raw = await mmApi.getChannelMembers(props.channelId)
+    const userIds = raw.map((m: any) => m.user_id)
+    await usersStore.fetchUsers(userIds)
+    channelMembers.value = userIds
+      .map((id: string) => usersStore.getUser(id))
+      .filter(Boolean) as MattermostUser[]
+  } catch {
+    // Fallback to all cached users in store
+    channelMembers.value = Object.values(usersStore.users)
+  }
+}
+
+watch(
+  () => props.channelId,
+  () => {
+    loadChannelMembers()
+    showMentions.value = false
+  },
+  { immediate: true }
+)
+
+// Computed Candidates for Mention
+const mentionCandidates = computed(() => {
+  const currentUserId = authStore.currentUser?.id
+  const userList = channelMembers.value.length > 0 ? channelMembers.value : Object.values(usersStore.users)
+
+  const list: Array<{
+    id: string
+    username: string
+    name: string
+    isSpecial?: boolean
+    user?: MattermostUser
+  }> = []
+
+  // Add special channel broadcast mentions
+  const isDirect = chatStore.activeChannel?.type === 'D'
+  if (!isDirect) {
+    list.push({ id: 'all', username: 'all', name: 'Notify all members in channel', isSpecial: true })
+    list.push({ id: 'channel', username: 'channel', name: 'Notify channel', isSpecial: true })
+    list.push({ id: 'here', username: 'here', name: 'Notify online members', isSpecial: true })
+  }
+
+  for (const u of userList) {
+    if (u && u.id !== currentUserId) {
+      list.push({
+        id: u.id,
+        username: u.username,
+        name: usersStore.getUserDisplayName(u),
+        user: u
+      })
+    }
+  }
+
+  const q = mentionQuery.value.toLowerCase()
+  if (!q) {
+    return list.slice(0, 8)
+  }
+
+  return list
+    .filter((item) => item.username.toLowerCase().includes(q) || item.name.toLowerCase().includes(q))
+    .slice(0, 8)
+})
+
 // Auto resize textarea
 function autoResize() {
   const el = textareaRef.value
@@ -61,17 +137,83 @@ function autoResize() {
   el.style.height = Math.min(el.scrollHeight, 140) + 'px'
 }
 
-// Handle keydown (Enter to send, Shift+Enter for newline)
+// Check mention trigger
+function checkMention() {
+  const el = textareaRef.value
+  if (!el) return
+  const cursor = el.selectionStart || 0
+  const textBefore = messageText.value.substring(0, cursor)
+  // Match @username ending at cursor
+  const match = textBefore.match(/(?:^|\s)@([a-zA-Z0-9_.-]*)$/)
+  if (match) {
+    mentionQuery.value = match[1].toLowerCase()
+    mentionStartIndex.value = textBefore.lastIndexOf('@')
+    showMentions.value = true
+    selectedMentionIndex.value = 0
+  } else {
+    showMentions.value = false
+    mentionStartIndex.value = -1
+  }
+}
+
+// Select a mention item
+function selectMention(item: { username: string }) {
+  const el = textareaRef.value
+  if (!el) return
+
+  const cursor = el.selectionStart || 0
+  const textBefore = messageText.value.substring(0, mentionStartIndex.value)
+  const textAfter = messageText.value.substring(cursor)
+
+  const insertText = `@${item.username} `
+  messageText.value = textBefore + insertText + textAfter
+  showMentions.value = false
+  mentionStartIndex.value = -1
+
+  nextTick(() => {
+    const newPos = textBefore.length + insertText.length
+    el.setSelectionRange(newPos, newPos)
+    el.focus()
+    autoResize()
+  })
+}
+
+// Handle keydown (Enter to send, Shift+Enter for newline, Arrows for mentions)
 function handleKeydown(e: KeyboardEvent) {
+  if (showMentions.value && mentionCandidates.value.length > 0) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      selectedMentionIndex.value = (selectedMentionIndex.value + 1) % mentionCandidates.value.length
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      selectedMentionIndex.value =
+        (selectedMentionIndex.value - 1 + mentionCandidates.value.length) % mentionCandidates.value.length
+      return
+    }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault()
+      selectMention(mentionCandidates.value[selectedMentionIndex.value])
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      showMentions.value = false
+      return
+    }
+  }
+
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     handleSend()
   }
 }
 
-// Emit typing
+// Emit typing & check mention
 function handleInput() {
   autoResize()
+  checkMention()
   const now = Date.now()
   if (now - lastTypingTime > 3000) {
     lastTypingTime = now
@@ -101,6 +243,7 @@ async function handleSend() {
     messageText.value = ''
     attachedFiles.value = []
     showEmojiPicker.value = false
+    showMentions.value = false
 
     if (textareaRef.value) {
       textareaRef.value.style.height = 'auto'
@@ -155,6 +298,7 @@ function handleEmojiSelect(emoji: string) {
     el.selectionStart = el.selectionEnd = start + emoji.length
     el.focus()
     autoResize()
+    checkMention()
   })
 }
 
@@ -171,6 +315,71 @@ function cancelEdit() {
 
 <template>
   <div class="px-3 pb-3 pt-1 bg-[#17212b] dark:bg-[#17212b] bg-white border-t border-[#101921] dark:border-[#101921] border-[#dfe1e5] relative z-20">
+    <!-- Telegram Mention Autocomplete Popover -->
+    <div
+      v-if="showMentions && mentionCandidates.length > 0"
+      class="absolute bottom-full mb-2 left-3 right-3 md:left-14 md:right-16 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-40 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150"
+    >
+      <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#7f91a4] border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] bg-[#0e1621]/40 flex items-center justify-between">
+        <span>Mention Members</span>
+        <span class="text-[10px] font-normal lowercase opacity-75">↑↓ navigate • enter select</span>
+      </div>
+
+      <div class="py-1">
+        <div
+          v-for="(item, idx) in mentionCandidates"
+          :key="item.id"
+          @mousedown.prevent="selectMention(item)"
+          @mouseenter="selectedMentionIndex = idx"
+          class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors"
+          :class="[
+            selectedMentionIndex === idx
+              ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#3390ec] text-white'
+              : 'hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'
+          ]"
+        >
+          <!-- Special Mention Icon -->
+          <div
+            v-if="item.isSpecial"
+            class="w-8 h-8 rounded-full bg-[#3390ec] flex items-center justify-center text-white shrink-0"
+          >
+            <AtSign class="w-4 h-4" />
+          </div>
+
+          <!-- User Avatar -->
+          <TelegramAvatar
+            v-else
+            :userId="item.user?.id"
+            :name="item.name"
+            size="sm"
+            :showOnlineDot="true"
+            :isOnline="usersStore.getStatus(item.user?.id || '') === 'online'"
+            :lastPictureUpdate="(item.user as any)?.last_picture_update"
+          />
+
+          <!-- Name & Username -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold truncate">{{ item.name }}</span>
+              <span
+                class="text-[11px] truncate"
+                :class="selectedMentionIndex === idx ? 'text-white/80' : 'text-[#3390ec] font-medium'"
+              >
+                @{{ item.username }}
+              </span>
+            </div>
+            <p
+              v-if="!item.isSpecial && item.user?.email"
+              class="text-[10px] truncate mt-0.5"
+              :class="selectedMentionIndex === idx ? 'text-white/70' : 'text-[#7f91a4]'"
+            >
+              {{ item.user.email }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reply Banner Preview -->
     <div
       v-if="uiStore.replyingTo"
@@ -255,6 +464,8 @@ function cancelEdit() {
           v-model="messageText"
           @keydown="handleKeydown"
           @input="handleInput"
+          @click="checkMention"
+          @keyup="checkMention"
           rows="1"
           dir="auto"
           placeholder="Write a message..."
