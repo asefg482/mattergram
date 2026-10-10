@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
@@ -15,6 +16,7 @@ import type { MattermostChannel, MattermostUser } from '../../types/mattermost'
 import { notificationService } from '../../services/notifications'
 import { Menu, Search, X, Edit3, Loader2, Bell, Hash, Globe, Users } from 'lucide-vue-next'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const uiStore = useUiStore()
@@ -248,6 +250,7 @@ function handleSelectChat(channelId: string) {
   if (window.innerWidth < 768) {
     uiStore.isMobileSidebarOpen = false
   }
+  router.push(`/c/${channelId}`)
 }
 
 function handleSelectChatWithSearch(channelId: string) {
@@ -260,11 +263,15 @@ function handleSelectChatWithSearch(channelId: string) {
 async function handleSelectGlobalChannel(channel: MattermostChannel) {
   await chatStore.openOrJoinChannel(channel)
   finishSearch()
+  router.push(`/c/${channel.id}`)
 }
 
 async function handleSelectGlobalUser(user: MattermostUser) {
   await chatStore.openDirectMessage(user.id)
   finishSearch()
+  if (chatStore.activeChannelId) {
+    router.push(`/c/${chatStore.activeChannelId}`)
+  }
 }
 
 function handleUserAvatarClick(user: MattermostUser) {

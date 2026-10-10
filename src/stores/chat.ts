@@ -255,9 +255,12 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // Select Channel
+  // Select Channel (Supports channel ID or channel name)
   async function selectChannel(channelId: string) {
-    if (activeChannelId.value === channelId) {
+    const ch = channels.value.find((c) => c.id === channelId || c.name === channelId)
+    const targetId = ch ? ch.id : channelId
+
+    if (activeChannelId.value === targetId) {
       scrollToBottomTrigger.value++
       return
     }
@@ -267,23 +270,23 @@ export const useChatStore = defineStore('chat', () => {
       firstUnreadPostIds.value[prevChannelId] = null
     }
 
-    activeChannelId.value = channelId
+    activeChannelId.value = targetId
     scrollToBottomTrigger.value++
 
     // Capture unread metrics prior to resetting
-    const unreadCount = unreadCounts.value[channelId] || 0
-    const lastViewedAt = channelLastViewedAt.value[channelId] || 0
+    const unreadCount = unreadCounts.value[targetId] || 0
+    const lastViewedAt = channelLastViewedAt.value[targetId] || 0
 
     // Mark as read in Mattermost & local store
-    unreadCounts.value[channelId] = 0
+    unreadCounts.value[targetId] = 0
     const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
     notificationService.updateDocumentTitle(totalUnread)
     try {
-      await mmApi.viewChannel(channelId, prevChannelId)
+      await mmApi.viewChannel(targetId, prevChannelId)
     } catch {}
 
     // Load posts with captured unread metrics
-    await loadPosts(channelId, unreadCount, lastViewedAt)
+    await loadPosts(targetId, unreadCount, lastViewedAt)
   }
 
   // Load Posts

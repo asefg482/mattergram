@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
@@ -29,6 +30,8 @@ const emit = defineEmits<{
   (e: 'update:isOpen', value: boolean): void
 }>()
 
+const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const uiStore = useUiStore()
@@ -64,19 +67,31 @@ function openSavedMessages() {
   const savedChannel = chatStore.channels.find((c) => c.display_name === 'Saved Messages')
   if (savedChannel) {
     chatStore.selectChannel(savedChannel.id)
+    router.push(`/c/${savedChannel.id}`)
   } else if (user.value) {
-    chatStore.openDirectMessage(user.value.id)
+    chatStore.openDirectMessage(user.value.id).then(() => {
+      if (chatStore.activeChannelId) {
+        router.push(`/c/${chatStore.activeChannelId}`)
+      }
+    })
   }
 }
 
 function openSettings() {
   closeDrawer()
   uiStore.showSettingsModal = true
+  if (route.params.channelId) {
+    router.push(`/c/${route.params.channelId}/settings`)
+  } else {
+    router.push('/settings')
+  }
 }
 
 function handleLogout() {
   closeDrawer()
+  chatStore.activeChannelId = null
   authStore.logout()
+  router.push('/login')
 }
 
 // --- Mobile Touch Drag & Swipe Gestures ---

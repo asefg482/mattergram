@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { notificationService, type InAppToast } from '../../services/notifications'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
 import TelegramAvatar from './TelegramAvatar.vue'
 import { X } from 'lucide-vue-next'
 
+const router = useRouter()
 const chatStore = useChatStore()
 const uiStore = useUiStore()
 
@@ -16,6 +18,7 @@ function handleClick(toast: InAppToast) {
   if (window.innerWidth < 768) {
     uiStore.isMobileSidebarOpen = false
   }
+  router.push(`/c/${toast.channelId}`)
   notificationService.dismissToast(toast.id)
 }
 

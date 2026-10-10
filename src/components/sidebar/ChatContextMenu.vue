@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
 import type { MattermostChannel } from '../../types/mattermost'
@@ -13,6 +14,7 @@ import {
   LogOut
 } from 'lucide-vue-next'
 
+const router = useRouter()
 const props = defineProps<{
   channel: MattermostChannel | null
   position: { x: number; y: number }
@@ -102,6 +104,7 @@ function handleToggleMarkAsUnread() {
 function handleViewInfo() {
   if (props.channel) {
     chatStore.selectChannel(props.channel.id)
+    router.push(`/c/${props.channel.id}`)
     uiStore.showRightSidebar = true
   }
   emit('close')

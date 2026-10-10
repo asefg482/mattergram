@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
@@ -20,6 +21,7 @@ import {
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
@@ -81,6 +83,8 @@ function handleAvatarClick() {
 
 function goBackMobile() {
   uiStore.isMobileSidebarOpen = true
+  chatStore.activeChannelId = null
+  router.push('/')
 }
 
 function toggleMute() {

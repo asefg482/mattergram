@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
@@ -7,6 +8,8 @@ import { getAvatarGradient, getInitials } from '../../utils/formatters'
 import type { MattermostUser } from '../../types/mattermost'
 import { X, Search, UserPlus, Hash, Lock, Loader2 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+
+const router = useRouter()
 
 const props = defineProps<{
   isOpen: boolean
@@ -55,6 +58,9 @@ async function handleSearch() {
 async function startDirectChat(user: MattermostUser) {
   emit('close')
   await chatStore.openDirectMessage(user.id)
+  if (chatStore.activeChannelId) {
+    router.push(`/c/${chatStore.activeChannelId}`)
+  }
 }
 
 async function handleSearchEnter(e: KeyboardEvent) {
@@ -80,8 +86,11 @@ async function handleCreateChannel() {
   createError.value = null
   try {
     const rawName = channelName.value.trim() || channelDisplayName.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-')
-    await chatStore.createNewChannel(rawName, channelDisplayName.value.trim(), channelType.value, channelPurpose.value.trim())
+    const ch = await chatStore.createNewChannel(rawName, channelDisplayName.value.trim(), channelType.value, channelPurpose.value.trim())
     emit('close')
+    if (ch?.id) {
+      router.push(`/c/${ch.id}`)
+    }
   } catch (err: any) {
     createError.value = err.message || 'Failed to create channel'
   } finally {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUiStore } from '../../stores/ui'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
@@ -17,6 +18,7 @@ import {
   Shield
 } from 'lucide-vue-next'
 
+const router = useRouter()
 const uiStore = useUiStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
@@ -60,6 +62,9 @@ async function startChat() {
   await chatStore.openDirectMessage(user.value.id)
   if (window.innerWidth < 768) {
     uiStore.isMobileSidebarOpen = false
+  }
+  if (chatStore.activeChannelId) {
+    router.push(`/c/${chatStore.activeChannelId}`)
   }
 }
 </script>

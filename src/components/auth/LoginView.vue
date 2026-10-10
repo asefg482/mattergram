@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { mmApi } from '../../services/mattermostApi'
 import { notificationService } from '../../services/notifications'
 import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-vue-next'
 
+const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const loginId = ref('asefg482@gmail.com')
@@ -76,6 +79,8 @@ async function handleLogin() {
   try {
     await authStore.login(loginId.value, password.value)
     notificationService.autoRequestPermissionOnFirstOpen()
+    const redirect = (route.query.redirect as string) || '/'
+    router.replace(redirect)
   } catch (err: any) {
     errorMsg.value = err.message || 'Login failed. Please check credentials or server connection.'
   } finally {
