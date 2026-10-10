@@ -4,6 +4,7 @@ import { useAuthStore } from './stores/auth'
 import { useChatStore } from './stores/chat'
 import { useUsersStore } from './stores/users'
 import { useUiStore } from './stores/ui'
+import { notificationService } from './services/notifications'
 import LoginView from './components/auth/LoginView.vue'
 import Sidebar from './components/sidebar/Sidebar.vue'
 import ChatArea from './components/chat/ChatArea.vue'
@@ -19,6 +20,9 @@ const usersStore = useUsersStore()
 const uiStore = useUiStore()
 
 onMounted(async () => {
+  // Request notification permission on first open
+  notificationService.autoRequestPermissionOnFirstOpen()
+
   // Initialize WS listeners
   chatStore.initWs()
   usersStore.initWs()
@@ -26,6 +30,16 @@ onMounted(async () => {
   // Initialize Auth session from storage if present
   await authStore.initAuth()
 })
+
+// Also trigger if user logs in
+watch(
+  () => authStore.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) {
+      notificationService.autoRequestPermissionOnFirstOpen()
+    }
+  }
+)
 
 // When team is loaded or changes, load channels
 watch(

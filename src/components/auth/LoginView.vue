@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { notificationService } from '../../services/notifications'
 import { Send, Server, Lock, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
@@ -50,6 +51,7 @@ async function handleLogin() {
   try {
     authStore.setBaseUrl(serverUrl.value)
     await authStore.login(loginId.value, password.value)
+    notificationService.autoRequestPermissionOnFirstOpen()
   } catch (err: any) {
     errorMsg.value = err.message || 'Login failed. Please check credentials or server URL.'
   } finally {

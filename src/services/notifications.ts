@@ -13,12 +13,22 @@ export interface InAppToast {
 class NotificationService {
   private enabled = true
   public toasts = ref<InAppToast[]>([])
+  public permission = ref<NotificationPermission>('default')
   private originalTitle = 'Mattergram — Telegram for Mattermost'
+  private hasAutoRequested = false
 
   constructor() {
     const saved = localStorage.getItem('mattergram_notifications_enabled')
     if (saved !== null) {
       this.enabled = saved === 'true'
+    }
+    if (this.isSupported()) {
+      this.permission.value = Notification.permission
+      window.addEventListener('focus', () => {
+        if (this.isSupported()) {
+          this.permission.value = Notification.permission
+        }
+      })
     }
   }
 
@@ -28,7 +38,8 @@ class NotificationService {
 
   public getPermission(): NotificationPermission {
     if (!this.isSupported()) return 'denied'
-    return Notification.permission
+    this.permission.value = Notification.permission
+    return this.permission.value
   }
 
   public isEnabled(): boolean {
@@ -44,10 +55,50 @@ class NotificationService {
     if (!this.isSupported()) return false
     try {
       const res = await Notification.requestPermission()
+      this.permission.value = res
+      if (res === 'granted') {
+        this.setEnabled(true)
+      }
       return res === 'granted'
     } catch {
       return false
     }
+  }
+
+  public autoRequestPermissionOnFirstOpen() {
+    if (!this.isSupported()) return
+
+    // Update current permission state
+    this.permission.value = Notification.permission
+
+    // Only prompt if user hasn't made a choice yet ('default')
+    if (Notification.permission !== 'default') {
+      return
+    }
+
+    if (this.hasAutoRequested) return
+    this.hasAutoRequested = true
+
+    // 1. Immediately request browser permission (supported in Firefox, Chromium desktop, etc.)
+    this.requestPermission().catch(() => {})
+
+    // 2. In case browser requires a user gesture (e.g. Safari or strict policy):
+    const triggerOnFirstInteraction = async () => {
+      if (Notification.permission === 'default') {
+        await this.requestPermission()
+      }
+      cleanup()
+    }
+
+    const cleanup = () => {
+      window.removeEventListener('click', triggerOnFirstInteraction)
+      window.removeEventListener('keydown', triggerOnFirstInteraction)
+      window.removeEventListener('touchstart', triggerOnFirstInteraction)
+    }
+
+    window.addEventListener('click', triggerOnFirstInteraction, { once: true, passive: true })
+    window.addEventListener('keydown', triggerOnFirstInteraction, { once: true, passive: true })
+    window.addEventListener('touchstart', triggerOnFirstInteraction, { once: true, passive: true })
   }
 
   public updateDocumentTitle(unreadCount: number) {

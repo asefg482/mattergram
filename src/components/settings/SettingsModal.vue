@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useUiStore } from '../../stores/ui'
 import { soundService } from '../../services/sounds'
@@ -66,6 +66,13 @@ async function testConnection() {
 
 const notifEnabled = ref(notificationService.isEnabled())
 const notifPermission = ref(notificationService.getPermission())
+
+watch(
+  () => notificationService.permission.value,
+  (perm) => {
+    notifPermission.value = perm
+  }
+)
 
 async function toggleNotifications() {
   if (notifPermission.value !== 'granted') {

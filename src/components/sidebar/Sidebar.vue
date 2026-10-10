@@ -42,16 +42,24 @@ function onChatContextMenu(e: MouseEvent, channel: MattermostChannel) {
   showChatContextMenu.value = true
 }
 
-const showNotificationBanner = ref(
-  notificationService.isSupported() && notificationService.getPermission() === 'default'
-)
+const bannerDismissed = ref(false)
+const showNotificationBanner = computed(() => {
+  return (
+    notificationService.isSupported() &&
+    notificationService.permission.value === 'default' &&
+    !bannerDismissed.value
+  )
+})
 
 async function enableNotifications() {
   const granted = await notificationService.requestPermission()
-  showNotificationBanner.value = false
   if (granted) {
     notificationService.setEnabled(true)
   }
+}
+
+function dismissNotificationBanner() {
+  bannerDismissed.value = true
 }
 
 // Filter chats based on activeTab and searchQuery
@@ -358,7 +366,7 @@ function finishSearch() {
           Enable
         </button>
         <button
-          @click="showNotificationBanner = false"
+          @click="dismissNotificationBanner"
           class="p-1 text-[#7f91a4] hover:text-white rounded-lg transition-colors"
         >
           <X class="w-3.5 h-3.5" />
