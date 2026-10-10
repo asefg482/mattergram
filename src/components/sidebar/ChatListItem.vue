@@ -152,10 +152,10 @@ const avatarBg = computed(() => {
           <Pin v-if="channel.is_pinned" class="w-3.5 h-3.5 opacity-60" />
           <VolumeX v-if="channel.is_muted" class="w-3.5 h-3.5 opacity-60" />
 
-          <!-- Telegram Unread Badge (Pill) -->
+          <!-- Telegram Unread Badge (Circle) -->
           <span
             v-if="unreadCount > 0"
-            class="px-1.5 py-0.5 rounded-full text-[11px] font-bold"
+            class="min-w-5 h-5 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none text-center select-none"
             :class="isActive ? 'bg-white text-[#2b5278]' : 'bg-[#4fae60] text-white'"
           >
             {{ unreadCount }}

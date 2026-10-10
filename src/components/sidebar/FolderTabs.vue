@@ -34,7 +34,7 @@ const tabs = computed(() => {
       <span>{{ tab.label }}</span>
       <span
         v-if="tab.count"
-        class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#2481cc] text-white font-bold"
+        class="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] bg-[#2481cc] text-white font-bold flex items-center justify-center leading-none text-center select-none"
       >
         {{ tab.count }}
       </span>
