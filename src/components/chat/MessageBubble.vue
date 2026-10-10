@@ -173,6 +173,61 @@ function scrollToParent() {
 function openFile(file: MattermostFileInfo) {
   uiStore.openFilePreview(file)
 }
+
+// Handle mention click inside message text
+async function handleTextClick(e: MouseEvent) {
+  const target = (e.target as HTMLElement).closest('[data-mention]') as HTMLElement | null
+  if (!target) return
+  e.preventDefault()
+  e.stopPropagation()
+
+  const rawUsername = target.getAttribute('data-mention')
+  if (!rawUsername) return
+
+  const clean = rawUsername.toLowerCase().trim()
+  const BROADCAST_TAGS = ['all', 'channel', 'here']
+
+  // 1. If broadcast mention tag (@all, @channel, @here)
+  if (BROADCAST_TAGS.includes(clean)) {
+    uiStore.openMentionModal({
+      type: 'broadcast',
+      username: rawUsername
+    })
+    return
+  }
+
+  // 2. Regular user mention: show loading state
+  uiStore.openMentionModal({
+    type: 'loading',
+    username: rawUsername
+  })
+
+  // 3. Look up user by username
+  const foundUser = await usersStore.fetchUserByUsername(clean)
+  if (foundUser) {
+    uiStore.updateMentionModal({
+      type: 'user',
+      username: rawUsername,
+      user: foundUser
+    })
+  } else {
+    uiStore.updateMentionModal({
+      type: 'not_found',
+      username: rawUsername
+    })
+  }
+}
+
+// Handle clicking on sender's avatar or name
+function handleSenderClick() {
+  if (sender.value) {
+    uiStore.openMentionModal({
+      type: 'user',
+      username: sender.value.username,
+      user: sender.value
+    })
+  }
+}
 </script>
 
 <template>
@@ -191,7 +246,8 @@ function openFile(file: MattermostFileInfo) {
       :name="senderName"
       size="sm"
       :lastPictureUpdate="(sender as any)?.last_picture_update"
-      class="mb-0.5 shrink-0"
+      class="mb-0.5 shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+      @click.stop="handleSenderClick"
     />
 
     <!-- Bubble Wrapper with Hover Action Bar -->
@@ -272,6 +328,7 @@ function openFile(file: MattermostFileInfo) {
         <!-- Sender Name (Incoming Group Message) -->
         <div
           v-if="!isOutgoing && showSenderName"
+          @click.stop="handleSenderClick"
           class="text-xs font-semibold mb-1 text-[#3390ec] truncate cursor-pointer hover:underline"
         >
           {{ senderName }}
@@ -343,9 +400,10 @@ function openFile(file: MattermostFileInfo) {
         <!-- Message Body Text -->
         <div
           v-if="post.message"
-          class="text-xs sm:text-[13px] leading-relaxed break-words text-auto"
+          class="text-xs sm:text-[13px] leading-relaxed break-words text-auto select-text cursor-default"
           dir="auto"
           v-html="renderedMessage"
+          @click="handleTextClick"
         ></div>
 
         <!-- Bubble Footer: Timestamp & Read Status -->

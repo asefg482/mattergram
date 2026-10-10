@@ -130,7 +130,7 @@ export function renderTelegramMarkdown(text: string): string {
   // User Mentions @username
   escaped = escaped.replace(
     /(^|[\s(])@([a-zA-Z0-9_.-]+)/g,
-    '$1<span class="text-[#3390ec] font-semibold hover:underline cursor-pointer">@$2</span>'
+    '$1<span class="tg-mention text-[#3390ec] font-semibold hover:underline cursor-pointer inline-block" data-mention="$2">@$2</span>'
   )
 
   // Line breaks

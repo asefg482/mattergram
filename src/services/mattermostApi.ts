@@ -257,6 +257,10 @@ class MattermostApiService {
     return this.request<MattermostUser>(`/api/v4/users/${userId}`)
   }
 
+  public async getUserByUsername(username: string): Promise<MattermostUser> {
+    return this.request<MattermostUser>(`/api/v4/users/username/${encodeURIComponent(username)}`)
+  }
+
   public async getUsersByIds(userIds: string[]): Promise<MattermostUser[]> {
     if (!userIds.length) return []
     return this.request<MattermostUser[]>('/api/v4/users/ids', {

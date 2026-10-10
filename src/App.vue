@@ -10,6 +10,7 @@ import ChatArea from './components/chat/ChatArea.vue'
 import ChatInfoDrawer from './components/info/ChatInfoDrawer.vue'
 import SettingsModal from './components/settings/SettingsModal.vue'
 import NotificationToast from './components/common/NotificationToast.vue'
+import MentionUserModal from './components/chat/MentionUserModal.vue'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -68,6 +69,9 @@ watch(
 
       <!-- In-App Notification Toast Banner -->
       <NotificationToast />
+
+      <!-- User Mention Click Confirmation Modal -->
+      <MentionUserModal />
     </div>
   </div>
 </template>

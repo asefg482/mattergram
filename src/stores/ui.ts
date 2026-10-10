@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { MattermostPost, MattermostFileInfo } from '../types/mattermost'
+import type { MattermostPost, MattermostFileInfo, MattermostUser } from '../types/mattermost'
+
+export interface MentionModalState {
+  isOpen: boolean
+  type: 'user' | 'broadcast' | 'not_found' | 'loading'
+  username: string
+  user?: MattermostUser | null
+}
 
 export const useUiStore = defineStore('ui', () => {
   const theme = ref<'dark' | 'light'>((localStorage.getItem('mattergram_theme') as any) || 'dark')
@@ -13,6 +20,12 @@ export const useUiStore = defineStore('ui', () => {
   const showNewChatModal = ref(false)
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
+
+  const mentionModal = ref<MentionModalState>({
+    isOpen: false,
+    type: 'user',
+    username: ''
+  })
 
   function setTheme(newTheme: 'dark' | 'light') {
     theme.value = newTheme
@@ -52,6 +65,24 @@ export const useUiStore = defineStore('ui', () => {
     previewFile.value = null
   }
 
+  function openMentionModal(data: Omit<MentionModalState, 'isOpen'>) {
+    mentionModal.value = {
+      ...data,
+      isOpen: true
+    }
+  }
+
+  function updateMentionModal(data: Partial<MentionModalState>) {
+    mentionModal.value = {
+      ...mentionModal.value,
+      ...data
+    }
+  }
+
+  function closeMentionModal() {
+    mentionModal.value.isOpen = false
+  }
+
   // Initialize theme on start
   if (theme.value === 'dark') {
     document.documentElement.classList.add('dark')
@@ -70,11 +101,15 @@ export const useUiStore = defineStore('ui', () => {
     showNewChatModal,
     previewFile,
     isMobileSidebarOpen,
+    mentionModal,
     setTheme,
     toggleTheme,
     setReplyingTo,
     setEditingPost,
     openFilePreview,
-    closeFilePreview
+    closeFilePreview,
+    openMentionModal,
+    updateMentionModal,
+    closeMentionModal
   }
 })

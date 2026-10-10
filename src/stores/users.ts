@@ -71,6 +71,42 @@ export const useUsersStore = defineStore('users', () => {
     return mmApi.searchUsers(term, teamId)
   }
 
+  async function fetchUserByUsername(username: string): Promise<MattermostUser | null> {
+    const clean = username.replace(/^@/, '').toLowerCase().trim()
+    if (!clean) return null
+
+    // 1. Check in-memory cached users
+    const existing = Object.values(users.value).find(
+      (u) => u && u.username && u.username.toLowerCase() === clean
+    )
+    if (existing) {
+      fetchStatuses([existing.id])
+      return existing
+    }
+
+    // 2. Fetch directly by username from Mattermost REST API
+    try {
+      const fetched = await mmApi.getUserByUsername(clean)
+      if (fetched) {
+        users.value[fetched.id] = fetched
+        fetchStatuses([fetched.id])
+        return fetched
+      }
+    } catch {
+      // 3. Fallback: Search users on server
+      try {
+        const results = await mmApi.searchUsers(clean)
+        const match = results.find((u) => u.username.toLowerCase() === clean)
+        if (match) {
+          users.value[match.id] = match
+          fetchStatuses([match.id])
+          return match
+        }
+      } catch {}
+    }
+    return null
+  }
+
   return {
     users,
     statuses,
@@ -80,6 +116,7 @@ export const useUsersStore = defineStore('users', () => {
     getUser,
     getStatus,
     getUserDisplayName,
-    searchUsers
+    searchUsers,
+    fetchUserByUsername
   }
 })
