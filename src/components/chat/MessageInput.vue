@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
@@ -83,13 +83,44 @@ async function loadChannelMembers() {
   }
 }
 
+function focusInput() {
+  nextTick(() => {
+    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal) {
+      if (document.activeElement?.tagName !== 'INPUT') {
+        textareaRef.value?.focus()
+      }
+    }
+  })
+  setTimeout(() => {
+    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal) {
+      if (document.activeElement !== textareaRef.value && document.activeElement?.tagName !== 'INPUT') {
+        textareaRef.value?.focus()
+      }
+    }
+  }, 50)
+}
+
+onMounted(() => {
+  focusInput()
+})
+
 watch(
   () => props.channelId,
   () => {
     loadChannelMembers()
     showMentions.value = false
+    focusInput()
   },
   { immediate: true }
+)
+
+watch(
+  () => uiStore.replyingTo,
+  (val) => {
+    if (val) {
+      focusInput()
+    }
+  }
 )
 
 // Computed Candidates for Mention
@@ -261,6 +292,7 @@ async function handleSend() {
     }
 
     emit('sent')
+    focusInput()
   } catch (err) {
     console.error('Failed to send:', err)
   } finally {
@@ -317,13 +349,19 @@ function handleEmojiSelect(emoji: string) {
 
 function cancelReply() {
   uiStore.setReplyingTo(null)
+  focusInput()
 }
 
 function cancelEdit() {
   uiStore.setEditingPost(null)
   messageText.value = ''
   if (textareaRef.value) textareaRef.value.style.height = 'auto'
+  focusInput()
 }
+
+defineExpose({
+  focus: focusInput
+})
 </script>
 
 <template>

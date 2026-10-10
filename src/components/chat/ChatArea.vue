@@ -18,6 +18,7 @@ const uiStore = useUiStore()
 
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const bottomAnchorRef = ref<HTMLDivElement | null>(null)
+const messageInputRef = ref<{ focus: () => void } | null>(null)
 const showScrollBottom = ref(false)
 
 // Context Menu State
@@ -115,6 +116,9 @@ function scrollToBottom(smooth = false) {
 
 function onMessageSent() {
   scrollToBottom(true)
+  nextTick(() => {
+    messageInputRef.value?.focus()
+  })
 }
 
 // Track scroll position throttled with requestAnimationFrame to prevent scroll stutter
@@ -131,11 +135,35 @@ function handleScroll() {
   })
 }
 
-// Scroll on channel switch
+function handleChatAreaClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (
+    target.closest('button') ||
+    target.closest('a') ||
+    target.closest('input') ||
+    target.closest('textarea') ||
+    target.closest('video') ||
+    target.closest('audio') ||
+    target.closest('.tg-mention') ||
+    target.closest('[data-mention]')
+  ) {
+    return
+  }
+  const selection = window.getSelection()
+  if (selection && selection.toString().trim().length > 0) {
+    return
+  }
+  messageInputRef.value?.focus()
+}
+
+// Scroll and focus on channel switch
 watch(
   () => chatStore.activeChannelId,
   () => {
     scrollToBottom(false)
+    nextTick(() => {
+      messageInputRef.value?.focus()
+    })
   }
 )
 
@@ -207,6 +235,7 @@ onUnmounted(() => {
       <div
         ref="messagesContainer"
         @scroll="handleScroll"
+        @click="handleChatAreaClick"
         class="flex-1 overflow-y-auto overflow-x-hidden tg-chat-bg tg-scroll-container relative"
       >
         <!-- Loading spinner -->
@@ -258,7 +287,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Bottom Input Bar -->
-      <MessageInput :channelId="channel.id" @sent="onMessageSent" />
+      <MessageInput ref="messageInputRef" :channelId="channel.id" @sent="onMessageSent" />
 
       <!-- File Preview Modal -->
       <FilePreviewModal />
