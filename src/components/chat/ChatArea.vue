@@ -45,33 +45,76 @@ function isDifferentDay(currTimestamp: number, prevTimestamp?: number): boolean 
   return d1 !== d2
 }
 
-// Robust Scroll to bottom with multi-phase layout settlement
-function scrollToBottom(smooth = false) {
-  const executeScroll = () => {
-    if (!messagesContainer.value) return
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight + 10000
-    if (bottomAnchorRef.value) {
-      bottomAnchorRef.value.scrollIntoView({
-        behavior: smooth ? 'smooth' : 'auto',
-        block: 'end'
-      })
+// High-speed smooth scroll animator (160ms snappy Telegram curve)
+let currentScrollAnimation: number | null = null
+
+function fastAnimateScroll(targetTop: number, duration = 160) {
+  if (!messagesContainer.value) return
+  const el = messagesContainer.value
+
+  if (currentScrollAnimation) {
+    cancelAnimationFrame(currentScrollAnimation)
+    currentScrollAnimation = null
+  }
+
+  const start = el.scrollTop
+  const distance = targetTop - start
+  if (Math.abs(distance) < 4) {
+    el.scrollTop = targetTop
+    return
+  }
+
+  const startTime = performance.now()
+  // Snappy quartic ease-out
+  const easeOut = (t: number) => 1 - Math.pow(1 - t, 4)
+
+  function frame(now: number) {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    el.scrollTop = start + distance * easeOut(progress)
+
+    if (progress < 1) {
+      currentScrollAnimation = requestAnimationFrame(frame)
+    } else {
+      el.scrollTop = targetTop
+      currentScrollAnimation = null
     }
   }
 
+  currentScrollAnimation = requestAnimationFrame(frame)
+}
+
+// Fast scroll to bottom
+function scrollToBottom(smooth = false) {
   nextTick(() => {
-    executeScroll()
-    requestAnimationFrame(() => {
-      executeScroll()
-    })
-    setTimeout(executeScroll, 50)
-    setTimeout(executeScroll, 150)
-    setTimeout(executeScroll, 300)
+    if (!messagesContainer.value) return
+    const el = messagesContainer.value
+    const target = el.scrollHeight - el.clientHeight
+
+    if (smooth) {
+      fastAnimateScroll(target, 160)
+    } else {
+      if (currentScrollAnimation) {
+        cancelAnimationFrame(currentScrollAnimation)
+        currentScrollAnimation = null
+      }
+      el.scrollTop = target + 10000
+    }
+
+    // Secondary settlement check without restarting smooth animations
+    setTimeout(() => {
+      if (messagesContainer.value && !showScrollBottom.value) {
+        const latestTarget = messagesContainer.value.scrollHeight - messagesContainer.value.clientHeight
+        if (Math.abs(messagesContainer.value.scrollTop - latestTarget) > 2) {
+          messagesContainer.value.scrollTop = latestTarget + 10000
+        }
+      }
+    }, 180)
   })
 }
 
 function onMessageSent() {
   scrollToBottom(true)
-  setTimeout(() => scrollToBottom(true), 100)
 }
 
 // Track scroll position throttled with requestAnimationFrame to prevent scroll stutter

@@ -112,7 +112,7 @@ input, textarea, button, select {
 
 .msg-pop-in {
   will-change: transform, opacity;
-  animation: tgPopIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: tgPopIn 0.10s cubic-bezier(0.12, 1, 0.2, 1) forwards;
 }
 
 /* GPU Accelerated Smooth Scrolling */
