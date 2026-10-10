@@ -92,53 +92,115 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-// Telegram-style basic markdown renderer with high-performance cache
+import { Marked } from 'marked'
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Configured Marked instance with Telegram/Mattermost feature set
+const markedInstance = new Marked({
+  gfm: true,
+  breaks: true,
+  renderer: {
+    html(token) {
+      return escapeHtml(token.text)
+    },
+    link(token) {
+      const href = token.href || ''
+      const isSafe = /^(https?:\/\/|mailto:|tel:|\/)/i.test(href)
+      const safeHref = isSafe ? href : '#'
+      const text = this.parser.parseInline(token.tokens)
+      return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="text-[#3390ec] hover:underline font-medium break-all">${text}</a>`
+    },
+    blockquote(token) {
+      const body = this.parser.parse(token.tokens)
+      return `<blockquote class="border-l-3 border-[#3390ec] pl-2.5 py-1 my-1.5 bg-black/15 dark:bg-black/15 bg-black/5 rounded-r text-xs opacity-90 leading-relaxed">${body}</blockquote>`
+    },
+    code(token) {
+      const lang = token.lang ? `language-${token.lang}` : ''
+      return `<pre class="bg-black/30 dark:bg-black/30 bg-black/5 text-emerald-400 dark:text-emerald-400 text-emerald-700 p-2.5 my-1.5 rounded-xl text-xs font-mono overflow-x-auto border border-white/10 dark:border-white/10 border-gray-300"><code class="${lang}">${escapeHtml(token.text)}</code></pre>`
+    },
+    codespan(token) {
+      return `<code class="bg-black/25 dark:bg-black/25 bg-black/5 text-pink-400 dark:text-pink-400 text-pink-600 px-1 py-0.5 rounded text-xs font-mono">${escapeHtml(token.text)}</code>`
+    }
+  },
+  extensions: [
+    {
+      name: 'mention',
+      level: 'inline',
+      start(src: string) {
+        return src.indexOf('@')
+      },
+      tokenizer(src: string) {
+        const match = /^@([a-zA-Z0-9_.-]+)/.exec(src)
+        if (match) {
+          return {
+            type: 'mention',
+            raw: match[0],
+            username: match[1]
+          }
+        }
+      },
+      renderer(token: any) {
+        return `<span class="tg-mention text-[#3390ec] font-semibold hover:underline cursor-pointer inline-block" data-mention="${token.username}">@${token.username}</span>`
+      }
+    },
+    {
+      name: 'spoiler',
+      level: 'inline',
+      start(src: string) {
+        return src.indexOf('||')
+      },
+      tokenizer(src: string) {
+        const match = /^\|\|([\s\S]+?)\|\|/.exec(src)
+        if (match) {
+          return {
+            type: 'spoiler',
+            raw: match[0],
+            text: match[1],
+            tokens: (this as any).lexer.inlineTokens(match[1])
+          }
+        }
+      },
+      renderer(token: any) {
+        return `<span class="tg-spoiler" onclick="this.classList.toggle('revealed')">${(this as any).parser.parseInline(token.tokens)}</span>`
+      }
+    }
+  ],
+  hooks: {
+    postprocess(html: string) {
+      return html
+        .replace(
+          /<table>/g,
+          '<div class="tg-table-wrapper overflow-x-auto max-w-full my-2 rounded-xl border border-white/15 dark:border-white/15 border-gray-300"><table class="w-full text-xs text-start border-collapse">'
+        )
+        .replace(/<\/table>/g, '</table></div>')
+    }
+  }
+})
+
+// Telegram-style comprehensive markdown renderer with cache
 const markdownCache = new Map<string, string>()
 export function renderTelegramMarkdown(text: string): string {
   if (!text) return ''
   const cached = markdownCache.get(text)
   if (cached !== undefined) return cached
 
-  let escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-
-  // Code blocks ```code```
-  escaped = escaped.replace(/```([\s\S]*?)```/g, '<pre class="bg-black/30 text-emerald-400 p-2 my-1 rounded text-xs font-mono overflow-x-auto">$1</pre>')
-
-  // Inline code `code`
-  escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-black/25 text-pink-400 px-1 py-0.5 rounded text-xs font-mono">$1</code>')
-
-  // Bold **bold** or *bold*
-  escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  escaped = escaped.replace(/__([^_]+)__/g, '<strong>$1</strong>')
-
-  // Italic *italic* or _italic_
-  escaped = escaped.replace(/\*([^*]+)\*/g, '<em>$1</em>')
-  escaped = escaped.replace(/_([^_]+)_/g, '<em>$1</em>')
-
-  // Strikethrough ~~strike~~
-  escaped = escaped.replace(/~~([^~]+)~~/g, '<del>$1</del>')
-
-  // URLs
-  escaped = escaped.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#3390ec] hover:underline">$1</a>'
-  )
-
-  // User Mentions @username
-  escaped = escaped.replace(
-    /(^|[\s(])@([a-zA-Z0-9_.-]+)/g,
-    '$1<span class="tg-mention text-[#3390ec] font-semibold hover:underline cursor-pointer inline-block" data-mention="$2">@$2</span>'
-  )
-
-  // Line breaks
-  escaped = escaped.replace(/\n/g, '<br/>')
-
-  if (markdownCache.size > 2000) markdownCache.clear()
-  markdownCache.set(text, escaped)
-  return escaped
+  try {
+    const parsed = markedInstance.parse(text) as string
+    if (markdownCache.size > 2000) markdownCache.clear()
+    markdownCache.set(text, parsed)
+    return parsed
+  } catch (err) {
+    console.error('Markdown parse error:', err)
+    return escapeHtml(text).replace(/\n/g, '<br/>')
+  }
 }
 
 // Mattermost <-> Telegram Emoji Mappings

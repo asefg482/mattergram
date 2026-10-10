@@ -179,8 +179,14 @@ function openFile(file: MattermostFileInfo) {
   uiStore.openFilePreview(file)
 }
 
-// Handle mention click inside message text
+// Handle mention or spoiler click inside message text
 async function handleTextClick(e: MouseEvent) {
+  const spoilerTarget = (e.target as HTMLElement).closest('.tg-spoiler') as HTMLElement | null
+  if (spoilerTarget) {
+    spoilerTarget.classList.toggle('revealed')
+    return
+  }
+
   const target = (e.target as HTMLElement).closest('[data-mention]') as HTMLElement | null
   if (!target) return
   e.preventDefault()
@@ -443,7 +449,7 @@ function handleSenderClick() {
         <!-- Message Body Text -->
         <div
           v-if="post.message"
-          class="text-xs sm:text-[13px] leading-relaxed break-words text-auto select-text cursor-default"
+          class="text-xs sm:text-[13px] leading-relaxed break-words text-auto select-text cursor-default tg-markdown"
           dir="auto"
           v-html="renderedMessage"
           @click="handleTextClick"

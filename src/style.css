@@ -154,3 +154,135 @@ input, textarea, button, select {
   unicode-bidi: plaintext;
   text-align: start;
 }
+
+/* Telegram Markdown Styling */
+.tg-markdown p {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+.tg-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.tg-markdown ul {
+  list-style-type: disc;
+  padding-inline-start: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.tg-markdown ol {
+  list-style-type: decimal;
+  padding-inline-start: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.tg-markdown li {
+  margin: 0.125rem 0;
+}
+
+.tg-markdown h1 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.tg-markdown h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.375rem 0 0.25rem 0;
+}
+
+.tg-markdown h3,
+.tg-markdown h4,
+.tg-markdown h5,
+.tg-markdown h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0.25rem 0 0.125rem 0;
+}
+
+.tg-markdown hr {
+  margin: 0.5rem 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Telegram Markdown Table Styling */
+.tg-table-wrapper {
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tg-table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.tg-table-wrapper th,
+.tg-table-wrapper td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: start;
+}
+
+.tg-table-wrapper th {
+  font-weight: 700;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+}
+
+.tg-table-wrapper tr:last-child td {
+  border-bottom: none;
+}
+
+.tg-table-wrapper tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Light mode table colors */
+html:not(.dark) .tg-table-wrapper {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+html:not(.dark) .tg-table-wrapper th {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  border-bottom-color: #cbd5e1;
+}
+
+html:not(.dark) .tg-table-wrapper td {
+  color: #334155;
+  border-bottom-color: #e2e8f0;
+}
+
+html:not(.dark) .tg-table-wrapper tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* Telegram Spoilers */
+.tg-spoiler {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: transparent;
+  filter: blur(4px);
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  padding: 0 4px;
+  transition: filter 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.tg-spoiler.revealed {
+  filter: none;
+  color: inherit;
+  background-color: rgba(255, 255, 255, 0.08);
+  user-select: auto;
+}

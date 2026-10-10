@@ -15,6 +15,7 @@
     "date-fns": "^4.1.0",
     "http-proxy": "^1.18.1",
     "lucide-vue-next": "^0.451.0",
+    "marked": "^18.1.0",
     "pinia": "^2.2.4",
     "vue": "^3.5.11",
     "vue-router": "^4.4.5",
