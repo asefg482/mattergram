@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { MattermostPost, MattermostFileInfo } from '../../types/mattermost'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
@@ -92,9 +92,18 @@ const parentSenderName = computed(() => {
 // Quick reaction emojis
 const quickEmojis = ['👍', '❤️', '🔥', '😂', '👏', '😢']
 
+export interface ReactionGroup {
+  emoji: string
+  rawName: string
+  count: number
+  hasReacted: boolean
+  userIds: string[]
+  users: Array<{ id: string; name: string; isMe: boolean }>
+}
+
 // Group reactions by emoji (mapping Mattermost shortcode names to Telegram emoji chars)
-const groupedReactions = computed(() => {
-  const map: Record<string, { emoji: string; rawName: string; count: number; hasReacted: boolean }> = {}
+const groupedReactions = computed<ReactionGroup[]>(() => {
+  const map: Record<string, ReactionGroup> = {}
   const reactions = props.post.metadata?.reactions || []
 
   for (const r of reactions) {
@@ -103,16 +112,51 @@ const groupedReactions = computed(() => {
     const normalizedKey = toEmojiName(rawName)
 
     if (!map[normalizedKey]) {
-      map[normalizedKey] = { emoji: char, rawName, count: 0, hasReacted: false }
+      map[normalizedKey] = {
+        emoji: char,
+        rawName,
+        count: 0,
+        hasReacted: false,
+        userIds: [],
+        users: []
+      }
     }
     map[normalizedKey].count++
-    if (r.user_id === myId.value) {
+    map[normalizedKey].userIds.push(r.user_id)
+    const isMe = r.user_id === myId.value
+    if (isMe) {
       map[normalizedKey].hasReacted = true
     }
+    const name = isMe ? 'You' : usersStore.getUserDisplayName(r.user_id)
+    map[normalizedKey].users.push({ id: r.user_id, name, isMe })
   }
 
   return Object.values(map)
 })
+
+// Prefetch user details for reactions if missing
+watch(
+  () => props.post.metadata?.reactions,
+  (reactions) => {
+    if (reactions && reactions.length > 0) {
+      const ids = reactions.map((r) => r.user_id).filter(Boolean)
+      usersStore.fetchUsers(ids)
+    }
+  },
+  { immediate: true }
+)
+
+function onReactionHover(r: ReactionGroup) {
+  const missing = r.userIds.filter((id) => !usersStore.getUser(id))
+  if (missing.length > 0) {
+    usersStore.fetchUsers(missing)
+  }
+}
+
+function getReactionTooltipTitle(r: ReactionGroup): string {
+  const names = r.users.map((u) => u.name)
+  return `${r.emoji} ${names.join(', ')}`
+}
 
 // File attachments
 const files = computed<MattermostFileInfo[]>(() => {
@@ -352,7 +396,8 @@ function handleSenderClick() {
           v-for="emoji in quickEmojis"
           :key="emoji"
           @click="handleQuickReaction(emoji)"
-          class="hover:scale-125 text-xs transition-transform px-0.5"
+          :title="`React with ${emoji}`"
+          class="hover:scale-125 text-xs transition-transform px-0.5 cursor-pointer"
         >
           {{ emoji }}
         </button>
@@ -556,21 +601,75 @@ function handleSenderClick() {
       </div>
 
       <!-- Emoji Reactions Pills Below Bubble -->
-      <div v-if="groupedReactions.length > 0" class="flex flex-wrap gap-1 mt-1">
-        <button
+      <div
+        v-if="groupedReactions.length > 0"
+        class="flex flex-wrap gap-1 mt-1"
+        :class="isOutgoing ? 'justify-end' : 'justify-start'"
+      >
+        <div
           v-for="r in groupedReactions"
           :key="r.emoji"
-          @click="handleQuickReaction(r.rawName || r.emoji)"
-          class="px-2 py-0.5 rounded-full text-xs flex items-center gap-1 transition-all border select-none"
-          :class="[
-            r.hasReacted
-              ? 'bg-[#3390ec]/20 border-[#3390ec] text-[#3390ec] font-semibold'
-              : 'bg-[#182533] dark:bg-[#182533] bg-white border-[#202b36] text-[#7f91a4] hover:border-gray-500'
-          ]"
+          class="relative group/react"
+          @mouseenter="onReactionHover(r)"
         >
-          <span>{{ r.emoji }}</span>
-          <span class="text-[10px]">{{ r.count }}</span>
-        </button>
+          <button
+            @click="handleQuickReaction(r.rawName || r.emoji)"
+            :title="getReactionTooltipTitle(r)"
+            class="px-2 py-0.5 rounded-full text-xs flex items-center gap-1 transition-all border select-none cursor-pointer"
+            :class="[
+              r.hasReacted
+                ? 'bg-[#3390ec]/20 border-[#3390ec] text-[#3390ec] font-semibold'
+                : 'bg-[#182533] dark:bg-[#182533] bg-white border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] text-[#7f91a4] hover:border-gray-500'
+            ]"
+          >
+            <span>{{ r.emoji }}</span>
+            <span class="text-[10px]">{{ r.count }}</span>
+          </button>
+
+          <!-- Telegram Reactions User List Tooltip / Popover on Hover -->
+          <div
+            class="absolute bottom-full mb-1.5 z-50 pointer-events-none opacity-0 group-hover/react:opacity-100 transition-all duration-150 delay-75 translate-y-1 group-hover/react:translate-y-0"
+            :class="isOutgoing ? 'right-0' : 'left-0'"
+          >
+            <div
+              class="bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] shadow-2xl rounded-xl py-1.5 px-2.5 text-xs min-w-[130px] max-w-[220px] whitespace-normal backdrop-blur-md"
+            >
+              <!-- Tooltip Header -->
+              <div
+                class="flex items-center gap-1.5 pb-1 mb-1 border-b border-[#202b36] dark:border-[#202b36] border-gray-200 text-[11px] font-semibold text-[#7f91a4]"
+              >
+                <span class="text-sm leading-none">{{ r.emoji }}</span>
+                <span>{{ r.count }} {{ r.count === 1 ? 'reaction' : 'reactions' }}</span>
+              </div>
+
+              <!-- Users who reacted -->
+              <div class="space-y-1">
+                <div
+                  v-for="u in r.users.slice(0, 7)"
+                  :key="u.id"
+                  class="flex items-center gap-1.5"
+                >
+                  <TelegramAvatar
+                    :userId="u.id"
+                    :name="u.name"
+                    size="micro"
+                  />
+                  <span
+                    class="truncate text-[11px] font-medium"
+                    :class="u.isMe ? 'text-[#3390ec] font-semibold' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
+                  >
+                    {{ u.isMe ? 'You' : u.name }}
+                  </span>
+                </div>
+
+                <!-- More users overflow -->
+                <div v-if="r.users.length > 7" class="text-[10px] text-[#7f91a4] pt-0.5 font-medium">
+                  +{{ r.users.length - 7 }} more
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

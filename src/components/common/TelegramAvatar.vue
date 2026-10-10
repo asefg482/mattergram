@@ -8,7 +8,7 @@ const props = withDefaults(
   defineProps<{
     userId?: string
     name?: string
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+    size?: 'micro' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
     isSavedMessages?: boolean
     showOnlineDot?: boolean
     isOnline?: boolean
@@ -59,6 +59,8 @@ watch(
 
 const sizeClasses = computed(() => {
   switch (props.size) {
+    case 'micro':
+      return 'w-4 h-4 text-[8px]'
     case 'xs':
       return 'w-7 h-7 text-[10px]'
     case 'sm':
@@ -78,6 +80,7 @@ const sizeClasses = computed(() => {
 
 const dotSizeClasses = computed(() => {
   switch (props.size) {
+    case 'micro':
     case 'xs':
     case 'sm':
       return 'w-2.5 h-2.5 border-[1.5px]'
