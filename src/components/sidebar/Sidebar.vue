@@ -259,14 +259,33 @@ async function handleSelectGlobalUser(user: MattermostUser) {
   finishSearch()
 }
 
+function handleSearchEsc(e?: Event) {
+  if (e) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  finishSearch()
+}
+
 function finishSearch() {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
+  }
   uiStore.searchQuery = ''
   globalUsers.value = []
   globalChannels.value = []
   isSearchingServer.value = false
   pendingEnter.value = false
   selectedSearchIndex.value = 0
-  searchInputRef.value?.blur()
+
+  if (searchInputRef.value) {
+    searchInputRef.value.value = ''
+    searchInputRef.value.blur()
+  }
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+  }
   if (window.innerWidth < 768) {
     uiStore.isMobileSidebarOpen = false
   }
@@ -297,7 +316,8 @@ function finishSearch() {
           @keydown.enter="handleSearchEnter"
           @keydown.down="handleArrowDown"
           @keydown.up="handleArrowUp"
-          @keydown.esc="finishSearch"
+          @keydown.esc.stop.prevent="handleSearchEsc"
+          @keyup.esc.stop.prevent="handleSearchEsc"
           type="text"
           placeholder="Search"
           class="w-full bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] border border-transparent focus:border-[#3390ec] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] placeholder-[#7f91a4] text-xs rounded-full pl-9 pr-8 py-2 outline-none transition-all"

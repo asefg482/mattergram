@@ -64,6 +64,16 @@ async function handleSearchEnter(e: KeyboardEvent) {
   }
 }
 
+function handleModalSearchEsc(e: KeyboardEvent) {
+  e.preventDefault()
+  if (searchQuery.value) {
+    searchQuery.value = ''
+    searchResults.value = []
+  } else {
+    emit('close')
+  }
+}
+
 async function handleCreateChannel() {
   if (!channelDisplayName.value.trim()) return
   isCreatingChannel.value = true
@@ -126,6 +136,7 @@ async function handleCreateChannel() {
             v-model="searchQuery"
             @input="handleSearch"
             @keydown.enter="handleSearchEnter"
+            @keydown.esc="handleModalSearchEsc"
             type="text"
             placeholder="Search by username, name, or email..."
             class="w-full bg-[#0e1621] border border-[#202b36] text-white text-sm rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-[#3390ec]"
