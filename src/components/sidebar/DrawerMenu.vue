@@ -14,6 +14,7 @@ import {
   Users,
   Shield,
   Layers,
+  Palette,
   X
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
@@ -395,6 +396,16 @@ const backdropStyle = computed(() => {
               </button>
             </div>
           </div>
+
+          <!-- Themes & Appearance -->
+          <button
+            @click="openSettings"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors"
+          >
+            <Palette class="w-5 h-5 text-[#3390ec]" />
+            <span class="flex-1 text-left">قالب‌ها و تم‌ها</span>
+            <span class="text-xs text-[#7f91a4] font-medium">{{ uiStore.currentThemePreset.nameFa }}</span>
+          </button>
 
           <!-- Settings -->
           <button

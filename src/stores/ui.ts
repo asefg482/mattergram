@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { MattermostPost, MattermostFileInfo, MattermostUser } from '../types/mattermost'
+import { THEME_PRESETS, ANIMATION_PRESETS, getThemeById, getAnimationById, type ThemePreset, type AnimationPreset } from '../utils/themes'
 
 export interface MentionModalState {
   isOpen: boolean
@@ -17,7 +18,71 @@ export interface AvatarPreviewState {
 }
 
 export const useUiStore = defineStore('ui', () => {
-  const theme = ref<'dark' | 'light'>((localStorage.getItem('mattergram_theme') as any) || 'dark')
+  // Theme & Animation Presets with localStorage persistence
+  const themeId = ref<string>(localStorage.getItem('mattergram_theme_id') || 'classic-dark')
+  const animPreset = ref<string>(localStorage.getItem('mattergram_animation_preset') || 'smooth')
+
+  const currentThemePreset = computed<ThemePreset>(() => getThemeById(themeId.value))
+  const currentAnimPreset = computed<AnimationPreset>(() => getAnimationById(animPreset.value))
+  const theme = computed<'dark' | 'light'>({
+    get: () => currentThemePreset.value.mode,
+    set: (mode) => setTheme(mode)
+  })
+
+  function applyThemeToDom() {
+    if (typeof document === 'undefined') return
+    const active = currentThemePreset.value
+    const anim = animPreset.value
+
+    document.documentElement.setAttribute('data-theme', active.id)
+    document.documentElement.setAttribute('data-anim', anim)
+
+    if (active.mode === 'dark') {
+      document.documentElement.classList.add('dark')
+      document.documentElement.classList.remove('light')
+    } else {
+      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.add('light')
+    }
+  }
+
+  function setThemePreset(id: string) {
+    themeId.value = id
+    localStorage.setItem('mattergram_theme_id', id)
+    const preset = getThemeById(id)
+    localStorage.setItem('mattergram_theme', preset.mode)
+    applyThemeToDom()
+  }
+
+  function setAnimationPreset(animId: string) {
+    animPreset.value = animId
+    localStorage.setItem('mattergram_animation_preset', animId)
+    applyThemeToDom()
+  }
+
+  function setTheme(newMode: 'dark' | 'light') {
+    if (newMode === 'light') {
+      setThemePreset('classic-light')
+    } else {
+      if (currentThemePreset.value.mode === 'light') {
+        setThemePreset('classic-dark')
+      } else {
+        setThemePreset(themeId.value)
+      }
+    }
+  }
+
+  function toggleTheme() {
+    if (currentThemePreset.value.mode === 'dark') {
+      setTheme('light')
+    } else {
+      setTheme('dark')
+    }
+  }
+
+  // Initial DOM apply
+  applyThemeToDom()
+
   const activeTab = ref<'all' | 'channels' | 'direct' | 'unread'>('all')
   const searchQuery = ref('')
   const replyingTo = ref<MattermostPost | null>(null)
@@ -40,22 +105,6 @@ export const useUiStore = defineStore('ui', () => {
     type: 'user',
     username: ''
   })
-
-  function setTheme(newTheme: 'dark' | 'light') {
-    theme.value = newTheme
-    localStorage.setItem('mattergram_theme', newTheme)
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-      document.documentElement.classList.remove('light')
-    } else {
-      document.documentElement.classList.remove('dark')
-      document.documentElement.classList.add('light')
-    }
-  }
-
-  function toggleTheme() {
-    setTheme(theme.value === 'dark' ? 'light' : 'dark')
-  }
 
   function setReplyingTo(post: MattermostPost | null) {
     replyingTo.value = post
@@ -119,6 +168,13 @@ export const useUiStore = defineStore('ui', () => {
 
   return {
     theme,
+    themeId,
+    animPreset,
+    currentThemePreset,
+    currentAnimPreset,
+    setThemePreset,
+    setAnimationPreset,
+    applyThemeToDom,
     activeTab,
     searchQuery,
     replyingTo,

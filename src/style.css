@@ -286,3 +286,227 @@ html:not(.dark) .tg-table-wrapper tr:hover {
   background-color: rgba(255, 255, 255, 0.08);
   user-select: auto;
 }
+
+/* ==================== THEMES SYSTEM ==================== */
+
+/* 1. Midnight AMOLED (Pure Black OLED) */
+html[data-theme='midnight-amoled'] {
+  --tg-bg: #000000;
+  --tg-sidebar: #09090b;
+  --tg-card: #141416;
+  --tg-hover: #1a1a1f;
+  --tg-active: #0284c7;
+  --tg-bubble-in: #121214;
+  --tg-bubble-out: #0284c7;
+  --tg-blue-light: #38bdf8;
+  --tg-blue: #0284c7;
+  --tg-border: #222226;
+  --tg-pattern-opacity: 0.04;
+}
+html[data-theme='midnight-amoled'] .bg-\[\#0e1621\],
+html[data-theme='midnight-amoled'] .dark\:bg-\[\#0e1621\] { background-color: #000000 !important; }
+html[data-theme='midnight-amoled'] .bg-\[\#17212b\],
+html[data-theme='midnight-amoled'] .dark\:bg-\[\#17212b\] { background-color: #09090b !important; }
+html[data-theme='midnight-amoled'] .bg-\[\#242f3d\],
+html[data-theme='midnight-amoled'] .dark\:bg-\[\#242f3d\] { background-color: #141416 !important; }
+html[data-theme='midnight-amoled'] .bg-\[\#202b36\],
+html[data-theme='midnight-amoled'] .dark\:bg-\[\#202b36\] { background-color: #1a1a1f !important; }
+html[data-theme='midnight-amoled'] .hover\:bg-\[\#202b36\]:hover,
+html[data-theme='midnight-amoled'] .dark\:hover\:bg-\[\#202b36\]:hover { background-color: #1f1f24 !important; }
+html[data-theme='midnight-amoled'] .bg-\[\#182533\],
+html[data-theme='midnight-amoled'] .dark\:bg-\[\#182533\] { background-color: #121214 !important; }
+html[data-theme='midnight-amoled'] .bg-\[\#2b5278\],
+html[data-theme='midnight-amoled'] .dark\:bg-\[\#2b5278\] { background-color: #0284c7 !important; }
+html[data-theme='midnight-amoled'] .border-\[\#202b36\],
+html[data-theme='midnight-amoled'] .dark\:border-\[\#202b36\] { border-color: #222226 !important; }
+html[data-theme='midnight-amoled'] .text-\[\#3390ec\] { color: #38bdf8 !important; }
+html[data-theme='midnight-amoled'] .bg-\[\#3390ec\] { background-color: #0284c7 !important; }
+html[data-theme='midnight-amoled'] .border-\[\#3390ec\] { border-color: #38bdf8 !important; }
+
+/* 2. Emerald Forest (Matrix & Deep Green) */
+html[data-theme='matrix-emerald'] {
+  --tg-bg: #06130d;
+  --tg-sidebar: #0a1c14;
+  --tg-card: #112a1f;
+  --tg-hover: #163628;
+  --tg-active: #144e36;
+  --tg-bubble-in: #0d2219;
+  --tg-bubble-out: #144e36;
+  --tg-blue-light: #10b981;
+  --tg-blue: #059669;
+  --tg-border: #183d2c;
+  --tg-pattern-opacity: 0.08;
+}
+html[data-theme='matrix-emerald'] .bg-\[\#0e1621\],
+html[data-theme='matrix-emerald'] .dark\:bg-\[\#0e1621\] { background-color: #06130d !important; }
+html[data-theme='matrix-emerald'] .bg-\[\#17212b\],
+html[data-theme='matrix-emerald'] .dark\:bg-\[\#17212b\] { background-color: #0a1c14 !important; }
+html[data-theme='matrix-emerald'] .bg-\[\#242f3d\],
+html[data-theme='matrix-emerald'] .dark\:bg-\[\#242f3d\] { background-color: #112a1f !important; }
+html[data-theme='matrix-emerald'] .bg-\[\#202b36\],
+html[data-theme='matrix-emerald'] .dark\:bg-\[\#202b36\] { background-color: #143325 !important; }
+html[data-theme='matrix-emerald'] .hover\:bg-\[\#202b36\]:hover,
+html[data-theme='matrix-emerald'] .dark\:hover\:bg-\[\#202b36\]:hover { background-color: #173d2d !important; }
+html[data-theme='matrix-emerald'] .bg-\[\#182533\],
+html[data-theme='matrix-emerald'] .dark\:bg-\[\#182533\] { background-color: #0d2219 !important; }
+html[data-theme='matrix-emerald'] .bg-\[\#2b5278\],
+html[data-theme='matrix-emerald'] .dark\:bg-\[\#2b5278\] { background-color: #144e36 !important; }
+html[data-theme='matrix-emerald'] .border-\[\#202b36\],
+html[data-theme='matrix-emerald'] .dark\:border-\[\#202b36\] { border-color: #183d2c !important; }
+html[data-theme='matrix-emerald'] .text-\[\#3390ec\] { color: #10b981 !important; }
+html[data-theme='matrix-emerald'] .bg-\[\#3390ec\] { background-color: #059669 !important; }
+html[data-theme='matrix-emerald'] .border-\[\#3390ec\] { border-color: #10b981 !important; }
+
+/* 3. Cyberpunk Violet (Neon Cosmic Purple) */
+html[data-theme='cyberpunk-neon'] {
+  --tg-bg: #0d081a;
+  --tg-sidebar: #150d29;
+  --tg-card: #22143f;
+  --tg-hover: #2d1a54;
+  --tg-active: #581c87;
+  --tg-bubble-in: #1c1134;
+  --tg-bubble-out: #581c87;
+  --tg-blue-light: #c084fc;
+  --tg-blue: #9333ea;
+  --tg-border: #331d5c;
+  --tg-pattern-opacity: 0.08;
+}
+html[data-theme='cyberpunk-neon'] .bg-\[\#0e1621\],
+html[data-theme='cyberpunk-neon'] .dark\:bg-\[\#0e1621\] { background-color: #0d081a !important; }
+html[data-theme='cyberpunk-neon'] .bg-\[\#17212b\],
+html[data-theme='cyberpunk-neon'] .dark\:bg-\[\#17212b\] { background-color: #150d29 !important; }
+html[data-theme='cyberpunk-neon'] .bg-\[\#242f3d\],
+html[data-theme='cyberpunk-neon'] .dark\:bg-\[\#242f3d\] { background-color: #22143f !important; }
+html[data-theme='cyberpunk-neon'] .bg-\[\#202b36\],
+html[data-theme='cyberpunk-neon'] .dark\:bg-\[\#202b36\] { background-color: #2b194f !important; }
+html[data-theme='cyberpunk-neon'] .hover\:bg-\[\#202b36\]:hover,
+html[data-theme='cyberpunk-neon'] .dark\:hover\:bg-\[\#202b36\]:hover { background-color: #341e5f !important; }
+html[data-theme='cyberpunk-neon'] .bg-\[\#182533\],
+html[data-theme='cyberpunk-neon'] .dark\:bg-\[\#182533\] { background-color: #1c1134 !important; }
+html[data-theme='cyberpunk-neon'] .bg-\[\#2b5278\],
+html[data-theme='cyberpunk-neon'] .dark\:bg-\[\#2b5278\] { background-color: #581c87 !important; }
+html[data-theme='cyberpunk-neon'] .border-\[\#202b36\],
+html[data-theme='cyberpunk-neon'] .dark\:border-\[\#202b36\] { border-color: #331d5c !important; }
+html[data-theme='cyberpunk-neon'] .text-\[\#3390ec\] { color: #c084fc !important; }
+html[data-theme='cyberpunk-neon'] .bg-\[\#3390ec\] { background-color: #9333ea !important; }
+html[data-theme='cyberpunk-neon'] .border-\[\#3390ec\] { border-color: #c084fc !important; }
+
+/* 4. Warm Sunset (Amber & Espresso) */
+html[data-theme='sunset-amber'] {
+  --tg-bg: #140f0c;
+  --tg-sidebar: #1d1612;
+  --tg-card: #2a201b;
+  --tg-hover: #372a24;
+  --tg-active: #6c3b1c;
+  --tg-bubble-in: #231a15;
+  --tg-bubble-out: #6c3b1c;
+  --tg-blue-light: #f59e0b;
+  --tg-blue: #d97706;
+  --tg-border: #3d2e27;
+  --tg-pattern-opacity: 0.08;
+}
+html[data-theme='sunset-amber'] .bg-\[\#0e1621\],
+html[data-theme='sunset-amber'] .dark\:bg-\[\#0e1621\] { background-color: #140f0c !important; }
+html[data-theme='sunset-amber'] .bg-\[\#17212b\],
+html[data-theme='sunset-amber'] .dark\:bg-\[\#17212b\] { background-color: #1d1612 !important; }
+html[data-theme='sunset-amber'] .bg-\[\#242f3d\],
+html[data-theme='sunset-amber'] .dark\:bg-\[\#242f3d\] { background-color: #2a201b !important; }
+html[data-theme='sunset-amber'] .bg-\[\#202b36\],
+html[data-theme='sunset-amber'] .dark\:bg-\[\#202b36\] { background-color: #332620 !important; }
+html[data-theme='sunset-amber'] .hover\:bg-\[\#202b36\]:hover,
+html[data-theme='sunset-amber'] .dark\:hover\:bg-\[\#202b36\]:hover { background-color: #3d2e26 !important; }
+html[data-theme='sunset-amber'] .bg-\[\#182533\],
+html[data-theme='sunset-amber'] .dark\:bg-\[\#182533\] { background-color: #231a15 !important; }
+html[data-theme='sunset-amber'] .bg-\[\#2b5278\],
+html[data-theme='sunset-amber'] .dark\:bg-\[\#2b5278\] { background-color: #6c3b1c !important; }
+html[data-theme='sunset-amber'] .border-\[\#202b36\],
+html[data-theme='sunset-amber'] .dark\:border-\[\#202b36\] { border-color: #3d2e27 !important; }
+html[data-theme='sunset-amber'] .text-\[\#3390ec\] { color: #f59e0b !important; }
+html[data-theme='sunset-amber'] .bg-\[\#3390ec\] { background-color: #d97706 !important; }
+html[data-theme='sunset-amber'] .border-\[\#3390ec\] { border-color: #f59e0b !important; }
+
+/* 5. Arctic Nord (Cool Scandinavian Blue) */
+html[data-theme='arctic-nord'] {
+  --tg-bg: #0f172a;
+  --tg-sidebar: #172338;
+  --tg-card: #1e2f47;
+  --tg-hover: #263a56;
+  --tg-active: #2563eb;
+  --tg-bubble-in: #1a293e;
+  --tg-bubble-out: #2563eb;
+  --tg-blue-light: #60a5fa;
+  --tg-blue: #3b82f6;
+  --tg-border: #283e5c;
+  --tg-pattern-opacity: 0.08;
+}
+html[data-theme='arctic-nord'] .bg-\[\#0e1621\],
+html[data-theme='arctic-nord'] .dark\:bg-\[\#0e1621\] { background-color: #0f172a !important; }
+html[data-theme='arctic-nord'] .bg-\[\#17212b\],
+html[data-theme='arctic-nord'] .dark\:bg-\[\#17212b\] { background-color: #172338 !important; }
+html[data-theme='arctic-nord'] .bg-\[\#242f3d\],
+html[data-theme='arctic-nord'] .dark\:bg-\[\#242f3d\] { background-color: #1e2f47 !important; }
+html[data-theme='arctic-nord'] .bg-\[\#202b36\],
+html[data-theme='arctic-nord'] .dark\:bg-\[\#202b36\] { background-color: #233752 !important; }
+html[data-theme='arctic-nord'] .hover\:bg-\[\#202b36\]:hover,
+html[data-theme='arctic-nord'] .dark\:hover\:bg-\[\#202b36\]:hover { background-color: #2a4161 !important; }
+html[data-theme='arctic-nord'] .bg-\[\#182533\],
+html[data-theme='arctic-nord'] .dark\:bg-\[\#182533\] { background-color: #1a293e !important; }
+html[data-theme='arctic-nord'] .bg-\[\#2b5278\],
+html[data-theme='arctic-nord'] .dark\:bg-\[\#2b5278\] { background-color: #2563eb !important; }
+html[data-theme='arctic-nord'] .border-\[\#202b36\],
+html[data-theme='arctic-nord'] .dark\:border-\[\#202b36\] { border-color: #283e5c !important; }
+html[data-theme='arctic-nord'] .text-\[\#3390ec\] { color: #60a5fa !important; }
+html[data-theme='arctic-nord'] .bg-\[\#3390ec\] { background-color: #3b82f6 !important; }
+html[data-theme='arctic-nord'] .border-\[\#3390ec\] { border-color: #60a5fa !important; }
+
+/* ==================== CUSTOM ANIMATION PRESETS ==================== */
+
+/* 1. Spring / Bouncy Elastic Physics */
+html[data-anim='spring'] .msg-pop-in {
+  animation: spring-msg-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+@keyframes spring-msg-pop {
+  0% { opacity: 0; transform: scale(0.82) translateY(14px); }
+  65% { transform: scale(1.04) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+html[data-anim='spring'] button:active {
+  transform: scale(0.92) !important;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+html[data-anim='spring'] .group\/react:hover button {
+  transform: scale(1.08);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 2. Turbo Snappy (Ultra fast 75ms) */
+html[data-anim='fast'] * {
+  transition-duration: 75ms !important;
+  animation-duration: 75ms !important;
+}
+html[data-anim='fast'] .msg-pop-in {
+  animation-duration: 90ms !important;
+}
+
+/* 3. Ambient Glow & Pulse */
+html[data-anim='pulse'] .tg-message-row.bg-\[\#3390ec\]\/15 {
+  animation: ambient-row-glow 0.8s ease-in-out !important;
+}
+@keyframes ambient-row-glow {
+  0% { box-shadow: 0 0 0px var(--tg-blue-light); }
+  50% { box-shadow: 0 0 16px var(--tg-blue-light); }
+  100% { box-shadow: 0 0 0px transparent; }
+}
+html[data-anim='pulse'] .tg-bubble-out {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25), 0 0 10px rgba(51, 144, 236, 0.12);
+}
+
+/* 4. Reduced Motion */
+html[data-anim='none'] *,
+html[data-anim='none'] *::before,
+html[data-anim='none'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+

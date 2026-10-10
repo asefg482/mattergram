@@ -17,11 +17,15 @@ import {
   AlertCircle,
   Loader2,
   Bell,
-  BellOff
+  BellOff,
+  Palette,
+  Zap,
+  Check
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { notificationService } from '../../services/notifications'
 import { mmApi } from '../../services/mattermostApi'
+import { THEME_PRESETS, ANIMATION_PRESETS } from '../../utils/themes'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -97,6 +101,14 @@ function handleSave() {
     saveSuccess.value = false
     uiStore.showSettingsModal = false
   }, 1000)
+}
+
+function selectTheme(id: string) {
+  uiStore.setThemePreset(id)
+}
+
+function selectAnimation(id: string) {
+  uiStore.setAnimationPreset(id)
 }
 </script>
 
@@ -243,6 +255,128 @@ function handleSave() {
                 class="w-4 h-4 rounded-full bg-white transition-transform"
                 :class="notifEnabled && notifPermission === 'granted' ? 'translate-x-4' : 'translate-x-0'"
               ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Themes & Custom Animations -->
+        <div class="space-y-4 pt-3 border-t border-[#202b36] dark:border-[#202b36] border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <Palette class="w-4 h-4 text-[#3390ec]" />
+              <h4 class="text-xs font-semibold text-[#7f91a4] uppercase tracking-wider">Themes & Colors</h4>
+            </div>
+            <span class="text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              Saved in Browser Storage
+            </span>
+          </div>
+
+          <!-- Themes Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <button
+              v-for="t in THEME_PRESETS"
+              :key="t.id"
+              @click="selectTheme(t.id)"
+              type="button"
+              class="relative flex flex-col p-2.5 rounded-xl border text-left transition-all group overflow-hidden cursor-pointer"
+              :class="[
+                uiStore.themeId === t.id
+                  ? 'border-[#3390ec] ring-2 ring-[#3390ec]/30 shadow-lg bg-[#202b36]/40'
+                  : 'border-[#202b36] dark:border-[#202b36] border-gray-200 hover:border-gray-500 bg-black/15'
+              ]"
+            >
+              <!-- Color Palette Miniature Preview -->
+              <div
+                class="w-full h-12 rounded-lg p-1.5 flex flex-col justify-between mb-2 shadow-inner border border-white/5 relative overflow-hidden"
+                :style="{ backgroundColor: t.colors.bg }"
+              >
+                <!-- Mini simulated chat bar -->
+                <div class="flex items-center justify-between text-[8px] opacity-80" :style="{ color: t.colors.text }">
+                  <div class="w-8 h-1.5 rounded-full" :style="{ backgroundColor: t.colors.sidebar }"></div>
+                  <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: t.colors.accent }"></div>
+                </div>
+
+                <!-- Mini chat bubbles -->
+                <div class="flex flex-col gap-1">
+                  <!-- Incoming bubble -->
+                  <div
+                    class="w-14 h-2.5 rounded-sm px-1 flex items-center shadow-xs"
+                    :style="{ backgroundColor: t.colors.bubbleIn }"
+                  >
+                    <div class="w-8 h-1 rounded-full opacity-60" :style="{ backgroundColor: t.colors.text }"></div>
+                  </div>
+                  <!-- Outgoing bubble -->
+                  <div
+                    class="w-12 h-2.5 rounded-sm px-1 self-end flex items-center justify-end shadow-xs"
+                    :style="{ backgroundColor: t.colors.bubbleOut }"
+                  >
+                    <div class="w-6 h-1 rounded-full opacity-80 bg-white"></div>
+                  </div>
+                </div>
+
+                <!-- Active checkmark badge -->
+                <div
+                  v-if="uiStore.themeId === t.id"
+                  class="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#3390ec] text-white flex items-center justify-center shadow"
+                >
+                  <Check class="w-2.5 h-2.5 stroke-[3]" />
+                </div>
+              </div>
+
+              <!-- Theme Title & Subtitle -->
+              <div class="min-w-0">
+                <div class="text-xs font-semibold text-white dark:text-white text-gray-800 truncate flex items-center justify-between">
+                  <span>{{ t.nameFa }}</span>
+                </div>
+                <div class="text-[10px] text-[#7f91a4] truncate mt-0.5 font-sans">
+                  {{ t.name }}
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Section 3.2: Custom Animations -->
+          <div class="pt-3 space-y-2.5">
+            <div class="flex items-center gap-2">
+              <Zap class="w-4 h-4 text-amber-400" />
+              <h5 class="text-xs font-semibold text-[#7f91a4] uppercase tracking-wider">Motion & Animations</h5>
+            </div>
+
+            <!-- Animation Presets Pills -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                v-for="anim in ANIMATION_PRESETS"
+                :key="anim.id"
+                @click="selectAnimation(anim.id)"
+                class="flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer"
+                :class="[
+                  uiStore.animPreset === anim.id
+                    ? 'border-[#3390ec] bg-[#3390ec]/15 shadow-sm'
+                    : 'border-[#202b36] dark:border-[#202b36] border-gray-200 hover:border-gray-500 bg-black/15'
+                ]"
+              >
+                <!-- Radio Dot -->
+                <div
+                  class="w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 transition-colors"
+                  :class="[
+                    uiStore.animPreset === anim.id
+                      ? 'border-[#3390ec] bg-[#3390ec]'
+                      : 'border-gray-500'
+                  ]"
+                >
+                  <div v-if="uiStore.animPreset === anim.id" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                </div>
+
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold text-white dark:text-white text-gray-800 flex items-center gap-1.5">
+                    <span>{{ anim.nameFa }}</span>
+                    <span class="text-[10px] font-normal text-[#7f91a4]">({{ anim.name }})</span>
+                  </div>
+                  <p class="text-[10px] text-[#7f91a4] mt-0.5 leading-relaxed line-clamp-2">
+                    {{ anim.description }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
