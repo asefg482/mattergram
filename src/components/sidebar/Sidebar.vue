@@ -511,7 +511,12 @@ function finishSearch() {
     </button>
 
     <!-- Drawer Menu Component -->
-    <DrawerMenu :isOpen="isDrawerOpen" @close="isDrawerOpen = false" />
+    <DrawerMenu
+      :isOpen="isDrawerOpen"
+      @close="isDrawerOpen = false"
+      @open="isDrawerOpen = true"
+      @update:isOpen="isDrawerOpen = $event"
+    />
 
     <!-- New Chat Modal -->
     <NewChatModal

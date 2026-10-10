@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
@@ -24,6 +24,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'open'): void
+  (e: 'update:isOpen', value: boolean): void
 }>()
 
 const authStore = useAuthStore()
@@ -40,6 +42,11 @@ const userFullName = computed(() => {
   return user.value.username || user.value.email
 })
 
+function closeDrawer() {
+  emit('update:isOpen', false)
+  emit('close')
+}
+
 function enlargeMyAvatar() {
   if (user.value) {
     const url = mmApi.getUserAvatarUrl(user.value.id, (user.value as any)?.last_picture_update)
@@ -52,7 +59,7 @@ const avatarGradient = computed(() => {
 })
 
 function openSavedMessages() {
-  emit('close')
+  closeDrawer()
   const savedChannel = chatStore.channels.find((c) => c.display_name === 'Saved Messages')
   if (savedChannel) {
     chatStore.selectChannel(savedChannel.id)
@@ -62,20 +69,240 @@ function openSavedMessages() {
 }
 
 function openSettings() {
-  emit('close')
+  closeDrawer()
   uiStore.showSettingsModal = true
 }
 
 function handleLogout() {
-  emit('close')
+  closeDrawer()
   authStore.logout()
 }
+
+// --- Mobile Touch Drag & Swipe Gestures ---
+const isDragging = ref(false)
+const isSnapping = ref(false)
+const dragOffset = ref(0)
+
+function getDrawerWidth() {
+  if (typeof window !== 'undefined') {
+    return Math.min(288, window.innerWidth * 0.82)
+  }
+  return 288
+}
+
+let touchStartX = 0
+let touchStartY = 0
+let touchStartTime = 0
+let touchCandidate = false
+let isDraggingActive = false
+
+function onTouchStart(e: TouchEvent) {
+  if (e.touches.length !== 1) return
+  const touch = e.touches[0]
+
+  if (props.isOpen) {
+    // Drawer is already open: touch anywhere on drawer or backdrop to drag left and close
+    touchStartX = touch.clientX
+    touchStartY = touch.clientY
+    touchStartTime = performance.now()
+    touchCandidate = true
+    isDraggingActive = false
+    return
+  }
+
+  // Drawer is closed:
+  // Allow opening swipe when:
+  // 1) Starting near left edge of the screen (clientX <= 44px)
+  // OR 2) Starting on the hamburger button area at top left (clientY <= 65px && clientX <= 75px)
+  const isLeftEdge = touch.clientX <= 44
+  const isHamburgerArea = touch.clientY <= 65 && touch.clientX <= 75
+
+  // Only allow opening if sidebar is visible (on mobile chat list or desktop)
+  const isSidebarVisible = uiStore.isMobileSidebarOpen || !chatStore.activeChannelId || window.innerWidth >= 768
+
+  if ((isLeftEdge || isHamburgerArea) && isSidebarVisible) {
+    touchStartX = touch.clientX
+    touchStartY = touch.clientY
+    touchStartTime = performance.now()
+    touchCandidate = true
+    isDraggingActive = false
+  } else {
+    touchCandidate = false
+  }
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!touchCandidate || e.touches.length !== 1) return
+  const touch = e.touches[0]
+  const deltaX = touch.clientX - touchStartX
+  const deltaY = touch.clientY - touchStartY
+  const width = getDrawerWidth()
+
+  if (!isDraggingActive) {
+    const absX = Math.abs(deltaX)
+    const absY = Math.abs(deltaY)
+
+    // Vertical scroll is dominant -> abort swipe gesture so list scrolls normally
+    if (absY > absX && absY > 7) {
+      touchCandidate = false
+      return
+    }
+
+    // Horizontal swipe threshold met
+    if (absX > 8 && absX > absY * 1.1) {
+      if (!props.isOpen && deltaX > 0) {
+        // Swiping right to open
+        isDraggingActive = true
+        isDragging.value = true
+        isSnapping.value = false
+      } else if (props.isOpen && deltaX < 0) {
+        // Swiping left to close
+        isDraggingActive = true
+        isDragging.value = true
+        isSnapping.value = false
+      } else {
+        touchCandidate = false
+        return
+      }
+    }
+  }
+
+  if (isDraggingActive) {
+    if (e.cancelable) {
+      e.preventDefault()
+    }
+    if (!props.isOpen) {
+      dragOffset.value = Math.max(0, Math.min(width, deltaX))
+    } else {
+      dragOffset.value = Math.min(0, Math.max(-width, deltaX))
+    }
+  }
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (!isDraggingActive) {
+    touchCandidate = false
+    return
+  }
+
+  const touch = e.changedTouches[0]
+  const deltaX = touch ? touch.clientX - touchStartX : 0
+  const elapsed = Math.max(1, performance.now() - touchStartTime)
+  const velocity = deltaX / elapsed // px/ms
+  const width = getDrawerWidth()
+
+  isSnapping.value = true
+
+  if (!props.isOpen) {
+    // Opening: snap open if dragged more than 28% of drawer width or fast flick to right (velocity > 0.3)
+    const shouldOpen = dragOffset.value > width * 0.28 || velocity > 0.3
+    if (shouldOpen) {
+      dragOffset.value = width
+      setTimeout(() => {
+        isDragging.value = false
+        isSnapping.value = false
+        dragOffset.value = 0
+        emit('update:isOpen', true)
+        emit('open')
+      }, 220)
+    } else {
+      dragOffset.value = 0
+      setTimeout(() => {
+        isDragging.value = false
+        isSnapping.value = false
+        dragOffset.value = 0
+      }, 220)
+    }
+  } else {
+    // Closing: snap close if dragged left more than 25% or fast flick to left (velocity < -0.3)
+    const shouldClose = dragOffset.value < -width * 0.25 || velocity < -0.3
+    if (shouldClose) {
+      dragOffset.value = -width
+      setTimeout(() => {
+        isDragging.value = false
+        isSnapping.value = false
+        dragOffset.value = 0
+        emit('update:isOpen', false)
+        emit('close')
+      }, 220)
+    } else {
+      dragOffset.value = 0
+      setTimeout(() => {
+        isDragging.value = false
+        isSnapping.value = false
+        dragOffset.value = 0
+      }, 220)
+    }
+  }
+
+  touchCandidate = false
+  isDraggingActive = false
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.isOpen) {
+    closeDrawer()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('touchstart', onTouchStart, { passive: true })
+  window.addEventListener('touchmove', onTouchMove, { passive: false })
+  window.addEventListener('touchend', onTouchEnd, { passive: true })
+  window.addEventListener('touchcancel', onTouchEnd, { passive: true })
+  window.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('touchstart', onTouchStart)
+  window.removeEventListener('touchmove', onTouchMove)
+  window.removeEventListener('touchend', onTouchEnd)
+  window.removeEventListener('touchcancel', onTouchEnd)
+  window.removeEventListener('keydown', onKeydown)
+})
+
+const drawerStyle = computed(() => {
+  if (isDragging.value || isSnapping.value) {
+    const width = getDrawerWidth()
+    let tx = 0
+    if (!props.isOpen) {
+      tx = -width + dragOffset.value
+    } else {
+      tx = dragOffset.value
+    }
+    tx = Math.max(-width, Math.min(0, tx))
+    return {
+      transform: `translateX(${tx}px)`,
+      transition: isSnapping.value ? 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)' : 'none'
+    }
+  }
+  return {}
+})
+
+const backdropStyle = computed(() => {
+  if (isDragging.value || isSnapping.value) {
+    const width = getDrawerWidth()
+    let progress = 0
+    if (!props.isOpen) {
+      progress = dragOffset.value / width
+    } else {
+      progress = 1 + (dragOffset.value / width)
+    }
+    progress = Math.max(0, Math.min(1, progress))
+    return {
+      opacity: progress,
+      transition: isSnapping.value ? 'opacity 0.22s ease-out' : 'none'
+    }
+  }
+  return {}
+})
 </script>
 
 <template>
   <div>
     <!-- Backdrop Overlay -->
     <transition
+      :css="!isDragging && !isSnapping"
       enter-active-class="transition-opacity duration-300 ease-out"
       enter-from-class="opacity-0"
       enter-to-class="opacity-100"
@@ -84,14 +311,16 @@ function handleLogout() {
       leave-to-class="opacity-0"
     >
       <div
-        v-if="isOpen"
-        @click="emit('close')"
+        v-if="isOpen || isDragging || isSnapping"
+        @click="closeDrawer"
         class="fixed inset-0 bg-black/60 z-40 backdrop-blur-xs"
+        :style="isDragging || isSnapping ? backdropStyle : {}"
       ></div>
     </transition>
 
     <!-- Drawer Panel -->
     <transition
+      :css="!isDragging && !isSnapping"
       enter-active-class="transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)"
       enter-from-class="-translate-x-full"
       enter-to-class="translate-x-0"
@@ -100,8 +329,9 @@ function handleLogout() {
       leave-to-class="-translate-x-full"
     >
       <div
-        v-if="isOpen"
+        v-if="isOpen || isDragging || isSnapping"
         class="fixed top-0 bottom-0 left-0 w-72 bg-[#17212b] dark:bg-[#17212b] bg-white z-50 shadow-2xl flex flex-col border-r border-[#101921] dark:border-[#101921] border-[#dfe1e5]"
+        :style="isDragging || isSnapping ? drawerStyle : {}"
       >
         <!-- User Profile Header -->
         <div class="p-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#3390ec] text-white">
