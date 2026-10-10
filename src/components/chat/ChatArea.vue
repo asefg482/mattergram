@@ -357,7 +357,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
-        <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-2 sm:px-4 pt-2 pb-6 flex flex-col">
+        <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-1 sm:px-2 pt-2 pb-6 flex flex-col">
           <template v-for="(post, index) in posts" :key="post.id">
             <!-- Date Divider -->
             <div

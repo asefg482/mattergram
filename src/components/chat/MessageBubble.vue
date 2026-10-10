@@ -360,7 +360,7 @@ function handleSenderClick() {
 <template>
   <div
     :id="`msg-${post.id}`"
-    class="flex items-end gap-2 my-1 px-2 sm:px-3 group relative transition-colors duration-150 tg-message-row w-full rounded-lg"
+    class="flex items-end gap-1.5 my-1 px-0.5 sm:px-1 group relative transition-colors duration-150 tg-message-row w-full rounded-lg"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
@@ -379,7 +379,7 @@ function handleSenderClick() {
 
     <!-- Bubble Wrapper with Hover Action Bar -->
     <div
-      class="relative max-w-[85%] md:max-w-[70%]"
+      class="relative max-w-[88%] sm:max-w-[82%] md:max-w-[75%]"
       @mouseenter="onMouseEnter"
       @mouseleave="onMouseLeave"
     >
