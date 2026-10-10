@@ -13,7 +13,7 @@ const ENV_SERVER_URL =
   ((import.meta as any).env?.VITE_MATTERMOST_BASE_URL as string) ||
   ''
 
-const DEFAULT_SERVER_URL = (ENV_SERVER_URL || localStorage.getItem('mattergram_base_url') || 'https://m.dornicadev.ir').trim().replace(/\/+$/, '')
+const DEFAULT_SERVER_URL = (ENV_SERVER_URL || localStorage.getItem('mattergram_base_url') || '').trim().replace(/\/+$/, '')
 
 class MattermostApiService {
   private baseUrl: string = DEFAULT_SERVER_URL

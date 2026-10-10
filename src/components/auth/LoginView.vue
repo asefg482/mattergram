@@ -10,8 +10,8 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const loginId = ref('asefg482@gmail.com')
-const password = ref('a1206s1206')
+const loginId = ref('')
+const password = ref('')
 const errorMsg = ref<string | null>(null)
 const loading = ref(false)
 
@@ -86,11 +86,6 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
-}
-
-function fillDemoCreds() {
-  loginId.value = 'asefg482@gmail.com'
-  password.value = 'a1206s1206'
 }
 </script>
 
@@ -186,21 +181,14 @@ function fillDemoCreds() {
           </button>
         </form>
 
-        <!-- Server Host Indicator & Quick Demo -->
-        <div class="mt-5 pt-4 border-t border-[#202b36] flex items-center justify-between text-xs text-[#7f91a4]">
-          <div class="flex items-center gap-1.5 min-w-0 pr-2">
+        <!-- Server Host Indicator -->
+        <div class="mt-5 pt-4 border-t border-[#202b36] flex items-center justify-center text-xs text-[#7f91a4]">
+          <div class="flex items-center gap-1.5 min-w-0">
             <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
             <span class="truncate text-[11px] text-[#7f91a4]/90" :title="authStore.baseUrl">
               {{ serverHostName }}
             </span>
           </div>
-          <button
-            type="button"
-            @click="fillDemoCreds"
-            class="text-[#3390ec] hover:text-[#52a6f5] font-medium transition-colors text-[11px] shrink-0"
-          >
-            Fill Demo Info
-          </button>
         </div>
       </div>
 

@@ -44,6 +44,21 @@
 
 ---
 
+## ⚙️ پیکربندی متغیرهای محیطی (.env)
+
+قبل از اجرای پروژه، یک فایل `.env` بر اساس `.env.example` بسازید و آدرس سرور Mattermost خود را وارد کنید:
+
+```bash
+cp .env.example .env
+```
+
+محتوای فایل `.env`:
+```env
+MATTERMOST_BASE_URL=https://your-mattermost-server.com
+```
+
+---
+
 ## 🚀 نحوه راه‌اندازی و اجرا
 
 ### ۱. اجرای حالت توسعه (Development Mode)
@@ -58,13 +73,3 @@ npm run dev
 npm run build
 npm start
 ```
-
----
-
-## 🔑 اطلاعات تست (Test Credentials)
-
-- **Server URL**: `https://m.dornicadev.ir`
-- **Username / Email**: `asefg482@gmail.com`
-- **Password**: `a1206s1206`
-
-در صفحه ورود دکمه **"Fill Demo Info"** نیز برای تکمیل خودکار این اطلاعات قرار داده شده است.

@@ -4,7 +4,7 @@ import path from 'path'
 import httpProxy from 'http-proxy'
 import { WebSocketServer } from 'ws'
 
-function mattermostProxyPlugin(defaultFallback = 'https://m.dornicadev.ir'): Plugin {
+function mattermostProxyPlugin(defaultFallback = ''): Plugin {
   const proxy = httpProxy.createProxyServer({
     changeOrigin: true,
     secure: false,
@@ -57,7 +57,13 @@ function mattermostProxyPlugin(defaultFallback = 'https://m.dornicadev.ir'): Plu
           try {
             targetUrl = new URL(targetServer)
           } catch {
-            targetUrl = new URL(defaultFallback)
+            try {
+              targetUrl = new URL(defaultFallback)
+            } catch {
+              res.writeHead(500, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ error: 'Mattermost server URL is not configured' }))
+              return
+            }
           }
 
           delete req.headers['x-mattermost-server']
@@ -86,7 +92,12 @@ function mattermostProxyPlugin(defaultFallback = 'https://m.dornicadev.ir'): Plu
           try {
             targetUrl = new URL(targetServer)
           } catch {
-            targetUrl = new URL(defaultFallback)
+            try {
+              targetUrl = new URL(defaultFallback)
+            } catch {
+              socket.destroy()
+              return
+            }
           }
 
           const wsProtocol = targetUrl.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -142,7 +153,7 @@ function mattermostProxyPlugin(defaultFallback = 'https://m.dornicadev.ir'): Plu
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const defaultFallback = (env.MATTERMOST_BASE_URL || env.VITE_MATTERMOST_BASE_URL || 'https://m.dornicadev.ir').trim().replace(/\/+$/, '')
+  const defaultFallback = (env.MATTERMOST_BASE_URL || env.VITE_MATTERMOST_BASE_URL || '').trim().replace(/\/+$/, '')
 
   return {
     plugins: [vue(), mattermostProxyPlugin(defaultFallback)],

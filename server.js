@@ -3,13 +3,14 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import httpProxy from 'http-proxy'
-import { WebSocketServer } from 'ws'
+import { WebSocketServer, WebSocket as WsClient } from 'ws'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const PORT = process.env.PORT || 5173
 const DIST_DIR = path.resolve(__dirname, 'dist')
+const DEFAULT_MATTERMOST_SERVER = (process.env.MATTERMOST_BASE_URL || process.env.VITE_MATTERMOST_BASE_URL || '').trim().replace(/\/+$/, '')
 
 const proxy = httpProxy.createProxyServer({
   changeOrigin: true,
@@ -40,7 +41,7 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   // 1. Proxy Mattermost API
   if (req.url && (req.url.startsWith('/api/v4') || req.url.startsWith('/mattermost-proxy/api/v4'))) {
-    let targetServer = (req.headers['x-mattermost-server'] as string) || 'https://m.dornicadev.ir'
+    let targetServer = req.headers['x-mattermost-server'] || DEFAULT_MATTERMOST_SERVER
 
     if (req.url.startsWith('/mattermost-proxy/')) {
       req.url = req.url.replace('/mattermost-proxy', '')
@@ -64,13 +65,25 @@ const server = http.createServer((req, res) => {
       // ignore
     }
 
-    targetServer = targetServer.trim().replace(/\/+$/, '')
+    targetServer = (targetServer || '').trim().replace(/\/+$/, '')
 
     let targetUrl
     try {
       targetUrl = new URL(targetServer)
     } catch {
-      targetUrl = new URL('https://m.dornicadev.ir')
+      if (DEFAULT_MATTERMOST_SERVER) {
+        try {
+          targetUrl = new URL(DEFAULT_MATTERMOST_SERVER)
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!targetUrl) {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Mattermost server URL is not configured' }))
+      return
     }
 
     delete req.headers['x-mattermost-server']
@@ -99,10 +112,10 @@ const server = http.createServer((req, res) => {
     if (err) {
       res.writeHead(500)
       res.end('Server Error')
-      return
+    } else {
+      res.writeHead(200, { 'Content-Type': contentType })
+      res.end(content)
     }
-    res.writeHead(200, { 'Content-Type': contentType })
-    res.end(content)
   })
 })
 
@@ -111,21 +124,32 @@ const wss = new WebSocketServer({ noServer: true })
 server.on('upgrade', (req, socket, head) => {
   if (req.url && (req.url.startsWith('/api/v4/websocket') || req.url.startsWith('/ws'))) {
     const parsed = new URL(req.url, 'http://localhost')
-    let targetServer = parsed.searchParams.get('server') || (req.headers['x-mattermost-server'] as string) || 'https://m.dornicadev.ir'
-    targetServer = targetServer.trim().replace(/\/+$/, '')
+    let targetServer = parsed.searchParams.get('server') || req.headers['x-mattermost-server'] || DEFAULT_MATTERMOST_SERVER
+    targetServer = (targetServer || '').trim().replace(/\/+$/, '')
 
     let targetUrl
     try {
       targetUrl = new URL(targetServer)
     } catch {
-      targetUrl = new URL('https://m.dornicadev.ir')
+      if (DEFAULT_MATTERMOST_SERVER) {
+        try {
+          targetUrl = new URL(DEFAULT_MATTERMOST_SERVER)
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!targetUrl) {
+      socket.destroy()
+      return
     }
 
     const wsProtocol = targetUrl.protocol === 'https:' ? 'wss:' : 'ws:'
     const upstreamUrl = `${wsProtocol}//${targetUrl.host}/api/v4/websocket`
 
     wss.handleUpgrade(req, socket, head, (clientWs) => {
-      const upstream = new (globalThis as any).WebSocket(upstreamUrl)
+      const upstream = new WsClient(upstreamUrl)
       const buffer = []
 
       upstream.onmessage = (e) => {
