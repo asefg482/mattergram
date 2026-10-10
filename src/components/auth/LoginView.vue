@@ -1,44 +1,69 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { mmApi } from '../../services/mattermostApi'
 import { notificationService } from '../../services/notifications'
-import { Send, Server, Lock, Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next'
+import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 
-const serverUrl = ref(authStore.baseUrl)
 const loginId = ref('asefg482@gmail.com')
 const password = ref('a1206s1206')
-const isTestingServer = ref(false)
-const serverStatus = ref<{ ok: boolean; message: string } | null>(null)
 const errorMsg = ref<string | null>(null)
 const loading = ref(false)
 
-async function testConnection() {
-  if (!serverUrl.value.trim()) return
-  isTestingServer.value = true
-  serverStatus.value = null
+// Server branding fetched from Mattermost settings
+const brandImageUrl = ref<string | null>(null)
+const siteName = ref<string>('Mattermost')
+const customDescription = ref<string>('')
+const isLoadingBrand = ref(true)
+
+const serverHostName = computed(() => {
   try {
-    const clean = serverUrl.value.trim().replace(/\/+$/, '')
-    authStore.setBaseUrl(clean)
-    
-    // Test with system ping
-    const res = await fetch('/api/v4/system/ping', {
-      headers: {
-        'X-Mattermost-Server': clean
-      }
+    const u = new URL(authStore.baseUrl || mmApi.getBaseUrl())
+    return u.host
+  } catch {
+    return authStore.baseUrl || 'Mattermost Server'
+  }
+})
+
+async function fetchServerBrand() {
+  isLoadingBrand.value = true
+  const currentBase = authStore.baseUrl || mmApi.getBaseUrl()
+
+  // 1. Fetch site name & description from client config
+  try {
+    const configUrl = mmApi.resolveEndpoint('/api/v4/config/client?format=old')
+    const configRes = await fetch(configUrl, {
+      headers: { 'X-Mattermost-Server': currentBase }
     })
-    if (res.ok) {
-      serverStatus.value = { ok: true, message: 'Server is reachable & operational' }
-    } else {
-      serverStatus.value = { ok: false, message: `Server replied with HTTP ${res.status}` }
+    if (configRes.ok) {
+      const cfg = await configRes.json()
+      if (cfg.SiteName) siteName.value = cfg.SiteName
+      if (cfg.CustomDescriptionText) customDescription.value = cfg.CustomDescriptionText
     }
-  } catch (err: any) {
-    serverStatus.value = { ok: false, message: err.message || 'Cannot reach server' }
-  } finally {
-    isTestingServer.value = false
+  } catch {}
+
+  // 2. Fetch custom brand image from Mattermost server settings (/api/v4/brand/image)
+  try {
+    const brandUrl = mmApi.resolveEndpoint('/api/v4/brand/image')
+    const brandRes = await fetch(brandUrl, {
+      headers: { 'X-Mattermost-Server': currentBase }
+    })
+    if (brandRes.ok) {
+      const blob = await brandRes.blob()
+      if (blob.type.startsWith('image/')) {
+        brandImageUrl.value = URL.createObjectURL(blob)
+      }
+    }
+  } catch {} finally {
+    isLoadingBrand.value = false
   }
 }
+
+onMounted(() => {
+  fetchServerBrand()
+})
 
 async function handleLogin() {
   if (!loginId.value || !password.value) {
@@ -49,18 +74,16 @@ async function handleLogin() {
   errorMsg.value = null
   loading.value = true
   try {
-    authStore.setBaseUrl(serverUrl.value)
     await authStore.login(loginId.value, password.value)
     notificationService.autoRequestPermissionOnFirstOpen()
   } catch (err: any) {
-    errorMsg.value = err.message || 'Login failed. Please check credentials or server URL.'
+    errorMsg.value = err.message || 'Login failed. Please check credentials or server connection.'
   } finally {
     loading.value = false
   }
 }
 
 function fillDemoCreds() {
-  serverUrl.value = 'https://m.dornicadev.ir'
   loginId.value = 'asefg482@gmail.com'
   password.value = 'a1206s1206'
 }
@@ -72,13 +95,38 @@ function fillDemoCreds() {
     <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#2481cc_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
 
     <div class="w-full max-w-md z-10">
-      <!-- Telegram Logo & Branding -->
+      <!-- Mattermost Official Logo & Branding from Server Settings -->
       <div class="text-center mb-8">
-        <div class="w-24 h-24 mx-auto mb-4 bg-gradient-to-tr from-[#2481cc] to-[#3ca0f0] rounded-full flex items-center justify-center shadow-xl shadow-[#2481cc]/25 transition-transform hover:scale-105 duration-300">
-          <Send class="w-12 h-12 text-white -rotate-12 translate-x-0.5 -translate-y-0.5" />
+        <!-- Custom Brand Image from Mattermost Settings -->
+        <div v-if="brandImageUrl" class="mb-4 flex items-center justify-center">
+          <img
+            :src="brandImageUrl"
+            :alt="siteName"
+            class="max-h-24 max-w-[260px] object-contain drop-shadow-xl rounded-xl transition-transform hover:scale-105 duration-300"
+          />
         </div>
-        <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Mattergram</h1>
-        <p class="text-sm text-[#7f91a4]">Mattermost client with full Telegram UI/UX</p>
+
+        <!-- Official Mattermost Brand Compass Icon (if custom brand image not configured) -->
+        <div
+          v-else
+          class="w-24 h-24 mx-auto mb-4 bg-gradient-to-tr from-[#1c58d9] to-[#0058cc] rounded-3xl flex items-center justify-center shadow-xl shadow-[#1c58d9]/30 transition-transform hover:scale-105 duration-300 border border-white/10"
+        >
+          <svg class="w-14 h-14 text-white" viewBox="0 0 104 104" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <circle r="52" cx="52" cy="52" fill="none"/>
+            <g transform="translate(54,46)">
+              <g transform="translate(-15,-42)">
+                <path d="M29.9539 1.4977C29.9539 0.670968 29.2827 0 28.4562 0C27.9597 0 27.5192 0.242028 27.2468 0.614415C27.216 0.656555 27.1873 0.700359 27.1609 0.745666L3.66519 32.1191C1.38202 34.7479 0 38.1803 0 41.9355C0 50.207 6.70541 56.9124 14.977 56.9124C23.2485 56.9124 29.9539 50.207 29.9539 41.9355L29.9539 41.9013V1.50252C29.9539 1.50091 29.9539 1.49931 29.9539 1.4977Z" fill="white"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <h1 class="text-2xl font-bold tracking-tight text-white mb-1">
+          {{ siteName || 'Mattermost' }}
+        </h1>
+        <p class="text-sm text-[#7f91a4]">
+          {{ customDescription || 'Mattermost client with full Telegram UI/UX' }}
+        </p>
       </div>
 
       <!-- Auth Card -->
@@ -90,40 +138,6 @@ function fillDemoCreds() {
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-4">
-          <!-- Server Base URL Field -->
-          <div>
-            <label class="block text-xs font-medium text-[#7f91a4] mb-1.5 flex items-center justify-between">
-              <span class="flex items-center gap-1.5">
-                <Server class="w-3.5 h-3.5 text-[#2481cc]" />
-                Mattermost Base URL
-              </span>
-              <button 
-                type="button" 
-                @click="testConnection" 
-                class="text-[#3390ec] hover:underline text-[11px] flex items-center gap-1"
-                :disabled="isTestingServer"
-              >
-                <Loader2 v-if="isTestingServer" class="w-3 h-3 animate-spin" />
-                <span>{{ isTestingServer ? 'Testing...' : 'Test Connection' }}</span>
-              </button>
-            </label>
-            <div class="relative">
-              <input
-                v-model="serverUrl"
-                type="url"
-                required
-                placeholder="https://your-mattermost.com"
-                class="w-full bg-[#0e1621] border border-[#202b36] focus:border-[#2481cc] focus:ring-1 focus:ring-[#2481cc] text-white text-sm rounded-xl px-3.5 py-2.5 outline-none transition-all"
-              />
-            </div>
-            <!-- Server Connection Status -->
-            <div v-if="serverStatus" class="mt-1.5 text-[11px] flex items-center gap-1.5" :class="serverStatus.ok ? 'text-emerald-400' : 'text-amber-400'">
-              <CheckCircle2 v-if="serverStatus.ok" class="w-3.5 h-3.5" />
-              <AlertCircle v-else class="w-3.5 h-3.5" />
-              <span>{{ serverStatus.message }}</span>
-            </div>
-          </div>
-
           <!-- Login ID (Username or Email) -->
           <div>
             <label class="block text-xs font-medium text-[#7f91a4] mb-1.5 flex items-center gap-1.5">
@@ -167,13 +181,18 @@ function fillDemoCreds() {
           </button>
         </form>
 
-        <!-- Quick Demo Fill -->
+        <!-- Server Host Indicator & Quick Demo -->
         <div class="mt-5 pt-4 border-t border-[#202b36] flex items-center justify-between text-xs text-[#7f91a4]">
-          <span>Test Server Credentials:</span>
+          <div class="flex items-center gap-1.5 min-w-0 pr-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+            <span class="truncate text-[11px] text-[#7f91a4]/90" :title="authStore.baseUrl">
+              {{ serverHostName }}
+            </span>
+          </div>
           <button
             type="button"
             @click="fillDemoCreds"
-            class="text-[#3390ec] hover:text-[#52a6f5] font-medium transition-colors"
+            class="text-[#3390ec] hover:text-[#52a6f5] font-medium transition-colors text-[11px] shrink-0"
           >
             Fill Demo Info
           </button>

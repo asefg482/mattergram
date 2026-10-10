@@ -8,10 +8,15 @@ import type {
   MattermostFileInfo
 } from '../types/mattermost'
 
-const DEFAULT_SERVER_URL = 'https://m.dornicadev.ir'
+const ENV_SERVER_URL =
+  ((import.meta as any).env?.MATTERMOST_BASE_URL as string) ||
+  ((import.meta as any).env?.VITE_MATTERMOST_BASE_URL as string) ||
+  ''
+
+const DEFAULT_SERVER_URL = (ENV_SERVER_URL || localStorage.getItem('mattergram_base_url') || 'https://m.dornicadev.ir').trim().replace(/\/+$/, '')
 
 class MattermostApiService {
-  private baseUrl: string = localStorage.getItem('mattergram_base_url') || DEFAULT_SERVER_URL
+  private baseUrl: string = DEFAULT_SERVER_URL
   private token: string | null = localStorage.getItem('mattergram_token') || null
 
   constructor() {
@@ -23,7 +28,7 @@ class MattermostApiService {
   }
 
   public setBaseUrl(url: string) {
-    this.baseUrl = url.trim().replace(/\/+$/, '')
+    this.baseUrl = (url || ENV_SERVER_URL || DEFAULT_SERVER_URL).trim().replace(/\/+$/, '')
     localStorage.setItem('mattergram_base_url', this.baseUrl)
   }
 
@@ -56,10 +61,14 @@ class MattermostApiService {
     return headers
   }
 
-  private resolveEndpoint(endpoint: string): string {
+  public resolveEndpoint(endpoint: string): string {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
     // If in dev / browser environment, proxy handles /api/v4 directly to prevent CORS
     return cleanEndpoint
+  }
+
+  public async getClientConfig(): Promise<any> {
+    return this.request('/api/v4/config/client?format=old')
   }
 
   public async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
