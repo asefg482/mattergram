@@ -246,6 +246,19 @@ function handleKeydown(e: KeyboardEvent) {
     }
   }
 
+  if (e.key === 'Escape') {
+    if (uiStore.replyingTo) {
+      e.preventDefault()
+      cancelReply()
+      return
+    }
+    if (uiStore.editingPost) {
+      e.preventDefault()
+      cancelEdit()
+      return
+    }
+  }
+
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     handleSend()

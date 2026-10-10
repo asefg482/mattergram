@@ -141,6 +141,78 @@ function handleReply() {
   showMenu.value = false
 }
 
+function flashBubble() {
+  const el = document.getElementById(`msg-${props.post.id}`)
+  if (el) {
+    el.classList.add('bg-[#3390ec]/15')
+    setTimeout(() => el.classList.remove('bg-[#3390ec]/15'), 400)
+  }
+}
+
+function handleBubbleDoubleClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target) return
+
+  // Do not reply if user clicked on interactive or special elements
+  if (
+    target.closest('a, button, input, textarea, video, audio, [data-mention], .tg-spoiler, [data-no-bubble-reply]')
+  ) {
+    return
+  }
+
+  // Clear any word selection caused by the browser's native double-click
+  window.getSelection()?.removeAllRanges()
+
+  flashBubble()
+  handleReply()
+}
+
+// Mobile double-tap support
+let touchStartX = 0
+let touchStartY = 0
+let touchMoved = false
+let lastTouchTapTime = 0
+
+function handleBubbleTouchStart(e: TouchEvent) {
+  if (e.touches.length === 1) {
+    touchStartX = e.touches[0].clientX
+    touchStartY = e.touches[0].clientY
+    touchMoved = false
+  }
+}
+
+function handleBubbleTouchMove(e: TouchEvent) {
+  if (e.touches.length === 1) {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX)
+    const dy = Math.abs(e.touches[0].clientY - touchStartY)
+    if (dx > 10 || dy > 10) {
+      touchMoved = true
+    }
+  }
+}
+
+function handleBubbleTouchEnd(e: TouchEvent) {
+  if (touchMoved) return
+  const target = e.target as HTMLElement | null
+  if (!target) return
+
+  if (
+    target.closest('a, button, input, textarea, video, audio, [data-mention], .tg-spoiler, [data-no-bubble-reply]')
+  ) {
+    return
+  }
+
+  const now = Date.now()
+  if (now - lastTouchTapTime < 350) {
+    window.getSelection()?.removeAllRanges()
+    flashBubble()
+    handleReply()
+    lastTouchTapTime = 0
+  } else {
+    lastTouchTapTime = now
+  }
+}
+
 function handleEdit() {
   uiStore.setEditingPost(props.post)
   showMenu.value = false
@@ -244,7 +316,7 @@ function handleSenderClick() {
 <template>
   <div
     :id="`msg-${post.id}`"
-    class="flex items-end gap-2 my-1 px-2 sm:px-3 group relative transition-colors duration-150 tg-message-row w-full"
+    class="flex items-end gap-2 my-1 px-2 sm:px-3 group relative transition-colors duration-150 tg-message-row w-full rounded-lg"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
@@ -328,6 +400,10 @@ function handleSenderClick() {
 
       <!-- Message Bubble -->
       <div
+        @dblclick="handleBubbleDoubleClick"
+        @touchstart.passive="handleBubbleTouchStart"
+        @touchmove.passive="handleBubbleTouchMove"
+        @touchend="handleBubbleTouchEnd"
         class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative"
         :class="[
           isOutgoing
@@ -340,6 +416,7 @@ function handleSenderClick() {
         <div
           v-if="!isOutgoing && showSenderName"
           @click.stop="handleSenderClick"
+          data-no-bubble-reply
           class="text-xs font-semibold mb-1 text-[#3390ec] truncate cursor-pointer hover:underline"
         >
           {{ senderName }}
@@ -349,6 +426,7 @@ function handleSenderClick() {
         <div
           v-if="parentPost"
           @click="scrollToParent"
+          data-no-bubble-reply
           class="mb-1.5 pl-2 border-l-2 border-[#3390ec] bg-black/15 rounded-r py-1 pr-2 cursor-pointer text-xs"
         >
           <div class="font-semibold text-[#3390ec] text-[11px] truncate">
@@ -365,6 +443,7 @@ function handleSenderClick() {
             v-for="img in imageFiles"
             :key="img.id"
             @click="openFile(img)"
+            data-no-bubble-reply
             class="cursor-pointer overflow-hidden rounded-lg relative group/img bg-black/20"
           >
             <img
@@ -420,6 +499,7 @@ function handleSenderClick() {
             v-for="doc in documentFiles"
             :key="doc.id"
             @click="openFile(doc)"
+            data-no-bubble-reply
             class="flex items-center gap-3 p-2 bg-black/15 hover:bg-black/25 rounded-xl cursor-pointer transition-colors"
           >
             <!-- Doc Icon -->
