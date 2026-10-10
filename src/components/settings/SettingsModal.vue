@@ -134,7 +134,7 @@ function selectAnimation(id: string) {
           <div
             @click="enlargeMyAvatar"
             class="cursor-pointer hover:opacity-85 transition-opacity"
-            title="برای بزرگ‌نمایی عکس کلیک کنید"
+            title="Click to view full photo"
           >
             <TelegramAvatar
               :userId="authStore.currentUser?.id"
@@ -323,13 +323,13 @@ function selectAnimation(id: string) {
                 </div>
               </div>
 
-              <!-- Theme Title & Subtitle -->
+              <!-- Theme Title & Description in English -->
               <div class="min-w-0">
-                <div class="text-xs font-semibold text-white dark:text-white text-gray-800 truncate flex items-center justify-between">
-                  <span>{{ t.nameFa }}</span>
-                </div>
-                <div class="text-[10px] text-[#7f91a4] truncate mt-0.5 font-sans">
+                <div class="text-xs font-semibold text-white dark:text-white text-gray-800 truncate">
                   {{ t.name }}
+                </div>
+                <div class="text-[10px] text-[#7f91a4] truncate mt-0.5 font-sans" :title="t.description">
+                  {{ t.description }}
                 </div>
               </div>
             </button>
@@ -369,8 +369,7 @@ function selectAnimation(id: string) {
 
                 <div class="min-w-0">
                   <div class="text-xs font-semibold text-white dark:text-white text-gray-800 flex items-center gap-1.5">
-                    <span>{{ anim.nameFa }}</span>
-                    <span class="text-[10px] font-normal text-[#7f91a4]">({{ anim.name }})</span>
+                    <span>{{ anim.name }}</span>
                   </div>
                   <p class="text-[10px] text-[#7f91a4] mt-0.5 leading-relaxed line-clamp-2">
                     {{ anim.description }}

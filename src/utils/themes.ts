@@ -1,7 +1,7 @@
 export interface ThemePreset {
   id: string
   name: string
-  nameFa: string
+  nameFa?: string
   mode: 'dark' | 'light'
   colors: {
     bg: string
@@ -18,7 +18,7 @@ export interface ThemePreset {
 export interface AnimationPreset {
   id: string
   name: string
-  nameFa: string
+  nameFa?: string
   description: string
 }
 
@@ -26,7 +26,6 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'classic-dark',
     name: 'Telegram Dark',
-    nameFa: 'کلاسیک شب تلگرام',
     mode: 'dark',
     colors: {
       bg: '#0e1621',
@@ -37,12 +36,11 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#3390ec',
       text: '#f5f5f5'
     },
-    description: 'تم استاندارد و پیش‌فرض تلگرام با تم آبی تیره'
+    description: 'Classic Telegram dark theme with blue accents'
   },
   {
     id: 'classic-light',
     name: 'Telegram Day',
-    nameFa: 'کلاسیک روز تلگرام',
     mode: 'light',
     colors: {
       bg: '#8ea6b4',
@@ -53,12 +51,11 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#3390ec',
       text: '#111827'
     },
-    description: 'تم روز شفاف تلگرام با حباب سبز پاستلی و پس‌زمینه ابری'
+    description: 'Crisp light theme with pastel green bubbles'
   },
   {
     id: 'midnight-amoled',
     name: 'Midnight AMOLED',
-    nameFa: 'مشکی مطلق آمولد',
     mode: 'dark',
     colors: {
       bg: '#000000',
@@ -69,12 +66,11 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#38bdf8',
       text: '#ffffff'
     },
-    description: 'مشکی خالص مخصوص صفحات اولد با کنتراست بالا و کاهش مصرف باتری'
+    description: 'Pure black contrast optimized for OLED displays'
   },
   {
     id: 'matrix-emerald',
     name: 'Emerald Forest',
-    nameFa: 'جنگل زمردی',
     mode: 'dark',
     colors: {
       bg: '#06130d',
@@ -85,12 +81,11 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#10b981',
       text: '#f0fdf4'
     },
-    description: 'طیف سبز زمردی عمیق با جلوه آرامش‌بخش طبیعت'
+    description: 'Deep emerald palette inspired by nature'
   },
   {
     id: 'cyberpunk-neon',
     name: 'Cyberpunk Violet',
-    nameFa: 'بنفش سایبرپانک',
     mode: 'dark',
     colors: {
       bg: '#0d081a',
@@ -101,12 +96,11 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#c084fc',
       text: '#faf5ff'
     },
-    description: 'تم فضایی و نئونی مدرن با طیف بنفش کهکشانی و بنفش روشن'
+    description: 'Futuristic cosmic neon purple aesthetic'
   },
   {
     id: 'sunset-amber',
     name: 'Warm Sunset',
-    nameFa: 'غروب کهربایی',
     mode: 'dark',
     colors: {
       bg: '#140f0c',
@@ -117,12 +111,11 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#f59e0b',
       text: '#fffbeb'
     },
-    description: 'طیف گرم شکلاتی و کهربایی برگرفته از آرامش غروب آفتاب'
+    description: 'Cozy espresso and warm amber golden hour tones'
   },
   {
     id: 'arctic-nord',
     name: 'Arctic Frost',
-    nameFa: 'آبی یخی نوردیک',
     mode: 'dark',
     colors: {
       bg: '#0f172a',
@@ -133,7 +126,7 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#60a5fa',
       text: '#f8fafc'
     },
-    description: 'تم خنک نوردیک با الهام از یخچال‌های طبیعی اسکاندیناوی'
+    description: 'Cool Scandinavian blue inspired by Nordic glaciers'
   }
 ]
 
@@ -141,32 +134,27 @@ export const ANIMATION_PRESETS: AnimationPreset[] = [
   {
     id: 'smooth',
     name: 'Telegram Smooth',
-    nameFa: 'روان تلگرامی (پیش‌فرض)',
-    description: 'انیمیشن‌های استاندارد و روان تلگرام با تعادل بهینه بین زیبایی و سرعت'
+    description: 'Standard fluid Telegram motion balanced for performance and beauty'
   },
   {
     id: 'spring',
     name: 'Bouncy Spring',
-    nameFa: 'فنری و ارتجاعی',
-    description: 'حرکت فنری و الاستیک برای باز شدن پیام‌ها، منوها و دکمه‌ها'
+    description: 'Playful elastic spring physics for messages and menus'
   },
   {
     id: 'fast',
     name: 'Turbo Snappy',
-    nameFa: 'توربو و پرسرعت',
-    description: 'انیمیشن‌های لحظه‌ای و بسیار کوتاه (۷۵ میلی‌ثانیه) برای بالاترین سرعت پاسخگویی'
+    description: 'Ultra-fast 75ms animations for maximum responsiveness'
   },
   {
     id: 'pulse',
     name: 'Ambient Glow',
-    nameFa: 'نورانی و نئونی',
-    description: 'هاله نورانی و پالس‌های نئونی ملایم در چت فعال و المان‌های تعاملی'
+    description: 'Soft neon glows and subtle pulse effects on active elements'
   },
   {
     id: 'none',
     name: 'Reduced Motion',
-    nameFa: 'بدون انیمیشن',
-    description: 'غیرفعال‌سازی تمامی انیمیشن‌ها برای صرفه‌جویی در منابع و دسترسی‌پذیری'
+    description: 'Disables all animations for accessibility and minimum resource usage'
   }
 ]
 
