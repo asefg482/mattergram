@@ -1,0 +1,15 @@
+services:
+  mattergram:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mattergram
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5173}:5173"
+    environment:
+      - MATTERMOST_BASE_URL=${MATTERMOST_BASE_URL}
+      - PORT=5173
+    env_file:
+      - path: .env
+        required: false

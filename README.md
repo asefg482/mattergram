@@ -73,3 +73,37 @@ npm run dev
 npm run build
 npm start
 ```
+
+### ۳. اجرا با داکر (Docker & Docker Compose)
+
+#### روش ۱: اجرای مستقیم با دستور Docker
+ابتدا ایمیج داکر پروژه را بیلد کنید:
+```bash
+docker build -t mattergram .
+```
+
+سپس کانتینر را اجرا کنید و آدرس سرور Mattermost خود را تعیین کنید:
+```bash
+docker run -d \
+  --name mattergram \
+  -p 5173:5173 \
+  -e MATTERMOST_BASE_URL=https://your-mattermost-server.com \
+  mattergram
+```
+
+#### روش ۲: اجرا با Docker Compose
+پس از تنظیم آدرس سرور در فایل `.env`:
+```bash
+docker compose up -d
+```
+پروژه روی آدرس `http://localhost:5173` در دسترس خواهد بود.
+
+---
+
+## 🔄 یکپارچه‌سازی مداوم (GitHub Actions CI)
+
+یک پایپ‌لاین خودکار GitHub Actions در مسیر `.github/workflows/build.yml` تعبیه شده است که با هر ارسال کد (`push`) یا درخواست ادغام (`pull_request`) روی شاخه `master`:
+1. وابستگی‌های پروژه را نصب و اعتبارسنجی می‌کند (`npm ci`).
+2. تایپ‌ها و فایل‌های باندل فرانت‌اند را بیلد می‌کند (`npm run build`).
+3. ایمیج داکر را به صورت بهینه و چندمرحله‌ای (Multi-stage) می‌سازد تا از صحت بیلد داکر در محیط CI مطمئن شود.
+

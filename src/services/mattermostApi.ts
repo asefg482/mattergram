@@ -8,7 +8,11 @@ import type {
   MattermostFileInfo
 } from '../types/mattermost'
 
+const RUNTIME_ENV_URL =
+  (typeof window !== 'undefined' && (window as any).__MATTERGRAM_ENV__?.MATTERMOST_BASE_URL) || ''
+
 const ENV_SERVER_URL = (
+  RUNTIME_ENV_URL ||
   ((import.meta as any).env?.MATTERMOST_BASE_URL as string) ||
   ((import.meta as any).env?.VITE_MATTERMOST_BASE_URL as string) ||
   ''

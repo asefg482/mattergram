@@ -159,6 +159,13 @@ const server = http.createServer((req, res) => {
       res.writeHead(500)
       res.end('Server Error')
     } else {
+      if (filePath.endsWith('index.html') && DEFAULT_MATTERMOST_SERVER) {
+        const injected = `<script>window.__MATTERGRAM_ENV__ = { MATTERMOST_BASE_URL: ${JSON.stringify(DEFAULT_MATTERMOST_SERVER)} };</script></head>`
+        const html = content.toString('utf8').replace('</head>', injected)
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end(html)
+        return
+      }
       res.writeHead(200, { 'Content-Type': contentType })
       res.end(content)
     }
