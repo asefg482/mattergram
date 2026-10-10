@@ -112,16 +112,16 @@ function handleSelectChat(channelId: string) {
           @click="handleSelectChat(channel.id)"
         />
       </template>
-
-      <!-- Telegram Floating Action Button (FAB) -->
-      <button
-        @click="uiStore.showNewChatModal = true"
-        class="absolute bottom-5 right-5 w-13 h-13 rounded-full bg-[#3390ec] hover:bg-[#2481cc] active:scale-95 text-white shadow-xl shadow-[#3390ec]/30 flex items-center justify-center transition-all z-10 p-3.5"
-        title="New Chat or Channel"
-      >
-        <Edit3 class="w-5 h-5" />
-      </button>
     </div>
+
+    <!-- Telegram Floating Action Button (FAB) - Fixed at bottom-right of sidebar -->
+    <button
+      @click="uiStore.showNewChatModal = true"
+      class="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-[#3390ec] hover:bg-[#2481cc] active:scale-95 text-white shadow-xl shadow-[#3390ec]/30 flex items-center justify-center transition-all z-30 p-3"
+      title="New Chat or Channel"
+    >
+      <Edit3 class="w-5 h-5" />
+    </button>
 
     <!-- Drawer Menu Component -->
     <DrawerMenu :isOpen="isDrawerOpen" @close="isDrawerOpen = false" />
