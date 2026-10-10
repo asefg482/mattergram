@@ -76,14 +76,19 @@ npm start
 
 ### ۳. اجرا با داکر (Docker & Docker Compose)
 
-#### روش ۱: اجرای مستقیم با دستور Docker
-ابتدا ایمیج داکر پروژه را بیلد کنید:
+#### روش ۱: اجرای مستقیم از GitHub Packages (بدون نیاز به بیلد محلی)
+ایمیج پروژه به صورت خودکار توسط گیت‌هاب اکشنز بیلد شده و در رجیستری GitHub Packages منتشر می‌شود:
 ```bash
-docker build -t mattergram .
+docker run -d \
+  --name mattergram \
+  -p 5173:5173 \
+  -e MATTERMOST_BASE_URL=https://your-mattermost-server.com \
+  ghcr.io/asefg482/mattergram:latest
 ```
 
-سپس کانتینر را اجرا کنید و آدرس سرور Mattermost خود را تعیین کنید:
+#### روش ۲: بیلد و اجرای محلی داکر
 ```bash
+docker build -t mattergram .
 docker run -d \
   --name mattergram \
   -p 5173:5173 \
@@ -91,7 +96,7 @@ docker run -d \
   mattergram
 ```
 
-#### روش ۲: اجرا با Docker Compose
+#### روش ۳: اجرا با Docker Compose
 پس از تنظیم آدرس سرور در فایل `.env`:
 ```bash
 docker compose up -d
@@ -100,10 +105,12 @@ docker compose up -d
 
 ---
 
-## 🔄 یکپارچه‌سازی مداوم (GitHub Actions CI)
+## 📦 انتشار پکیج و یکپارچه‌سازی مداوم (GitHub Actions CI & Packages)
 
-یک پایپ‌لاین خودکار GitHub Actions در مسیر `.github/workflows/build.yml` تعبیه شده است که با هر ارسال کد (`push`) یا درخواست ادغام (`pull_request`) روی شاخه `master`:
+یک پایپ‌لاین خودکار در مسیر `.github/workflows/build.yml` تعبیه شده است که با هر ارسال کد (`push`) به شاخه **`master`** یا ثبت Release Tag:
 1. وابستگی‌های پروژه را نصب و اعتبارسنجی می‌کند (`npm ci`).
 2. تایپ‌ها و فایل‌های باندل فرانت‌اند را بیلد می‌کند (`npm run build`).
-3. ایمیج داکر را به صورت بهینه و چندمرحله‌ای (Multi-stage) می‌سازد تا از صحت بیلد داکر در محیط CI مطمئن شود.
+3. آرشیو فایل‌های خروجی بیلد را به عنوان Artifact پکیج در بخش Actions بارگذاری می‌کند.
+4. ایمیج کانتینر پروژه را بیلد کرده و به عنوان پکیج رسمی در **GitHub Packages (GHCR)** منتشر می‌کند (`ghcr.io/asefg482/mattergram:latest`).
+
 
