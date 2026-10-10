@@ -10,7 +10,9 @@ import {
   renderTelegramMarkdown,
   formatFileSize,
   getAvatarGradient,
-  getInitials
+  getInitials,
+  toEmojiChar,
+  toEmojiName
 } from '../../utils/formatters'
 import { mmApi } from '../../services/mattermostApi'
 import {
@@ -44,6 +46,23 @@ const uiStore = useUiStore()
 
 const showMenu = ref(false)
 const isHovered = ref(false)
+let hoverTimer: any = null
+
+function onMouseEnter() {
+  if (hoverTimer) {
+    clearTimeout(hoverTimer)
+    hoverTimer = null
+  }
+  isHovered.value = true
+}
+
+function onMouseLeave() {
+  if (hoverTimer) clearTimeout(hoverTimer)
+  hoverTimer = setTimeout(() => {
+    isHovered.value = false
+    hoverTimer = null
+  }, 250)
+}
 
 const myId = computed(() => authStore.currentUser?.id)
 const isOutgoing = computed(() => props.post.user_id === myId.value)
@@ -73,18 +92,22 @@ const parentSenderName = computed(() => {
 // Quick reaction emojis
 const quickEmojis = ['👍', '❤️', '🔥', '😂', '👏', '😢']
 
-// Group reactions by emoji
+// Group reactions by emoji (mapping Mattermost shortcode names to Telegram emoji chars)
 const groupedReactions = computed(() => {
-  const map: Record<string, { emoji: string; count: number; hasReacted: boolean }> = {}
+  const map: Record<string, { emoji: string; rawName: string; count: number; hasReacted: boolean }> = {}
   const reactions = props.post.metadata?.reactions || []
 
   for (const r of reactions) {
-    if (!map[r.emoji_name]) {
-      map[r.emoji_name] = { emoji: r.emoji_name, count: 0, hasReacted: false }
+    const rawName = r.emoji_name
+    const char = toEmojiChar(rawName)
+    const normalizedKey = toEmojiName(rawName)
+
+    if (!map[normalizedKey]) {
+      map[normalizedKey] = { emoji: char, rawName, count: 0, hasReacted: false }
     }
-    map[r.emoji_name].count++
+    map[normalizedKey].count++
     if (r.user_id === myId.value) {
-      map[r.emoji_name].hasReacted = true
+      map[normalizedKey].hasReacted = true
     }
   }
 
@@ -157,8 +180,8 @@ function openFile(file: MattermostFileInfo) {
     :id="`msg-${post.id}`"
     class="flex items-end gap-2 my-1 px-4 group relative transition-colors duration-150 tg-message-row"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Sender Avatar (Incoming only in groups) -->
@@ -172,11 +195,17 @@ function openFile(file: MattermostFileInfo) {
     />
 
     <!-- Bubble Wrapper with Hover Action Bar -->
-    <div class="relative max-w-[85%] md:max-w-[70%]">
-      <!-- Telegram Hover Action Bar (Rendered only on hover for massive DOM performance) -->
+    <div
+      class="relative max-w-[85%] md:max-w-[70%]"
+      @mouseenter="onMouseEnter"
+      @mouseleave="onMouseLeave"
+    >
+      <!-- Telegram Hover Action Bar (With invisible bridge and debounce grace period) -->
       <div
         v-if="isHovered"
-        class="absolute -top-8 flex items-center gap-1 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2 py-1 rounded-full shadow-lg z-30 select-none animate-in fade-in duration-100"
+        @mouseenter="onMouseEnter"
+        @mouseleave="onMouseLeave"
+        class="absolute -top-7 flex items-center gap-1 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2 py-1 rounded-full shadow-lg z-30 select-none animate-in fade-in duration-100 after:absolute after:inset-x-0 after:-bottom-3 after:h-3 after:content-['']"
         :class="isOutgoing ? 'right-0' : 'left-0'"
       >
         <!-- Quick Emojis -->
@@ -344,7 +373,7 @@ function openFile(file: MattermostFileInfo) {
         <button
           v-for="r in groupedReactions"
           :key="r.emoji"
-          @click="handleQuickReaction(r.emoji)"
+          @click="handleQuickReaction(r.rawName || r.emoji)"
           class="px-2 py-0.5 rounded-full text-xs flex items-center gap-1 transition-all border select-none"
           :class="[
             r.hasReacted

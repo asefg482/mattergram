@@ -6,6 +6,7 @@ import { soundService } from '../services/sounds'
 import { notificationService } from '../services/notifications'
 import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
+import { toEmojiName } from '../utils/formatters'
 import type { MattermostChannel, MattermostPost, MattermostReaction } from '../types/mattermost'
 
 export const useChatStore = defineStore('chat', () => {
@@ -266,26 +267,27 @@ export const useChatStore = defineStore('chat', () => {
     const myId = authStore.currentUser?.id
     if (!myId) return
 
+    const normalizedName = toEmojiName(emojiName)
     const existing = post.metadata?.reactions?.find(
-      (r) => r.user_id === myId && r.emoji_name === emojiName
+      (r) => r.user_id === myId && (r.emoji_name === normalizedName || r.emoji_name === emojiName)
     )
 
     try {
       if (existing) {
-        await mmApi.removeReaction(myId, post.id, emojiName)
+        await mmApi.removeReaction(myId, post.id, existing.emoji_name)
         if (post.metadata?.reactions) {
           post.metadata.reactions = post.metadata.reactions.filter(
-            (r) => !(r.user_id === myId && r.emoji_name === emojiName)
+            (r) => !(r.user_id === myId && (r.emoji_name === normalizedName || r.emoji_name === emojiName))
           )
         }
       } else {
-        await mmApi.addReaction(myId, post.id, emojiName)
+        await mmApi.addReaction(myId, post.id, normalizedName)
         if (!post.metadata) post.metadata = {}
         if (!post.metadata.reactions) post.metadata.reactions = []
         post.metadata.reactions.push({
           user_id: myId,
           post_id: post.id,
-          emoji_name: emojiName,
+          emoji_name: normalizedName,
           create_at: Date.now()
         })
       }
