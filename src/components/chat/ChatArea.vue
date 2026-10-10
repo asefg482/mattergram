@@ -48,6 +48,23 @@ function isDifferentDay(currTimestamp: number, prevTimestamp?: number): boolean 
   return d1 !== d2
 }
 
+// Telegram unread messages separator check
+function isFirstUnread(postId: string): boolean {
+  if (!chatStore.activeChannelId) return false
+  return chatStore.firstUnreadPostIds[chatStore.activeChannelId] === postId
+}
+
+// Unread messages count waiting below if user is scrolled up
+const unreadBelowCount = computed(() => {
+  if (!chatStore.activeChannelId) return 0
+  const firstId = chatStore.firstUnreadPostIds[chatStore.activeChannelId]
+  if (!firstId) return 0
+  const list = posts.value
+  const idx = list.findIndex((p) => p.id === firstId)
+  if (idx === -1) return 0
+  return list.length - idx
+})
+
 // High-speed smooth scroll animator (used only when user clicks floating down arrow button)
 let currentScrollAnimation: number | null = null
 
@@ -97,6 +114,7 @@ function performInstantScrollToBottom() {
 
   el.scrollTop = el.scrollHeight
   showScrollBottom.value = false
+  chatStore.isScrolledUp = false
 }
 
 // Scheduled channel switch sequence that guarantees the chat opens already at the latest message
@@ -107,6 +125,7 @@ function onChannelSwitch() {
     currentScrollAnimation = null
   }
   showScrollBottom.value = false
+  chatStore.isScrolledUp = false
 
   // Step 1: Immediate synchronous scroll
   performInstantScrollToBottom()
@@ -165,6 +184,7 @@ let scrollRaf: number | null = null
 function handleScroll() {
   if (isChannelSwitching.value) {
     showScrollBottom.value = false
+    chatStore.isScrolledUp = false
     return
   }
   if (scrollRaf) return
@@ -172,7 +192,9 @@ function handleScroll() {
     if (messagesContainer.value) {
       const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
       const distanceToBottom = scrollHeight - scrollTop - clientHeight
-      showScrollBottom.value = distanceToBottom > 150
+      const isUp = distanceToBottom > 150
+      showScrollBottom.value = isUp
+      chatStore.isScrolledUp = isUp
     }
     scrollRaf = null
   })
@@ -347,6 +369,26 @@ onUnmounted(() => {
               </span>
             </div>
 
+            <!-- Telegram Unread / New Messages Divider Line -->
+            <div
+              v-if="isFirstUnread(post.id)"
+              class="flex items-center my-3 select-none px-1 sm:px-2 w-full tg-unread-separator group"
+              data-unread-separator="true"
+            >
+              <div class="flex-1 h-px bg-gradient-to-r from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-left"></div>
+              <div
+                class="mx-2.5 sm:mx-4 px-3.5 py-0.5 rounded-full text-[11px] font-medium bg-[#3390ec]/15 dark:bg-[#3390ec]/20 text-[#3390ec] dark:text-[#52a5f5] border border-[#3390ec]/25 backdrop-blur-xs flex items-center gap-1.5 shadow-xs transition-all hover:bg-[#3390ec]/25 tg-unread-pill"
+                title="پیام‌های بعد از این خط جدید هستند"
+              >
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3390ec] dark:bg-[#52a5f5] opacity-75 tg-unread-dot"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-[#3390ec] dark:bg-[#52a5f5] tg-unread-dot-solid"></span>
+                </span>
+                <span>پیام‌های جدید</span>
+              </div>
+              <div class="flex-1 h-px bg-gradient-to-l from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-right"></div>
+            </div>
+
             <!-- Message Bubble -->
             <MessageBubble
               :post="post"
@@ -367,6 +409,12 @@ onUnmounted(() => {
           class="sticky bottom-4 float-right mr-4 w-10 h-10 rounded-full bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] shadow-lg flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] transition-all z-20"
         >
           <ArrowDown class="w-5 h-5" />
+          <span
+            v-if="unreadBelowCount > 0"
+            class="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#3390ec] text-white text-[10px] font-bold flex items-center justify-center shadow-md leading-none select-none"
+          >
+            {{ unreadBelowCount > 99 ? '99+' : unreadBelowCount }}
+          </span>
         </button>
       </div>
 

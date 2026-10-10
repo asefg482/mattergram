@@ -192,6 +192,10 @@ class MattermostApiService {
     return this.request<any[]>(`/api/v4/channels/${channelId}/members?page=${page}&per_page=${perPage}`)
   }
 
+  public async getMyChannelMembers(teamId: string): Promise<any[]> {
+    return this.request<any[]>(`/api/v4/users/me/teams/${teamId}/channels/members`)
+  }
+
   public async viewChannel(channelId: string, prevChannelId: string = ''): Promise<{ status: string }> {
     return this.request('/api/v4/channels/members/me/view', {
       method: 'POST',

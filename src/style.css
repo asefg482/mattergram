@@ -510,3 +510,20 @@ html[data-anim='none'] *::after {
   transition-duration: 0.001ms !important;
 }
 
+/* Telegram Unread Messages Separator Theme Support */
+.tg-unread-separator .tg-unread-pill {
+  color: var(--tg-blue-light) !important;
+  border-color: color-mix(in srgb, var(--tg-blue-light) 28%, transparent) !important;
+  background-color: color-mix(in srgb, var(--tg-blue-light) 14%, transparent) !important;
+}
+.tg-unread-separator .tg-unread-line-left {
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--tg-blue-light) 45%, transparent)) !important;
+}
+.tg-unread-separator .tg-unread-line-right {
+  background: linear-gradient(to left, transparent, color-mix(in srgb, var(--tg-blue-light) 45%, transparent)) !important;
+}
+.tg-unread-separator .tg-unread-dot,
+.tg-unread-separator .tg-unread-dot-solid {
+  background-color: var(--tg-blue-light) !important;
+}
+

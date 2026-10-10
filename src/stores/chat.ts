@@ -20,6 +20,9 @@ export const useChatStore = defineStore('chat', () => {
   const loadingChannels = ref(false)
   const loadingPosts = ref(false)
   const unreadCounts = ref<Record<string, number>>({})
+  const firstUnreadPostIds = ref<Record<string, string | null>>({})
+  const channelLastViewedAt = ref<Record<string, number>>({})
+  const isScrolledUp = ref(false)
   const typingUsers = ref<Record<string, Record<string, string>>>({})
   const typingTimeouts = new Map<string, any>()
 
@@ -37,6 +40,39 @@ export const useChatStore = defineStore('chat', () => {
     const list = currentPosts.value
     return list
   })
+
+  // Compute the first unread post in a channel
+  function computeFirstUnread(
+    channelId: string,
+    postList: MattermostPost[],
+    unreadCount: number,
+    lastViewedAt = 0
+  ): string | null {
+    if (!postList || postList.length === 0) return null
+    const myId = authStore.currentUser?.id
+
+    // Strategy 1: Check by lastViewedAt timestamp
+    if (lastViewedAt > 0) {
+      const postByTime = postList.find((p) => p.create_at > lastViewedAt && p.user_id !== myId)
+      if (postByTime) {
+        return postByTime.id
+      }
+    }
+
+    // Strategy 2: Check by unreadCount from recent posts
+    if (unreadCount > 0) {
+      const incomingPosts = postList.filter((p) => p.user_id !== myId)
+      if (incomingPosts.length > 0) {
+        const idx = Math.max(0, incomingPosts.length - unreadCount)
+        return incomingPosts[idx].id
+      } else {
+        const idx = Math.max(0, postList.length - unreadCount)
+        return postList[idx].id
+      }
+    }
+
+    return null
+  }
 
   // Initialize WebSocket listeners
   function initWs() {
@@ -127,6 +163,31 @@ export const useChatStore = defineStore('chat', () => {
         await usersStore.fetchUsers(Array.from(authorIdsToFetch))
       }
 
+      // Fetch channel members to populate last_viewed_at and unread counts
+      try {
+        const members = await mmApi.getMyChannelMembers(authStore.currentTeam.id)
+        if (Array.isArray(members)) {
+          for (const m of members) {
+            if (m.channel_id) {
+              channelLastViewedAt.value[m.channel_id] = m.last_viewed_at || 0
+              if (typeof m.msg_count === 'number') {
+                const ch = channels.value.find((c) => c.id === m.channel_id)
+                if (ch && typeof ch.total_msg_count === 'number') {
+                  const unread = Math.max(0, ch.total_msg_count - m.msg_count)
+                  if (unread > 0) {
+                    unreadCounts.value[m.channel_id] = unread
+                  }
+                }
+              }
+            }
+          }
+          const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+          notificationService.updateDocumentTitle(totalUnread)
+        }
+      } catch (e) {
+        // Silently catch if not supported
+      }
+
       // Sort by last_post_at descending
       sortChannels()
     } catch (err) {
@@ -162,9 +223,21 @@ export const useChatStore = defineStore('chat', () => {
   function toggleMarkAsUnread(channelId: string) {
     if (unreadCounts.value[channelId] && unreadCounts.value[channelId] > 0) {
       unreadCounts.value[channelId] = 0
+      firstUnreadPostIds.value[channelId] = null
     } else {
       unreadCounts.value[channelId] = 1
+      const chPosts = posts.value[channelId]
+      if (chPosts && chPosts.length > 0) {
+        const myId = authStore.currentUser?.id
+        const incoming = chPosts.filter((p) => p.user_id !== myId)
+        const target = incoming.length > 0 ? incoming[incoming.length - 1] : chPosts[chPosts.length - 1]
+        if (target) {
+          firstUnreadPostIds.value[channelId] = target.id
+        }
+      }
     }
+    const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+    notificationService.updateDocumentTitle(totalUnread)
   }
 
   async function togglePinPost(post: MattermostPost) {
@@ -188,8 +261,17 @@ export const useChatStore = defineStore('chat', () => {
       return
     }
     const prevChannelId = activeChannelId.value || ''
+    if (prevChannelId) {
+      // Clear previous channel unread marker on channel change
+      firstUnreadPostIds.value[prevChannelId] = null
+    }
+
     activeChannelId.value = channelId
     scrollToBottomTrigger.value++
+
+    // Capture unread metrics prior to resetting
+    const unreadCount = unreadCounts.value[channelId] || 0
+    const lastViewedAt = channelLastViewedAt.value[channelId] || 0
 
     // Mark as read in Mattermost & local store
     unreadCounts.value[channelId] = 0
@@ -199,12 +281,12 @@ export const useChatStore = defineStore('chat', () => {
       await mmApi.viewChannel(channelId, prevChannelId)
     } catch {}
 
-    // Load posts
-    await loadPosts(channelId)
+    // Load posts with captured unread metrics
+    await loadPosts(channelId, unreadCount, lastViewedAt)
   }
 
   // Load Posts
-  async function loadPosts(channelId: string) {
+  async function loadPosts(channelId: string, unreadCount = 0, lastViewedAt = 0) {
     loadingPosts.value = true
     try {
       const res = await mmApi.getPosts(channelId)
@@ -234,6 +316,14 @@ export const useChatStore = defineStore('chat', () => {
         const newest = postList[postList.length - 1]
         ch.last_post = newest
         ch.last_post_at = newest.create_at
+      }
+
+      // Calculate first unread post to place separator
+      if (unreadCount > 0 || lastViewedAt > 0) {
+        const firstUnreadId = computeFirstUnread(channelId, postList, unreadCount, lastViewedAt)
+        firstUnreadPostIds.value[channelId] = firstUnreadId
+      } else if (!firstUnreadPostIds.value[channelId]) {
+        firstUnreadPostIds.value[channelId] = null
       }
     } catch (err) {
       console.error('Failed to load posts:', err)
@@ -464,6 +554,12 @@ export const useChatStore = defineStore('chat', () => {
         unreadCounts.value[channelId] = 0
       } else if (!isCurrentChat) {
         unreadCounts.value[channelId] = (unreadCounts.value[channelId] || 0) + 1
+      } else {
+        // Message arrived in the active chat while user is scrolled up or window is inactive
+        const isUserAway = isScrolledUp.value || (typeof document !== 'undefined' && document.hidden)
+        if (isUserAway && !firstUnreadPostIds.value[channelId]) {
+          firstUnreadPostIds.value[channelId] = post.id
+        }
       }
       const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
       notificationService.updateDocumentTitle(totalUnread)
@@ -582,6 +678,9 @@ export const useChatStore = defineStore('chat', () => {
     loadingChannels,
     loadingPosts,
     unreadCounts,
+    firstUnreadPostIds,
+    channelLastViewedAt,
+    isScrolledUp,
     typingUsers,
     initWs,
     loadChannels,
