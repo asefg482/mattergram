@@ -29,6 +29,7 @@ const uiStore = useUiStore()
 const menuRef = ref<HTMLDivElement | null>(null)
 const adjustedX = ref(props.position.x)
 const adjustedY = ref(props.position.y)
+const transformOrigin = ref('top left')
 
 const isOutgoing = computed(() => {
   return props.post?.user_id === authStore.currentUser?.id
@@ -43,44 +44,52 @@ const canEdit = computed(() => isOutgoing.value)
 
 const quickEmojis = ['👍', '❤️', '🔥', '😂', '👏', '😢', '🎉', '🚀']
 
+function adjustPosition() {
+  const el = menuRef.value
+  const menuWidth = el?.offsetWidth || 208
+  const menuHeight = el?.offsetHeight || 260
+  const padding = 8
+
+  let x = props.position.x + 2
+  let y = props.position.y + 2
+  let originX = 'left'
+  let originY = 'top'
+
+  // If menu overflows right side, flip to left of cursor
+  if (props.position.x + menuWidth + padding > window.innerWidth) {
+    x = props.position.x - menuWidth - 2
+    originX = 'right'
+    if (x < padding) {
+      x = padding
+      originX = 'left'
+    }
+  }
+
+  // If menu overflows bottom side, flip to above cursor
+  if (props.position.y + menuHeight + padding > window.innerHeight) {
+    y = props.position.y - menuHeight - 2
+    originY = 'bottom'
+    if (y < padding) {
+      y = padding
+      originY = 'top'
+    }
+  }
+
+  transformOrigin.value = `${originY} ${originX}`
+  adjustedX.value = Math.round(x)
+  adjustedY.value = Math.round(y)
+}
+
 watch(
-  () => [props.isOpen, props.position],
-  () => {
-    if (props.isOpen) {
+  () => [props.isOpen, props.position.x, props.position.y],
+  ([isOpen]) => {
+    if (isOpen) {
+      adjustPosition()
       nextTick(adjustPosition)
     }
   },
-  { deep: true }
+  { immediate: true }
 )
-
-function adjustPosition() {
-  const el = menuRef.value
-  if (!el) return
-
-  const menuWidth = el.offsetWidth || 210
-  const menuHeight = el.offsetHeight || 260
-  const padding = 12
-
-  let x = props.position.x
-  let y = props.position.y
-
-  if (x + menuWidth > window.innerWidth - padding) {
-    x = window.innerWidth - menuWidth - padding
-  }
-  if (x < padding) {
-    x = padding
-  }
-
-  if (y + menuHeight > window.innerHeight - padding) {
-    y = window.innerHeight - menuHeight - padding
-  }
-  if (y < padding) {
-    y = padding
-  }
-
-  adjustedX.value = x
-  adjustedY.value = y
-}
 
 function handleReaction(emoji: string) {
   if (props.post) {
@@ -161,8 +170,8 @@ onUnmounted(() => {
     <!-- Telegram Message Context Menu -->
     <div
       ref="menuRef"
-      class="fixed pointer-events-auto w-52 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-50 select-none animate-in fade-in zoom-in-95 duration-100 py-1.5"
-      :style="{ left: `${adjustedX}px`, top: `${adjustedY}px` }"
+      class="fixed pointer-events-auto w-52 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
+      :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin }"
     >
       <!-- Quick Reactions Row -->
       <div class="px-2.5 py-1.5 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
