@@ -12,7 +12,6 @@ import {
   Paperclip,
   Smile,
   Send,
-  Mic,
   X,
   FileText,
   Loader2,
@@ -549,24 +548,19 @@ defineExpose({
         </button>
       </div>
 
-      <!-- Send or Mic Action Button -->
+      <!-- Send Action Button (Visible when text or files are present) -->
       <button
+        v-if="messageText.trim() || attachedFiles.length > 0"
         @click="handleSend"
-        :disabled="isSending || (!messageText.trim() && attachedFiles.length === 0)"
-        class="w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5"
-        :class="[
-          messageText.trim() || attachedFiles.length > 0
-            ? 'bg-[#3390ec] hover:bg-[#2481cc] text-white shadow-md shadow-[#3390ec]/30 scale-100'
-            : 'text-[#7f91a4] hover:text-white hover:bg-[#202b36]'
-        ]"
+        :disabled="isSending"
+        class="w-10 h-10 rounded-full flex items-center justify-center transition-all shrink-0 mb-0.5 bg-[#3390ec] hover:bg-[#2481cc] text-white shadow-md shadow-[#3390ec]/30 scale-100 cursor-pointer animate-in fade-in zoom-in-90 duration-150"
         title="Send"
       >
         <Loader2 v-if="isSending" class="w-5 h-5 animate-spin" />
         <Send
-          v-else-if="messageText.trim() || attachedFiles.length > 0"
-          class="w-4 h-4 translate-x-0.5 -translate-y-0.5"
+          v-else
+          class="w-5 h-5"
         />
-        <Mic v-else class="w-5 h-5" />
       </button>
 
       <!-- Emoji Picker Popover -->
