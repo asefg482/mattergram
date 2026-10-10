@@ -7,6 +7,7 @@ import { getAvatarGradient, getInitials } from '../../utils/formatters'
 import {
   X,
   Server,
+  Lock,
   Volume2,
   VolumeX,
   Moon,
@@ -30,7 +31,6 @@ import { THEME_PRESETS, ANIMATION_PRESETS } from '../../utils/themes'
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
-const serverUrlInput = ref(authStore.baseUrl)
 const soundEnabled = ref(soundService.isEnabled())
 const isTestingServer = ref(false)
 const testResult = ref<{ ok: boolean; msg: string } | null>(null)
@@ -46,11 +46,12 @@ function enlargeMyAvatar() {
 }
 
 async function testConnection() {
-  if (!serverUrlInput.value.trim()) return
+  const url = authStore.baseUrl?.trim() || ''
+  if (!url) return
   isTestingServer.value = true
   testResult.value = null
   try {
-    const clean = serverUrlInput.value.trim().replace(/\/+$/, '')
+    const clean = url.replace(/\/+$/, '')
     const res = await fetch('/api/v4/system/ping', {
       headers: {
         'X-Mattermost-Server': clean
@@ -93,7 +94,6 @@ async function toggleNotifications() {
 }
 
 function handleSave() {
-  authStore.setBaseUrl(serverUrlInput.value)
   soundService.setEnabled(soundEnabled.value)
   notificationService.setEnabled(notifEnabled.value)
   saveSuccess.value = true
@@ -152,31 +152,38 @@ function selectAnimation(id: string) {
           </div>
         </div>
 
-        <!-- Section 1: Server URL Configuration -->
+        <!-- Section 1: Server URL Configuration (Read-only from .env) -->
         <div class="space-y-2">
           <label class="block text-xs font-semibold text-[#7f91a4] uppercase tracking-wider flex items-center justify-between">
             <span class="flex items-center gap-1.5">
               <Server class="w-3.5 h-3.5 text-[#3390ec]" />
               Mattermost Base URL
             </span>
-            <button
-              type="button"
-              @click="testConnection"
-              :disabled="isTestingServer"
-              class="text-[#3390ec] hover:underline text-[11px] font-normal flex items-center gap-1"
-            >
-              <Loader2 v-if="isTestingServer" class="w-3 h-3 animate-spin" />
-              <span>{{ isTestingServer ? 'Testing...' : 'Test' }}</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-[#7f91a4] font-medium bg-black/20 dark:bg-black/20 bg-gray-200 px-2 py-0.5 rounded-md border border-[#202b36] dark:border-[#202b36] border-gray-300">
+                Read-only (.env)
+              </span>
+              <button
+                type="button"
+                @click="testConnection"
+                :disabled="isTestingServer"
+                class="text-[#3390ec] hover:underline text-[11px] font-normal flex items-center gap-1 cursor-pointer"
+              >
+                <Loader2 v-if="isTestingServer" class="w-3 h-3 animate-spin" />
+                <span>{{ isTestingServer ? 'Testing...' : 'Test' }}</span>
+              </button>
+            </div>
           </label>
 
-          <input
-            v-model="serverUrlInput"
-            type="url"
-            required
-            placeholder="https://m.dornicadev.ir"
-            class="w-full bg-[#0e1621] border border-[#202b36] text-white text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3390ec]"
-          />
+          <div class="relative">
+            <input
+              :value="authStore.baseUrl"
+              type="text"
+              readonly
+              class="w-full bg-[#0e1621]/60 dark:bg-[#0e1621]/60 bg-gray-100 border border-[#202b36] dark:border-[#202b36] border-gray-300 text-[#a0abb8] dark:text-[#a0abb8] text-gray-600 text-xs rounded-xl px-3.5 py-2.5 outline-none cursor-default select-all pr-8 font-mono"
+            />
+            <Lock class="w-3.5 h-3.5 text-[#7f91a4] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
 
           <!-- Connection result -->
           <div v-if="testResult" class="text-xs flex items-center gap-1.5" :class="testResult.ok ? 'text-emerald-400' : 'text-amber-400'">
