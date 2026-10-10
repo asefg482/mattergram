@@ -6,7 +6,9 @@ import ChatHeader from './ChatHeader.vue'
 import MessageBubble from './MessageBubble.vue'
 import MessageInput from './MessageInput.vue'
 import FilePreviewModal from './FilePreviewModal.vue'
+import MessageContextMenu from './MessageContextMenu.vue'
 import { formatDateSeparator } from '../../utils/formatters'
+import type { MattermostPost } from '../../types/mattermost'
 import { MessageSquare, ArrowDown, Loader2 } from 'lucide-vue-next'
 
 const chatStore = useChatStore()
@@ -14,6 +16,17 @@ const uiStore = useUiStore()
 
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const showScrollBottom = ref(false)
+
+// Context Menu State
+const contextPost = ref<MattermostPost | null>(null)
+const contextPos = ref({ x: 0, y: 0 })
+const showContextMenu = ref(false)
+
+function onMessageContextMenu(e: MouseEvent, post: MattermostPost) {
+  contextPost.value = post
+  contextPos.value = { x: e.clientX, y: e.clientY }
+  showContextMenu.value = true
+}
 
 const channel = computed(() => chatStore.activeChannel)
 const posts = computed(() => chatStore.currentPosts)
@@ -124,6 +137,7 @@ watch(
             <MessageBubble
               :post="post"
               :showSenderName="isGroup"
+              @contextmenu="onMessageContextMenu($event, post)"
             />
           </template>
         </div>
@@ -143,6 +157,14 @@ watch(
 
       <!-- File Preview Modal -->
       <FilePreviewModal />
+
+      <!-- Message Context Menu -->
+      <MessageContextMenu
+        :post="contextPost"
+        :position="contextPos"
+        :isOpen="showContextMenu"
+        @close="showContextMenu = false"
+      />
     </template>
   </div>
 </template>

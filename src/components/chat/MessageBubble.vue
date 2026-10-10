@@ -33,6 +33,10 @@ const props = defineProps<{
   showSenderName?: boolean
 }>()
 
+const emit = defineEmits<{
+  (e: 'contextmenu', event: MouseEvent): void
+}>()
+
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
@@ -145,6 +149,7 @@ function openFile(file: MattermostFileInfo) {
     :id="`msg-${post.id}`"
     class="flex items-end gap-2 my-1 px-4 group relative transition-colors duration-300"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
+    @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Sender Avatar (Incoming only in groups) -->
     <TelegramAvatar

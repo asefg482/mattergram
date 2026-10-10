@@ -6,12 +6,25 @@ import FolderTabs from './FolderTabs.vue'
 import ChatListItem from './ChatListItem.vue'
 import DrawerMenu from './DrawerMenu.vue'
 import NewChatModal from './NewChatModal.vue'
+import ChatContextMenu from './ChatContextMenu.vue'
+import type { MattermostChannel } from '../../types/mattermost'
 import { Menu, Search, X, Edit3, Loader2 } from 'lucide-vue-next'
 
 const chatStore = useChatStore()
 const uiStore = useUiStore()
 
 const isDrawerOpen = ref(false)
+
+// Chat Context Menu State
+const contextChannel = ref<MattermostChannel | null>(null)
+const contextPos = ref({ x: 0, y: 0 })
+const showChatContextMenu = ref(false)
+
+function onChatContextMenu(e: MouseEvent, channel: MattermostChannel) {
+  contextChannel.value = channel
+  contextPos.value = { x: e.clientX, y: e.clientY }
+  showChatContextMenu.value = true
+}
 
 // Filter chats based on activeTab and searchQuery
 const filteredChannels = computed(() => {
@@ -110,6 +123,7 @@ function handleSelectChat(channelId: string) {
           :channel="channel"
           :isActive="chatStore.activeChannelId === channel.id"
           @click="handleSelectChat(channel.id)"
+          @contextmenu="onChatContextMenu($event, channel)"
         />
       </template>
     </div>
@@ -130,6 +144,14 @@ function handleSelectChat(channelId: string) {
     <NewChatModal
       :isOpen="uiStore.showNewChatModal"
       @close="uiStore.showNewChatModal = false"
+    />
+
+    <!-- Chat Context Menu -->
+    <ChatContextMenu
+      :channel="contextChannel"
+      :position="contextPos"
+      :isOpen="showChatContextMenu"
+      @close="showChatContextMenu = false"
     />
   </div>
 </template>

@@ -105,7 +105,48 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function sortChannels() {
-    channels.value.sort((a, b) => (b.last_post_at || b.create_at || 0) - (a.last_post_at || a.create_at || 0))
+    channels.value.sort((a, b) => {
+      if (a.is_pinned && !b.is_pinned) return -1
+      if (!a.is_pinned && b.is_pinned) return 1
+      return (b.last_post_at || b.create_at || 0) - (a.last_post_at || a.create_at || 0)
+    })
+  }
+
+  function togglePinChannel(channelId: string) {
+    const ch = channels.value.find((c) => c.id === channelId)
+    if (ch) {
+      ch.is_pinned = !ch.is_pinned
+      sortChannels()
+    }
+  }
+
+  function toggleMuteChannel(channelId: string) {
+    const ch = channels.value.find((c) => c.id === channelId)
+    if (ch) {
+      ch.is_muted = !ch.is_muted
+    }
+  }
+
+  function toggleMarkAsUnread(channelId: string) {
+    if (unreadCounts.value[channelId] && unreadCounts.value[channelId] > 0) {
+      unreadCounts.value[channelId] = 0
+    } else {
+      unreadCounts.value[channelId] = 1
+    }
+  }
+
+  async function togglePinPost(post: MattermostPost) {
+    try {
+      if (post.is_pinned) {
+        await mmApi.unpinPost(post.id)
+        post.is_pinned = false
+      } else {
+        await mmApi.pinPost(post.id)
+        post.is_pinned = true
+      }
+    } catch (err) {
+      console.error('Failed to toggle pin:', err)
+    }
   }
 
   // Select Channel
@@ -459,6 +500,10 @@ export const useChatStore = defineStore('chat', () => {
     toggleReaction,
     sendTyping,
     openDirectMessage,
-    createNewChannel
+    createNewChannel,
+    togglePinChannel,
+    toggleMuteChannel,
+    toggleMarkAsUnread,
+    togglePinPost
   }
 })

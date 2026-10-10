@@ -13,6 +13,10 @@ const props = defineProps<{
   isActive: boolean
 }>()
 
+const emit = defineEmits<{
+  (e: 'contextmenu', event: MouseEvent): void
+}>()
+
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
@@ -89,6 +93,7 @@ const avatarBg = computed(() => {
         ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#3390ec] text-white'
         : 'hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'
     ]"
+    @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Avatar with Online Indicator -->
     <TelegramAvatar

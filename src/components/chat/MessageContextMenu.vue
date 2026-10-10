@@ -1,0 +1,231 @@
+<script setup lang="ts">
+import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useAuthStore } from '../../stores/auth'
+import { useChatStore } from '../../stores/chat'
+import { useUiStore } from '../../stores/ui'
+import type { MattermostPost } from '../../types/mattermost'
+import {
+  Reply,
+  Edit2,
+  Copy,
+  Pin,
+  Trash2
+} from 'lucide-vue-next'
+
+const props = defineProps<{
+  post: MattermostPost | null
+  position: { x: number; y: number }
+  isOpen: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
+
+const authStore = useAuthStore()
+const chatStore = useChatStore()
+const uiStore = useUiStore()
+
+const menuRef = ref<HTMLDivElement | null>(null)
+const adjustedX = ref(props.position.x)
+const adjustedY = ref(props.position.y)
+
+const isOutgoing = computed(() => {
+  return props.post?.user_id === authStore.currentUser?.id
+})
+
+const isAdmin = computed(() => {
+  return authStore.currentUser?.roles.includes('system_admin')
+})
+
+const canDelete = computed(() => isOutgoing.value || isAdmin.value)
+const canEdit = computed(() => isOutgoing.value)
+
+const quickEmojis = ['👍', '❤️', '🔥', '😂', '👏', '😢', '🎉', '🚀']
+
+watch(
+  () => [props.isOpen, props.position],
+  () => {
+    if (props.isOpen) {
+      nextTick(adjustPosition)
+    }
+  },
+  { deep: true }
+)
+
+function adjustPosition() {
+  const el = menuRef.value
+  if (!el) return
+
+  const menuWidth = el.offsetWidth || 210
+  const menuHeight = el.offsetHeight || 260
+  const padding = 12
+
+  let x = props.position.x
+  let y = props.position.y
+
+  if (x + menuWidth > window.innerWidth - padding) {
+    x = window.innerWidth - menuWidth - padding
+  }
+  if (x < padding) {
+    x = padding
+  }
+
+  if (y + menuHeight > window.innerHeight - padding) {
+    y = window.innerHeight - menuHeight - padding
+  }
+  if (y < padding) {
+    y = padding
+  }
+
+  adjustedX.value = x
+  adjustedY.value = y
+}
+
+function handleReaction(emoji: string) {
+  if (props.post) {
+    chatStore.toggleReaction(props.post, emoji)
+  }
+  emit('close')
+}
+
+function handleReply() {
+  if (props.post) {
+    uiStore.setReplyingTo(props.post)
+  }
+  emit('close')
+}
+
+function handleEdit() {
+  if (props.post) {
+    uiStore.setEditingPost(props.post)
+  }
+  emit('close')
+}
+
+function handleCopy() {
+  if (props.post?.message) {
+    navigator.clipboard.writeText(props.post.message)
+  }
+  emit('close')
+}
+
+async function handleTogglePin() {
+  if (props.post) {
+    await chatStore.togglePinPost(props.post)
+  }
+  emit('close')
+}
+
+async function handleDelete() {
+  if (props.post) {
+    emit('close')
+    if (confirm('Are you sure you want to delete this message?')) {
+      await chatStore.deleteMessage(props.post.id)
+    }
+  }
+}
+
+function onWindowClick(e: MouseEvent) {
+  if (props.isOpen && menuRef.value && !menuRef.value.contains(e.target as Node)) {
+    emit('close')
+  }
+}
+
+function onWindowKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.isOpen) {
+    emit('close')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', onWindowClick)
+  window.addEventListener('keydown', onWindowKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', onWindowClick)
+  window.removeEventListener('keydown', onWindowKeydown)
+})
+</script>
+
+<template>
+  <div v-if="isOpen && post" class="fixed inset-0 z-50 pointer-events-none">
+    <!-- Backdrop to capture right clicks -->
+    <div
+      class="absolute inset-0 pointer-events-auto"
+      @click="emit('close')"
+      @contextmenu.prevent="emit('close')"
+    ></div>
+
+    <!-- Telegram Message Context Menu -->
+    <div
+      ref="menuRef"
+      class="fixed pointer-events-auto w-52 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-50 select-none animate-in fade-in zoom-in-95 duration-100 py-1.5"
+      :style="{ left: `${adjustedX}px`, top: `${adjustedY}px` }"
+    >
+      <!-- Quick Reactions Row -->
+      <div class="px-2.5 py-1.5 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+        <button
+          v-for="emoji in quickEmojis"
+          :key="emoji"
+          @click="handleReaction(emoji)"
+          class="w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] hover:scale-125 transition-transform"
+        >
+          {{ emoji }}
+        </button>
+      </div>
+
+      <!-- Action Items -->
+      <div class="py-1 text-xs">
+        <!-- Reply -->
+        <button
+          @click="handleReply"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+        >
+          <Reply class="w-4 h-4 text-[#3390ec]" />
+          <span>Reply</span>
+        </button>
+
+        <!-- Edit (if outgoing) -->
+        <button
+          v-if="canEdit"
+          @click="handleEdit"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+        >
+          <Edit2 class="w-4 h-4 text-amber-400" />
+          <span>Edit</span>
+        </button>
+
+        <!-- Copy Text -->
+        <button
+          v-if="post.message"
+          @click="handleCopy"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+        >
+          <Copy class="w-4 h-4 text-[#7f91a4]" />
+          <span>Copy Text</span>
+        </button>
+
+        <!-- Pin / Unpin -->
+        <button
+          @click="handleTogglePin"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+        >
+          <Pin class="w-4 h-4 text-[#7f91a4]" />
+          <span>{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
+        </button>
+
+        <!-- Delete (if allowed) -->
+        <button
+          v-if="canDelete"
+          @click="handleDelete"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-red-400 hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+        >
+          <Trash2 class="w-4 h-4 text-red-400" />
+          <span>Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
