@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
 import ChatHeader from './ChatHeader.vue'
@@ -11,10 +12,12 @@ import { formatDateSeparator } from '../../utils/formatters'
 import type { MattermostPost } from '../../types/mattermost'
 import { MessageSquare, ArrowDown, Loader2 } from 'lucide-vue-next'
 
+const authStore = useAuthStore()
 const chatStore = useChatStore()
 const uiStore = useUiStore()
 
 const messagesContainer = ref<HTMLDivElement | null>(null)
+const bottomAnchorRef = ref<HTMLDivElement | null>(null)
 const showScrollBottom = ref(false)
 
 // Context Menu State
@@ -42,16 +45,33 @@ function isDifferentDay(currTimestamp: number, prevTimestamp?: number): boolean 
   return d1 !== d2
 }
 
-// Scroll to bottom
+// Robust Scroll to bottom with multi-phase layout settlement
 function scrollToBottom(smooth = false) {
-  nextTick(() => {
-    if (messagesContainer.value) {
-      messagesContainer.value.scrollTo({
-        top: messagesContainer.value.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
+  const executeScroll = () => {
+    if (!messagesContainer.value) return
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight + 10000
+    if (bottomAnchorRef.value) {
+      bottomAnchorRef.value.scrollIntoView({
+        behavior: smooth ? 'smooth' : 'auto',
+        block: 'end'
       })
     }
+  }
+
+  nextTick(() => {
+    executeScroll()
+    requestAnimationFrame(() => {
+      executeScroll()
+    })
+    setTimeout(executeScroll, 50)
+    setTimeout(executeScroll, 150)
+    setTimeout(executeScroll, 300)
   })
+}
+
+function onMessageSent() {
+  scrollToBottom(true)
+  setTimeout(() => scrollToBottom(true), 100)
 }
 
 // Track scroll position
@@ -59,7 +79,7 @@ function handleScroll() {
   if (!messagesContainer.value) return
   const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
   const distanceToBottom = scrollHeight - scrollTop - clientHeight
-  showScrollBottom.value = distanceToBottom > 250
+  showScrollBottom.value = distanceToBottom > 150
 }
 
 // Scroll on channel switch
@@ -70,13 +90,45 @@ watch(
   }
 )
 
-// Scroll on new message
+// Scroll when posts load or change
 watch(
-  () => posts.value.length,
+  () => [posts.value.length, posts.value[posts.value.length - 1]?.id],
   () => {
-    scrollToBottom(true)
+    const isNearBottom = !showScrollBottom.value
+    const lastPost = posts.value[posts.value.length - 1]
+    const isMine = lastPost && lastPost.user_id === authStore.currentUser?.id
+    if (isNearBottom || isMine) {
+      scrollToBottom(true)
+    }
   }
 )
+
+watch(
+  () => chatStore.loadingPosts,
+  (loading) => {
+    if (!loading && posts.value.length > 0) {
+      scrollToBottom(false)
+    }
+  }
+)
+
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  if (messagesContainer.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      if (!showScrollBottom.value) {
+        scrollToBottom(false)
+      }
+    })
+    resizeObserver.observe(messagesContainer.value)
+  }
+  scrollToBottom(false)
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+})
 </script>
 
 <template>
@@ -121,7 +173,7 @@ watch(
         </div>
 
         <!-- Messages List with Date Separators -->
-        <div v-else class="max-w-4xl mx-auto py-2">
+        <div v-else class="max-w-4xl mx-auto pt-2 pb-6">
           <template v-for="(post, index) in posts" :key="post.id">
             <!-- Date Divider -->
             <div
@@ -140,6 +192,9 @@ watch(
               @contextmenu="onMessageContextMenu($event, post)"
             />
           </template>
+
+          <!-- Bottom scroll anchor -->
+          <div ref="bottomAnchorRef" class="h-2 w-full pointer-events-none"></div>
         </div>
 
         <!-- Floating Scroll to Bottom Button -->
@@ -153,7 +208,7 @@ watch(
       </div>
 
       <!-- Bottom Input Bar -->
-      <MessageInput :channelId="channel.id" />
+      <MessageInput :channelId="channel.id" @sent="onMessageSent" />
 
       <!-- File Preview Modal -->
       <FilePreviewModal />

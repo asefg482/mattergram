@@ -25,6 +25,10 @@ const props = defineProps<{
   channelId: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'sent'): void
+}>()
+
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
@@ -248,6 +252,8 @@ async function handleSend() {
     if (textareaRef.value) {
       textareaRef.value.style.height = 'auto'
     }
+
+    emit('sent')
   } catch (err) {
     console.error('Failed to send:', err)
   } finally {
