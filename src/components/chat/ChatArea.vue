@@ -164,7 +164,7 @@ onUnmounted(() => {
       <div
         ref="messagesContainer"
         @scroll="handleScroll"
-        class="flex-1 overflow-y-auto overflow-x-hidden p-2 tg-chat-bg tg-scroll-container relative"
+        class="flex-1 overflow-y-auto overflow-x-hidden tg-chat-bg tg-scroll-container relative"
       >
         <!-- Loading spinner -->
         <div v-if="chatStore.loadingPosts && posts.length === 0" class="flex items-center justify-center py-12">
@@ -178,8 +178,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Messages List with Date Separators -->
-        <div v-else class="max-w-4xl mx-auto pt-2 pb-6">
+        <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
+        <div v-else dir="ltr" class="w-full px-2 sm:px-4 pt-2 pb-6 flex flex-col">
           <template v-for="(post, index) in posts" :key="post.id">
             <!-- Date Divider -->
             <div
@@ -195,6 +195,7 @@ onUnmounted(() => {
             <MessageBubble
               :post="post"
               :showSenderName="isGroup"
+              :showAvatar="isGroup"
               @contextmenu="onMessageContextMenu($event, post)"
             />
           </template>

@@ -178,7 +178,7 @@ function openFile(file: MattermostFileInfo) {
 <template>
   <div
     :id="`msg-${post.id}`"
-    class="flex items-end gap-2 my-1 px-4 group relative transition-colors duration-150 tg-message-row"
+    class="flex items-end gap-2 my-1 px-2 sm:px-3 group relative transition-colors duration-150 tg-message-row w-full"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
@@ -186,12 +186,12 @@ function openFile(file: MattermostFileInfo) {
   >
     <!-- Sender Avatar (Incoming only in groups) -->
     <TelegramAvatar
-      v-if="!isOutgoing"
+      v-if="!isOutgoing && showAvatar"
       :userId="post.user_id"
       :name="senderName"
       size="sm"
       :lastPictureUpdate="(sender as any)?.last_picture_update"
-      class="mb-0.5"
+      class="mb-0.5 shrink-0"
     />
 
     <!-- Bubble Wrapper with Hover Action Bar -->
@@ -264,8 +264,8 @@ function openFile(file: MattermostFileInfo) {
         class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative"
         :class="[
           isOutgoing
-            ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#eeffde] text-white dark:text-white text-[#111827] rounded-br-xs'
-            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs',
+            ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#eeffde] text-white dark:text-white text-[#111827] rounded-br-xs bubble-out-tail mr-1'
+            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs bubble-in-tail ml-1',
           isRecent ? 'msg-pop-in' : ''
         ]"
       >
