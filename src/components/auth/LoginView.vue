@@ -22,17 +22,23 @@ const customDescription = ref<string>('')
 const isLoadingBrand = ref(true)
 
 const serverHostName = computed(() => {
+  const current = authStore.baseUrl || mmApi.getBaseUrl()
+  if (!current) return 'سرور در .env تنظیم نشده است'
   try {
-    const u = new URL(authStore.baseUrl || mmApi.getBaseUrl())
+    const u = new URL(current)
     return u.host
   } catch {
-    return authStore.baseUrl || 'Mattermost Server'
+    return current
   }
 })
 
 async function fetchServerBrand() {
-  isLoadingBrand.value = true
   const currentBase = authStore.baseUrl || mmApi.getBaseUrl()
+  if (!currentBase) {
+    isLoadingBrand.value = false
+    return
+  }
+  isLoadingBrand.value = true
 
   // 1. Fetch site name & description from client config
   try {
@@ -69,6 +75,12 @@ onMounted(() => {
 })
 
 async function handleLogin() {
+  const currentBase = authStore.baseUrl || mmApi.getBaseUrl()
+  if (!currentBase) {
+    errorMsg.value = 'آدرس سرور مترموست تنظیم نشده است. لطفاً MATTERMOST_BASE_URL را در فایل .env تنظیم کنید.'
+    return
+  }
+
   if (!loginId.value || !password.value) {
     errorMsg.value = 'Please enter both login ID and password'
     return

@@ -30,6 +30,11 @@ class MattermostWsService {
     const protocol = isSecure ? 'wss:' : 'ws:'
     const host = window.location.host
     const serverUrl = mmApi.getBaseUrl()
+    if (!serverUrl) {
+      console.warn('[WS] Mattermost Base URL is not configured in .env')
+      this.isConnecting = false
+      return
+    }
     
     // Connect through Vite proxy / websocket endpoint
     const wsUrl = `${protocol}//${host}/api/v4/websocket?server=${encodeURIComponent(serverUrl)}`

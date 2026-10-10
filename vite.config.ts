@@ -53,17 +53,25 @@ function mattermostProxyPlugin(defaultFallback = ''): Plugin {
 
           targetServer = targetServer.trim().replace(/\/+$/, '')
 
+          if (!targetServer) {
+            res.writeHead(500, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({
+              error: 'MATTERMOST_BASE_URL_NOT_CONFIGURED',
+              message: 'Mattermost Base URL is not configured in .env (MATTERMOST_BASE_URL)'
+            }))
+            return
+          }
+
           let targetUrl: URL
           try {
             targetUrl = new URL(targetServer)
           } catch {
-            try {
-              targetUrl = new URL(defaultFallback)
-            } catch {
-              res.writeHead(500, { 'Content-Type': 'application/json' })
-              res.end(JSON.stringify({ error: 'Mattermost server URL is not configured' }))
-              return
-            }
+            res.writeHead(500, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({
+              error: 'INVALID_MATTERMOST_BASE_URL',
+              message: `Invalid Mattermost server URL: "${targetServer}"`
+            }))
+            return
           }
 
           delete req.headers['x-mattermost-server']
@@ -88,16 +96,19 @@ function mattermostProxyPlugin(defaultFallback = ''): Plugin {
           let targetServer = parsed.searchParams.get('server') || (req.headers['x-mattermost-server'] as string) || defaultFallback
           targetServer = targetServer.trim().replace(/\/+$/, '')
 
+          if (!targetServer) {
+            console.error('[Vite WS Error] Mattermost Base URL is not configured in .env (MATTERMOST_BASE_URL)')
+            socket.destroy()
+            return
+          }
+
           let targetUrl: URL
           try {
             targetUrl = new URL(targetServer)
           } catch {
-            try {
-              targetUrl = new URL(defaultFallback)
-            } catch {
-              socket.destroy()
-              return
-            }
+            console.error(`[Vite WS Error] Invalid Mattermost server URL: "${targetServer}"`)
+            socket.destroy()
+            return
           }
 
           const wsProtocol = targetUrl.protocol === 'https:' ? 'wss:' : 'ws:'

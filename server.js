@@ -8,9 +8,52 @@ import { WebSocketServer, WebSocket as WsClient } from 'ws'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// 1. Automatically load environment variables from .env and .env.local
+function loadEnvFiles() {
+  const envFiles = ['.env', '.env.local']
+  for (const file of envFiles) {
+    const fullPath = path.resolve(__dirname, file)
+    if (fs.existsSync(fullPath)) {
+      try {
+        const content = fs.readFileSync(fullPath, 'utf8')
+        content.split('\n').forEach(line => {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed.startsWith('#')) return
+          const eqIdx = trimmed.indexOf('=')
+          if (eqIdx !== -1) {
+            const key = trimmed.slice(0, eqIdx).trim()
+            let val = trimmed.slice(eqIdx + 1).trim()
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+              val = val.slice(1, -1)
+            }
+            if (process.env[key] === undefined) {
+              process.env[key] = val
+            }
+          }
+        })
+      } catch (err) {
+        console.warn(`[Env] Failed to read ${file}:`, err.message)
+      }
+    }
+  }
+}
+loadEnvFiles()
+
 const PORT = process.env.PORT || 5173
 const DIST_DIR = path.resolve(__dirname, 'dist')
-const DEFAULT_MATTERMOST_SERVER = (process.env.MATTERMOST_BASE_URL || process.env.VITE_MATTERMOST_BASE_URL || '').trim().replace(/\/+$/, '')
+
+// Read Mattermost base URL dynamically from .env
+const DEFAULT_MATTERMOST_SERVER = (
+  process.env.MATTERMOST_BASE_URL ||
+  process.env.VITE_MATTERMOST_BASE_URL ||
+  ''
+).trim().replace(/\/+$/, '')
+
+if (DEFAULT_MATTERMOST_SERVER) {
+  console.log(`[Config] Loaded Mattermost Base URL from .env: ${DEFAULT_MATTERMOST_SERVER}`)
+} else {
+  console.warn('[Config Warning] MATTERMOST_BASE_URL is not defined in .env! Requests without explicit server header will fail.')
+}
 
 const proxy = httpProxy.createProxyServer({
   changeOrigin: true,
@@ -67,22 +110,25 @@ const server = http.createServer((req, res) => {
 
     targetServer = (targetServer || '').trim().replace(/\/+$/, '')
 
+    // If server is not set, throw an error instead of using any static fallback
+    if (!targetServer) {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({
+        error: 'MATTERMOST_BASE_URL_NOT_CONFIGURED',
+        message: 'Mattermost Base URL is not configured. Please set MATTERMOST_BASE_URL in your .env file.'
+      }))
+      return
+    }
+
     let targetUrl
     try {
       targetUrl = new URL(targetServer)
     } catch {
-      if (DEFAULT_MATTERMOST_SERVER) {
-        try {
-          targetUrl = new URL(DEFAULT_MATTERMOST_SERVER)
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    if (!targetUrl) {
       res.writeHead(500, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'Mattermost server URL is not configured' }))
+      res.end(JSON.stringify({
+        error: 'INVALID_MATTERMOST_BASE_URL',
+        message: `Invalid Mattermost server URL: "${targetServer}"`
+      }))
       return
     }
 
@@ -127,20 +173,19 @@ server.on('upgrade', (req, socket, head) => {
     let targetServer = parsed.searchParams.get('server') || req.headers['x-mattermost-server'] || DEFAULT_MATTERMOST_SERVER
     targetServer = (targetServer || '').trim().replace(/\/+$/, '')
 
+    if (!targetServer) {
+      console.error('[WebSocket Upgrade Error] Mattermost Base URL is not configured in .env (MATTERMOST_BASE_URL)')
+      socket.write('HTTP/1.1 500 Mattermost Base URL Not Configured\r\n\r\n')
+      socket.destroy()
+      return
+    }
+
     let targetUrl
     try {
       targetUrl = new URL(targetServer)
     } catch {
-      if (DEFAULT_MATTERMOST_SERVER) {
-        try {
-          targetUrl = new URL(DEFAULT_MATTERMOST_SERVER)
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    if (!targetUrl) {
+      console.error(`[WebSocket Upgrade Error] Invalid Mattermost URL: "${targetServer}"`)
+      socket.write('HTTP/1.1 500 Invalid Mattermost URL\r\n\r\n')
       socket.destroy()
       return
     }

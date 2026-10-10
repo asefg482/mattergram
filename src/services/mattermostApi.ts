@@ -8,28 +8,41 @@ import type {
   MattermostFileInfo
 } from '../types/mattermost'
 
-const ENV_SERVER_URL =
+const ENV_SERVER_URL = (
   ((import.meta as any).env?.MATTERMOST_BASE_URL as string) ||
   ((import.meta as any).env?.VITE_MATTERMOST_BASE_URL as string) ||
   ''
+).trim().replace(/\/+$/, '')
 
-const DEFAULT_SERVER_URL = (ENV_SERVER_URL || localStorage.getItem('mattergram_base_url') || '').trim().replace(/\/+$/, '')
+const INITIAL_SERVER_URL = ENV_SERVER_URL || (localStorage.getItem('mattergram_base_url') || '').trim().replace(/\/+$/, '')
 
 class MattermostApiService {
-  private baseUrl: string = DEFAULT_SERVER_URL
+  private baseUrl: string = INITIAL_SERVER_URL
   private token: string | null = localStorage.getItem('mattergram_token') || null
 
   constructor() {
-    this.cleanBaseUrl()
+    if (ENV_SERVER_URL) {
+      this.baseUrl = ENV_SERVER_URL
+      localStorage.setItem('mattergram_base_url', ENV_SERVER_URL)
+    } else {
+      this.cleanBaseUrl()
+    }
   }
 
   public getBaseUrl(): string {
-    return this.baseUrl
+    return this.baseUrl || ENV_SERVER_URL || (localStorage.getItem('mattergram_base_url') || '').trim().replace(/\/+$/, '')
   }
 
   public setBaseUrl(url: string) {
-    this.baseUrl = (url || ENV_SERVER_URL || DEFAULT_SERVER_URL).trim().replace(/\/+$/, '')
-    localStorage.setItem('mattergram_base_url', this.baseUrl)
+    if (ENV_SERVER_URL) {
+      this.baseUrl = ENV_SERVER_URL
+      localStorage.setItem('mattergram_base_url', ENV_SERVER_URL)
+      return
+    }
+    this.baseUrl = (url || '').trim().replace(/\/+$/, '')
+    if (this.baseUrl) {
+      localStorage.setItem('mattergram_base_url', this.baseUrl)
+    }
   }
 
   private cleanBaseUrl() {
@@ -72,6 +85,9 @@ class MattermostApiService {
   }
 
   public async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (!this.baseUrl) {
+      throw new Error('آدرس سرور مترموست تنظیم نشده است. لطفاً MATTERMOST_BASE_URL را در فایل .env تنظیم کنید.')
+    }
     const url = this.resolveEndpoint(endpoint)
     const headers = this.getHeaders(options.headers as Record<string, string> || {})
 
@@ -100,6 +116,9 @@ class MattermostApiService {
 
   // --- Auth ---
   public async login(loginId: string, password: string): Promise<{ user: MattermostUser; token: string }> {
+    if (!this.baseUrl) {
+      throw new Error('آدرس سرور مترموست تنظیم نشده است. لطفاً MATTERMOST_BASE_URL را در فایل .env تنظیم کنید.')
+    }
     const url = this.resolveEndpoint('/api/v4/users/login')
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
