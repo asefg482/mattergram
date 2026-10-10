@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
+import { mmApi } from '../../services/mattermostApi'
 import { getAvatarGradient, getInitials } from '../../utils/formatters'
 import {
   Bookmark,
@@ -38,6 +39,13 @@ const userFullName = computed(() => {
   }
   return user.value.username || user.value.email
 })
+
+function enlargeMyAvatar() {
+  if (user.value) {
+    const url = mmApi.getUserAvatarUrl(user.value.id, (user.value as any)?.last_picture_update)
+    uiStore.openAvatarPreview(url, userFullName.value, user.value.id)
+  }
+}
 
 const avatarGradient = computed(() => {
   return getAvatarGradient(user.value?.id || '')
@@ -99,12 +107,18 @@ function handleLogout() {
         <div class="p-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#3390ec] text-white">
           <div class="flex items-center justify-between mb-3">
             <!-- User Avatar -->
-            <TelegramAvatar
-              :userId="user?.id"
-              :name="userFullName"
-              size="xl"
-              :lastPictureUpdate="(user as any)?.last_picture_update"
-            />
+            <div
+              @click="enlargeMyAvatar"
+              class="cursor-pointer hover:opacity-85 transition-opacity"
+              title="برای بزرگ‌نمایی عکس کلیک کنید"
+            >
+              <TelegramAvatar
+                :userId="user?.id"
+                :name="userFullName"
+                size="xl"
+                :lastPictureUpdate="(user as any)?.last_picture_update"
+              />
+            </div>
 
             <!-- Close Button -->
             <button

@@ -259,6 +259,14 @@ async function handleSelectGlobalUser(user: MattermostUser) {
   finishSearch()
 }
 
+function handleUserAvatarClick(user: MattermostUser) {
+  uiStore.openMentionModal({
+    type: 'user',
+    username: user.username,
+    user
+  })
+}
+
 function handleSearchEsc(e?: Event) {
   if (e) {
     e.preventDefault()
@@ -454,13 +462,20 @@ function finishSearch() {
             class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors"
             :class="selectedSearchIndex === (filteredChannels.length + globalChannels.length + uIdx) ? 'bg-[#242f3d] dark:bg-[#242f3d] bg-[#e3effa]' : 'hover:bg-[#202b36]/60 dark:hover:bg-[#202b36]/60 hover:bg-gray-100'"
           >
-            <TelegramAvatar
-              :name="usersStore.getUserDisplayName(u)"
-              :userId="u.id"
-              size="md"
-              :showOnlineDot="true"
-              :isOnline="usersStore.getStatus(u.id) === 'online'"
-            />
+            <div
+              @click.stop="handleUserAvatarClick(u)"
+              class="shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+              title="مشاهده پروفایل کاربر"
+            >
+              <TelegramAvatar
+                :name="usersStore.getUserDisplayName(u)"
+                :userId="u.id"
+                size="md"
+                :showOnlineDot="true"
+                :isOnline="usersStore.getStatus(u.id) === 'online'"
+                :lastPictureUpdate="(u as any)?.last_picture_update"
+              />
+            </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-white dark:text-white text-gray-900 truncate">

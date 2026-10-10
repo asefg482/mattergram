@@ -11,6 +11,7 @@ import ChatInfoDrawer from './components/info/ChatInfoDrawer.vue'
 import SettingsModal from './components/settings/SettingsModal.vue'
 import NotificationToast from './components/common/NotificationToast.vue'
 import MentionUserModal from './components/chat/MentionUserModal.vue'
+import AvatarPreviewModal from './components/common/AvatarPreviewModal.vue'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -72,6 +73,9 @@ watch(
 
       <!-- User Mention Click Confirmation Modal -->
       <MentionUserModal />
+
+      <!-- Full-Screen Avatar Preview Modal -->
+      <AvatarPreviewModal />
     </div>
   </div>
 </template>

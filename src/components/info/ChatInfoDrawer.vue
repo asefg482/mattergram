@@ -17,7 +17,13 @@ import {
   Lock,
   Bookmark,
   Shield,
-  FileText
+  FileText,
+  ZoomIn,
+  Copy,
+  Check,
+  AtSign,
+  Briefcase,
+  Mail
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 
@@ -58,6 +64,25 @@ watch(
   { immediate: true }
 )
 
+const copiedField = ref<string | null>(null)
+
+function copyText(text: string, field: string) {
+  navigator.clipboard.writeText(text)
+  copiedField.value = field
+  setTimeout(() => {
+    copiedField.value = null
+  }, 2000)
+}
+
+function enlargeAvatar() {
+  if (isDirect.value && channel.value?.dm_user) {
+    const user = channel.value.dm_user
+    const url = mmApi.getUserAvatarUrl(user.id, (user as any)?.last_picture_update)
+    const name = channel.value.display_name || channel.value.name
+    uiStore.openAvatarPreview(url, name, user.id)
+  }
+}
+
 function toggleMute() {
   if (channel.value) {
     channel.value.is_muted = !channel.value.is_muted
@@ -66,8 +91,11 @@ function toggleMute() {
 
 function handleMemberClick(user: MattermostUser) {
   if (user.id !== authStore.currentUser?.id) {
-    chatStore.openDirectMessage(user.id)
-    uiStore.showRightSidebar = false
+    uiStore.openMentionModal({
+      type: 'user',
+      username: user.username,
+      user
+    })
   }
 }
 </script>
@@ -94,8 +122,25 @@ function handleMemberClick(user: MattermostUser) {
     <div class="flex-1 overflow-y-auto">
       <!-- Profile Card -->
       <div class="p-6 flex flex-col items-center text-center border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5]">
-        <!-- Avatar -->
+        <!-- Avatar (Clickable to Enlarge if DM) -->
+        <div
+          v-if="isDirect && channel.dm_user"
+          @click="enlargeAvatar"
+          class="relative group cursor-pointer mb-3 rounded-full"
+          title="برای بزرگ‌نمایی عکس کلیک کنید"
+        >
+          <TelegramAvatar
+            :userId="channel.dm_user.id"
+            :name="channel.display_name || channel.name"
+            size="2xl"
+            :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+          />
+          <div class="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+            <ZoomIn class="w-7 h-7" />
+          </div>
+        </div>
         <TelegramAvatar
+          v-else
           :userId="channel.dm_user?.id"
           :name="channel.display_name || channel.name"
           size="2xl"
@@ -116,6 +161,65 @@ function handleMemberClick(user: MattermostUser) {
           <span v-else-if="isPrivate">Private Channel</span>
           <span v-else>Saved Cloud</span>
         </p>
+      </div>
+
+      <!-- DM Profile Details (If Direct Message) -->
+      <div v-if="isDirect && channel.dm_user" class="p-4 space-y-3 border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5]">
+        <!-- Username -->
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-[#7f91a4]">
+            <AtSign class="w-4 h-4" />
+            <span>نام کاربری</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[#3390ec] font-semibold">@{{ channel.dm_user.username }}</span>
+            <button
+              @click="copyText(channel.dm_user.username, 'username')"
+              class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
+              title="کپی نام کاربری"
+            >
+              <Check v-if="copiedField === 'username'" class="w-3.5 h-3.5 text-emerald-400" />
+              <Copy v-else class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Position / Bio -->
+        <div v-if="channel.dm_user.position" class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-[#7f91a4]">
+            <Briefcase class="w-4 h-4" />
+            <span>سمت / بیو</span>
+          </div>
+          <span class="text-white dark:text-white text-gray-800 font-medium truncate max-w-[170px]">{{ channel.dm_user.position }}</span>
+        </div>
+
+        <!-- Email -->
+        <div v-if="channel.dm_user.email" class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-[#7f91a4]">
+            <Mail class="w-4 h-4" />
+            <span>ایمیل</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-white/90 dark:text-white/90 text-gray-700 truncate max-w-[150px]">{{ channel.dm_user.email }}</span>
+            <button
+              @click="copyText(channel.dm_user.email, 'email')"
+              class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
+              title="کپی ایمیل"
+            >
+              <Check v-if="copiedField === 'email'" class="w-3.5 h-3.5 text-emerald-400" />
+              <Copy v-else class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Zoom Photo Action Button -->
+        <button
+          @click="enlargeAvatar"
+          class="w-full mt-2 py-2 px-3 rounded-xl border border-[#202b36] hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-white transition-all flex items-center justify-center gap-2"
+        >
+          <ZoomIn class="w-3.5 h-3.5" />
+          <span>بزرگ‌نمایی عکس</span>
+        </button>
       </div>
 
       <!-- Info Details -->

@@ -67,6 +67,18 @@ function toggleRightSidebar() {
   uiStore.showRightSidebar = !uiStore.showRightSidebar
 }
 
+function handleAvatarClick() {
+  if (isDirect.value && channel.value?.dm_user) {
+    uiStore.openMentionModal({
+      type: 'user',
+      username: channel.value.dm_user.username,
+      user: channel.value.dm_user
+    })
+  } else {
+    toggleRightSidebar()
+  }
+}
+
 function goBackMobile() {
   uiStore.isMobileSidebarOpen = true
 }
@@ -96,8 +108,9 @@ function toggleMute() {
 
       <!-- Avatar (Clickable to open profile / info) -->
       <div
-        @click="toggleRightSidebar"
+        @click="handleAvatarClick"
         class="cursor-pointer hover:opacity-90 transition-opacity shrink-0"
+        :title="isDirect ? 'مشاهده پروفایل و بزرگ‌نمایی عکس' : 'اطلاعات کانال'"
       >
         <TelegramAvatar
           :userId="channel.dm_user?.id"

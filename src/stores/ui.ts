@@ -9,6 +9,13 @@ export interface MentionModalState {
   user?: MattermostUser | null
 }
 
+export interface AvatarPreviewState {
+  isOpen: boolean
+  url: string
+  name: string
+  userId?: string
+}
+
 export const useUiStore = defineStore('ui', () => {
   const theme = ref<'dark' | 'light'>((localStorage.getItem('mattergram_theme') as any) || 'dark')
   const activeTab = ref<'all' | 'channels' | 'direct' | 'unread'>('all')
@@ -20,6 +27,13 @@ export const useUiStore = defineStore('ui', () => {
   const showNewChatModal = ref(false)
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
+
+  const avatarPreview = ref<AvatarPreviewState>({
+    isOpen: false,
+    url: '',
+    name: '',
+    userId: ''
+  })
 
   const mentionModal = ref<MentionModalState>({
     isOpen: false,
@@ -83,6 +97,19 @@ export const useUiStore = defineStore('ui', () => {
     mentionModal.value.isOpen = false
   }
 
+  function openAvatarPreview(url: string, name: string, userId?: string) {
+    avatarPreview.value = {
+      isOpen: true,
+      url,
+      name,
+      userId
+    }
+  }
+
+  function closeAvatarPreview() {
+    avatarPreview.value.isOpen = false
+  }
+
   // Initialize theme on start
   if (theme.value === 'dark') {
     document.documentElement.classList.add('dark')
@@ -102,6 +129,7 @@ export const useUiStore = defineStore('ui', () => {
     previewFile,
     isMobileSidebarOpen,
     mentionModal,
+    avatarPreview,
     setTheme,
     toggleTheme,
     setReplyingTo,
@@ -110,6 +138,8 @@ export const useUiStore = defineStore('ui', () => {
     closeFilePreview,
     openMentionModal,
     updateMentionModal,
-    closeMentionModal
+    closeMentionModal,
+    openAvatarPreview,
+    closeAvatarPreview
   }
 })

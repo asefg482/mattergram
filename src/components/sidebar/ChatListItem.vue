@@ -4,6 +4,7 @@ import type { MattermostChannel, MattermostPost, MattermostFileInfo } from '../.
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
+import { useUiStore } from '../../stores/ui'
 import { getAvatarGradient, getInitials, formatChatListTime } from '../../utils/formatters'
 import { Bookmark, Hash, Lock, Pin, VolumeX, FileText } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
@@ -20,8 +21,19 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
+const uiStore = useUiStore()
 
 const myId = computed(() => authStore.currentUser?.id)
+
+function handleAvatarClick() {
+  if (isDirect.value && props.channel.dm_user) {
+    uiStore.openMentionModal({
+      type: 'user',
+      username: props.channel.dm_user.username,
+      user: props.channel.dm_user
+    })
+  }
+}
 
 const isSavedMessages = computed(() => {
   return props.channel.display_name === 'Saved Messages'
@@ -116,7 +128,23 @@ const avatarBg = computed(() => {
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Avatar with Online Indicator -->
+    <div
+      v-if="isDirect && channel.dm_user"
+      @click.stop="handleAvatarClick"
+      class="shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+      title="مشاهده پروفایل کاربر"
+    >
+      <TelegramAvatar
+        :userId="channel.dm_user.id"
+        :name="channel.display_name || channel.name"
+        size="lg"
+        :showOnlineDot="true"
+        :isOnline="isOnline"
+        :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+      />
+    </div>
     <TelegramAvatar
+      v-else
       :userId="channel.dm_user?.id"
       :name="channel.display_name || channel.name"
       size="lg"

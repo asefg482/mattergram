@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useUiStore } from '../../stores/ui'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
+import { mmApi } from '../../services/mattermostApi'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import {
-  MessageSquare,
-  AlertTriangle,
   UserX,
   Loader2,
   X,
   Radio,
-  Send
+  Send,
+  ZoomIn,
+  Copy,
+  Check,
+  Shield
 } from 'lucide-vue-next'
 
 const uiStore = useUiStore()
@@ -30,6 +33,22 @@ const displayName = computed(() => {
   if (!user.value) return ''
   return usersStore.getUserDisplayName(user.value)
 })
+
+const copiedField = ref<string | null>(null)
+
+function copyToClipboard(text: string, field: string) {
+  navigator.clipboard.writeText(text)
+  copiedField.value = field
+  setTimeout(() => {
+    copiedField.value = null
+  }, 2000)
+}
+
+function enlargeAvatar() {
+  if (!user.value) return
+  const url = mmApi.getUserAvatarUrl(user.value.id, (user.value as any)?.last_picture_update)
+  uiStore.openAvatarPreview(url, displayName.value, user.value.id)
+}
 
 function close() {
   uiStore.closeMentionModal()
@@ -113,10 +132,14 @@ async function startChat() {
         </button>
       </div>
 
-      <!-- 4. USER FOUND: CONFIRMATION MODAL -->
-      <div v-else-if="modal.type === 'user' && user" class="flex flex-col items-center text-center">
-        <!-- Big Avatar -->
-        <div class="mb-3">
+      <!-- 4. FULL USER PROFILE -->
+      <div v-else-if="modal.type === 'user' && user" class="flex flex-col items-center">
+        <!-- Avatar with Enlarge Zoom Effect -->
+        <div
+          @click="enlargeAvatar"
+          class="relative group cursor-pointer mb-3 rounded-full"
+          title="برای بزرگ‌نمایی عکس کلیک کنید"
+        >
           <TelegramAvatar
             :userId="user.id"
             :name="displayName"
@@ -125,43 +148,95 @@ async function startChat() {
             :isOnline="isOnline"
             :lastPictureUpdate="(user as any)?.last_picture_update"
           />
+          <div class="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+            <ZoomIn class="w-6 h-6" />
+          </div>
         </div>
 
-        <!-- Name & Username -->
-        <h3 class="text-base font-bold truncate max-w-full">
+        <!-- Name & Status -->
+        <h3 class="text-base font-bold truncate max-w-full text-center">
           {{ displayName }}
         </h3>
-        <p class="text-xs text-[#3390ec] font-semibold mt-0.5">
-          @{{ user.username }}
+        <p class="text-xs mt-0.5 text-center">
+          <span v-if="isOnline" class="text-emerald-400 font-semibold">آنلاین</span>
+          <span v-else class="text-[#7f91a4]">آخرین بازدید به تازگی</span>
         </p>
 
-        <!-- Status / Email -->
-        <p class="text-[11px] text-[#7f91a4] mt-1">
-          <span v-if="isOnline" class="text-emerald-400 font-medium">آنلاین</span>
-          <span v-else-if="user.email">{{ user.email }}</span>
-          <span v-else>آفلاین</span>
-        </p>
+        <!-- Role Badge -->
+        <span
+          v-if="user.roles?.includes('system_admin')"
+          class="mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-[#3390ec]/20 text-[#3390ec] font-semibold flex items-center gap-1"
+        >
+          <Shield class="w-3 h-3" />
+          <span>ادمین سیستم</span>
+        </span>
 
-        <!-- Question Box -->
-        <div class="w-full my-4 p-3 bg-[#0e1621]/40 rounded-2xl border border-[#202b36] text-xs text-[#7f91a4]">
-          آیا می‌خواهید با این کاربر گفتگوی خصوصی را آغاز کنید؟
+        <!-- Profile Details List -->
+        <div class="w-full mt-4 space-y-2.5 bg-[#0e1621]/40 rounded-2xl p-3 border border-[#202b36]">
+          <!-- Username Row -->
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-[#7f91a4]">نام کاربری</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[#3390ec] font-semibold">@{{ user.username }}</span>
+              <button
+                @click="copyToClipboard(user.username, 'username')"
+                class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
+                title="کپی نام کاربری"
+              >
+                <Check v-if="copiedField === 'username'" class="w-3.5 h-3.5 text-emerald-400" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Position / Bio (if available) -->
+          <div v-if="user.position" class="flex items-center justify-between text-xs">
+            <span class="text-[#7f91a4]">سمت / بیو</span>
+            <span class="text-white font-medium truncate max-w-[180px]">{{ user.position }}</span>
+          </div>
+
+          <!-- Email (if available) -->
+          <div v-if="user.email" class="flex items-center justify-between text-xs">
+            <span class="text-[#7f91a4]">ایمیل</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-white/90 truncate max-w-[150px]">{{ user.email }}</span>
+              <button
+                @click="copyToClipboard(user.email, 'email')"
+                class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
+                title="کپی ایمیل"
+              >
+                <Check v-if="copiedField === 'email'" class="w-3.5 h-3.5 text-emerald-400" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Nickname (if available) -->
+          <div v-if="user.nickname" class="flex items-center justify-between text-xs">
+            <span class="text-[#7f91a4]">نام مستعار</span>
+            <span class="text-white font-medium">{{ user.nickname }}</span>
+          </div>
         </div>
 
         <!-- Buttons Row -->
-        <div class="flex items-center gap-2.5 w-full">
+        <div class="flex items-center gap-2 w-full mt-4">
+          <!-- Enlarge Photo Button -->
           <button
-            @click="close"
-            class="flex-1 py-2.5 px-4 rounded-2xl border border-[#202b36] hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-white transition-all"
+            @click="enlargeAvatar"
+            class="py-2.5 px-3 rounded-2xl border border-[#202b36] hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-white transition-all flex items-center justify-center gap-1.5 shrink-0"
+            title="بزرگ کردن عکس پروفایل"
           >
-            انصراف
+            <ZoomIn class="w-3.5 h-3.5" />
+            <span>بزرگ‌نمایی عکس</span>
           </button>
 
+          <!-- Start Chat Button -->
           <button
             @click="startChat"
             class="flex-1 py-2.5 px-4 rounded-2xl bg-[#3390ec] hover:bg-[#2481cc] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-[#3390ec]/30 transition-all active:scale-95"
           >
             <Send class="w-3.5 h-3.5" />
-            <span>شروع چت</span>
+            <span>ارسال پیام</span>
           </button>
         </div>
       </div>

@@ -21,6 +21,7 @@ import {
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { notificationService } from '../../services/notifications'
+import { mmApi } from '../../services/mattermostApi'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -30,6 +31,15 @@ const soundEnabled = ref(soundService.isEnabled())
 const isTestingServer = ref(false)
 const testResult = ref<{ ok: boolean; msg: string } | null>(null)
 const saveSuccess = ref(false)
+
+function enlargeMyAvatar() {
+  const u = authStore.currentUser
+  if (u) {
+    const url = mmApi.getUserAvatarUrl(u.id, (u as any)?.last_picture_update)
+    const name = u.first_name || u.username
+    uiStore.openAvatarPreview(url, name, u.id)
+  }
+}
 
 async function testConnection() {
   if (!serverUrlInput.value.trim()) return
@@ -102,12 +112,18 @@ function handleSave() {
       <div class="p-5 overflow-y-auto space-y-6 flex-1">
         <!-- Account Card -->
         <div class="flex items-center gap-4 p-4 rounded-xl bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5]">
-          <TelegramAvatar
-            :userId="authStore.currentUser?.id"
-            :name="authStore.currentUser?.first_name || authStore.currentUser?.username"
-            size="xl"
-            :lastPictureUpdate="(authStore.currentUser as any)?.last_picture_update"
-          />
+          <div
+            @click="enlargeMyAvatar"
+            class="cursor-pointer hover:opacity-85 transition-opacity"
+            title="برای بزرگ‌نمایی عکس کلیک کنید"
+          >
+            <TelegramAvatar
+              :userId="authStore.currentUser?.id"
+              :name="authStore.currentUser?.first_name || authStore.currentUser?.username"
+              size="xl"
+              :lastPictureUpdate="(authStore.currentUser as any)?.last_picture_update"
+            />
+          </div>
           <div class="flex-1 min-w-0">
             <h3 class="text-sm font-bold text-white dark:text-white text-gray-900 truncate">
               {{ authStore.currentUser?.first_name || authStore.currentUser?.username }}
