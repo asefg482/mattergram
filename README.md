@@ -1,83 +1,85 @@
-# Mattergram — Telegram UI Client for Mattermost
+# Mattergram — Telegram Web Client for Mattermost
 
-یک کلاینت مدرن و کامل برای **Mattermost** که با **Vue 3**، **TypeScript**، **Pinia** و **Tailwind CSS** ساخته شده است و رابط کاربری و تجربه کاربری (UI/UX) آن دقیقاً مطابق با **Telegram Web** طراحی شده است.
-
----
-
-## 🌟 ویژگی‌ها (Features)
-
-- 🎨 **طراحی کاملاً شبیه به تلگرام (Telegram Web UI/UX)**:
-  - حباب‌های پیام ورودی و خروجی با استایل و دم تلگرام (`Tails`)
-  - تصویر زمینه اختصاصی چت تلگرام (`Telegram Wallpaper Doodle Pattern`)
-  - نمایش زمان پیام، وضعیت تیک‌های ارسال و خوانده شدن (`✓` و `✓✓`)
-  - تفکیک‌کننده‌های تاریخ وسط صفحه (Date Separators)
-  - نوار ابزار هاور تلگرام روی پیام‌ها برای واکنش سریع (Quick Reactions) و منوی عملیات (Reply, Edit, Delete, Copy)
-  - نوار پاسخ پیام (Reply Quote Preview) و ویرایش پیام (Edit Bar)
-  - پشتیبانی کامل از متن‌های فارسی و دوجهته (`dir="auto"`)
-  - قالب‌های **دارک مود** و **لایت مود** تلگرام با تغییر خودکار و دستی
-  - افکت‌های صوتی پیام تلگرام (صدای ارسال و دریافت پیام با Web Audio API)
-
-- 🔗 **پیکربندی داینامیک آدرس سرور (Configurable Base URL)**:
-  - امکان وارد کردن Base URL سرور Mattermost در صفحه ورود و بخش تنظیمات
-  - دکمه بررسی و تست اتصال زنده سرور (Test Connection)
-  - دور زدن کامل محدودیت‌های CORS بدون نیاز به تنظیمات خاص روی سرور از طریق پروکسی معکوس هوشمند داخلی Vite و Node
-
-- ⚡️ **ارتباط زنده با وب‌سوکت (Real-Time WebSocket Sync)**:
-  - دریافت لحظه‌ای پیام‌های جدید (`posted`)
-  - نمایش تایپ کردن کاربران در هدر چت و لیست چت‌ها (`user is typing...`)
-  - تغییرات وضعیت آنلاین/آفلاین/Away کاربران (`status_change`)
-  - واکنش‌ها و ایموجی‌ها به صورت زنده (`reaction_added`, `reaction_removed`)
-  - ویرایش و حذف لحظه‌ای پیام‌ها (`post_edited`, `post_deleted`)
-
-- 📁 **مدیریت فایل‌ها و رسانه‌ها (Files & Attachments)**:
-  - آپلود مستقیم فایل‌ها و اسناد به Mattermost
-  - پیش‌نمایش تصاویر با لایت‌باکس بزرگنمایی
-  - کارت نمایش فایل‌ها (PDF، داکیومنت‌ها) با نمایش حجم فایل و دکمه دانلود
-
-- 👥 **انواع چت و کانال**:
-  - کانال‌های عمومی (Public Channels)
-  - کانال‌های خصوصی (Private Groups)
-  - پیام‌های خصوصی (Direct Messages)
-  - **Saved Messages** (پیام‌های ذخیره شده تلگرام با آیکون بوکمارک اختصاصی)
-  - تب‌های پوشه‌ای تلگرام: All Chats, Channels, Direct Messages, Unread
-  - منوی کشویی سمت چپ (Drawer Menu) و پنل سمت راست اطلاعات چت و اعضا (Chat Info Drawer)
+A modern, high-performance web client for **Mattermost** built with **Vue 3**, **TypeScript**, **Pinia**, and **Tailwind CSS**. Its user interface and user experience (UI/UX) are designed to closely mirror **Telegram Web**.
 
 ---
 
-## ⚙️ پیکربندی متغیرهای محیطی (.env)
+## 🌟 Features
 
-قبل از اجرای پروژه، یک فایل `.env` بر اساس `.env.example` بسازید و آدرس سرور Mattermost خود را وارد کنید:
+- 🎨 **Authentic Telegram Web Experience**:
+  - Chat bubbles with Telegram-style speech tails (`outgoing` and `incoming`).
+  - Telegram chat wallpaper doodle pattern background.
+  - Message timestamps, delivery, and read receipts (`✓` sent, `✓✓` read).
+  - Sticky/centered date separators dividing chat history.
+  - Interactive hover actions toolbar for quick emoji reactions and message management (Reply, Edit, Delete, Copy).
+  - Quote reply preview bar and inline editing bar.
+  - Full bidirectional text and RTL support (`dir="auto"`).
+  - Dark Mode and Light Mode with manual and automatic system theme toggles.
+  - Telegram sound effects for incoming and outgoing messages powered by the Web Audio API.
+
+- 🔗 **Configurable Server Connection**:
+  - Dynamically configured via `MATTERMOST_BASE_URL` in `.env` or container runtime environment.
+  - Server latency and health test indicator ("Test Connection").
+  - Seamless CORS bypassing through an internal intelligent reverse proxy (Vite dev proxy and Node.js production proxy).
+
+- ⚡️ **Real-Time WebSocket Synchronization**:
+  - Instant live message delivery (`posted`).
+  - Real-time typing status in chat headers and conversation lists (`user is typing...`).
+  - User presence updates: online, away, dnd, offline (`status_change`).
+  - Live emoji reactions (`reaction_added`, `reaction_removed`).
+  - Immediate message edits and deletions (`post_edited`, `post_deleted`).
+
+- 📁 **Rich Media & File Attachments**:
+  - Direct file, document, and media uploads to Mattermost.
+  - Image lightbox preview with smooth zoom, pan, and navigation.
+  - Document cards with file type detection, size formatting, and one-click download.
+
+- 👥 **Comprehensive Channel & Messaging Support**:
+  - Public Channels, Private Groups, and Direct Messages.
+  - **Saved Messages** folder with dedicated bookmark styling.
+  - Telegram-style category tabs: *All Chats*, *Channels*, *Direct Messages*, *Unread*.
+  - Left navigation drawer menu and right-hand collapsible Chat Info drawer.
+
+---
+
+## ⚙️ Environment Configuration (.env)
+
+Before running the application, create a `.env` file from `.env.example` and set your Mattermost server URL:
 
 ```bash
 cp .env.example .env
 ```
 
-محتوای فایل `.env`:
+Contents of `.env`:
 ```env
 MATTERMOST_BASE_URL=https://your-mattermost-server.com
 ```
 
 ---
 
-## 🚀 نحوه راه‌اندازی و اجرا
+## 🚀 Getting Started
 
-### ۱. اجرای حالت توسعه (Development Mode)
+### 1. Development Mode
 ```bash
 npm install
 npm run dev
 ```
-برنامه روی آدرس `http://localhost:5173` باز می‌شود.
+The application will be available at `http://localhost:5173`.
 
-### ۲. ساخت و اجرای نسخه نهایی (Production Build)
+### 2. Production Build
 ```bash
 npm run build
 npm start
 ```
+Starts the production HTTP & WebSocket proxy server serving the compiled frontend bundle.
 
-### ۳. اجرا با داکر (Docker & Docker Compose)
+---
 
-#### روش ۱: اجرای مستقیم از GitHub Packages (بدون نیاز به بیلد محلی)
-ایمیج پروژه به صورت خودکار توسط گیت‌هاب اکشنز بیلد شده و در رجیستری GitHub Packages منتشر می‌شود:
+## 🐳 Docker & Docker Compose
+
+### Option 1: Run directly from GitHub Packages (Recommended)
+Pre-built container images are automatically published on every push to `master`:
+
 ```bash
 docker run -d \
   --name mattergram \
@@ -86,9 +88,10 @@ docker run -d \
   ghcr.io/asefg482/mattergram:latest
 ```
 
-#### روش ۲: بیلد و اجرای محلی داکر
+### Option 2: Build and run locally with Docker
 ```bash
 docker build -t mattergram .
+
 docker run -d \
   --name mattergram \
   -p 5173:5173 \
@@ -96,21 +99,32 @@ docker run -d \
   mattergram
 ```
 
-#### روش ۳: اجرا با Docker Compose
-پس از تنظیم آدرس سرور در فایل `.env`:
+### Option 3: Run with Docker Compose
+Configure your `.env` file, then run:
+
 ```bash
 docker compose up -d
 ```
-پروژه روی آدرس `http://localhost:5173` در دسترس خواهد بود.
+The service will be live at `http://localhost:5173`.
 
 ---
 
-## 📦 انتشار پکیج و یکپارچه‌سازی مداوم (GitHub Actions CI & Packages)
+## 📦 Continuous Integration & GitHub Packages
 
-یک پایپ‌لاین خودکار در مسیر `.github/workflows/build.yml` تعبیه شده است که با هر ارسال کد (`push`) به شاخه **`master`** یا ثبت Release Tag:
-1. وابستگی‌های پروژه را نصب و اعتبارسنجی می‌کند (`npm ci`).
-2. تایپ‌ها و فایل‌های باندل فرانت‌اند را بیلد می‌کند (`npm run build`).
-3. آرشیو فایل‌های خروجی بیلد را به عنوان Artifact پکیج در بخش Actions بارگذاری می‌کند.
-4. ایمیج کانتینر پروژه را بیلد کرده و به عنوان پکیج رسمی در **GitHub Packages (GHCR)** منتشر می‌کند (`ghcr.io/asefg482/mattergram:latest`).
+An automated GitHub Actions workflow is configured at [`.github/workflows/build.yml`](.github/workflows/build.yml). On every push to `master` or when releasing a new tag:
 
+1. **Dependency Verification**: Installs packages with clean caching (`npm ci`).
+2. **Type Checking & Bundling**: Compiles TypeScript and creates production Vite assets (`npm run build`).
+3. **Artifact Packaging**: Archives build assets (`mattergram-release.tar.gz`) as downloadable release artifacts.
+4. **Container Packaging**: Builds a multi-stage Docker image and publishes it to **GitHub Container Registry (GHCR)** at `ghcr.io/asefg482/mattergram:latest`.
 
+---
+
+## 🛠 Tech Stack
+
+- **Frontend Framework**: Vue 3 (Composition API, `<script setup>`)
+- **Language**: TypeScript
+- **State Management**: Pinia
+- **Styling**: Tailwind CSS & Lucide Icons
+- **HTTP & WebSocket Proxy**: Node.js, `http-proxy`, `ws`
+- **Containerization**: Docker (Alpine multi-stage), Docker Compose
