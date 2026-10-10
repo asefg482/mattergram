@@ -21,20 +21,39 @@ const props = withDefaults(
   }
 )
 
-const imageLoaded = ref(false)
-const imageError = ref(false)
+// Shared module-level avatar caches to prevent redundant requests across message list
+const failedAvatarUsers = new Set<string>()
+const loadedAvatarUsers = new Set<string>()
+
+const imageLoaded = ref(props.userId ? loadedAvatarUsers.has(props.userId) : false)
+const imageError = ref(props.userId ? failedAvatarUsers.has(props.userId) : false)
 
 const avatarUrl = computed(() => {
-  if (!props.userId || props.isSavedMessages) return ''
+  if (!props.userId || props.isSavedMessages || imageError.value) return ''
   return mmApi.getUserAvatarUrl(props.userId, props.lastPictureUpdate)
 })
 
-// Reset state when user changes
+function onImgLoad() {
+  imageLoaded.value = true
+  if (props.userId) loadedAvatarUsers.add(props.userId)
+}
+
+function onImgError() {
+  imageError.value = true
+  if (props.userId) failedAvatarUsers.add(props.userId)
+}
+
+// Reset state only when user changes or picture timestamp updates
 watch(
   () => [props.userId, props.lastPictureUpdate],
   () => {
-    imageLoaded.value = false
-    imageError.value = false
+    if (props.userId) {
+      imageLoaded.value = loadedAvatarUsers.has(props.userId)
+      imageError.value = failedAvatarUsers.has(props.userId)
+    } else {
+      imageLoaded.value = false
+      imageError.value = false
+    }
   }
 )
 
@@ -103,11 +122,12 @@ const bgGradient = computed(() => getAvatarGradient(props.userId || props.name |
         v-if="avatarUrl && !imageError"
         :src="avatarUrl"
         :alt="name || 'Avatar'"
-        @load="imageLoaded = true"
-        @error="imageError = true"
+        @load="onImgLoad"
+        @error="onImgError"
         class="absolute inset-0 w-full h-full object-cover z-10 transition-opacity duration-200"
         :class="imageLoaded ? 'opacity-100' : 'opacity-0'"
         loading="lazy"
+        decoding="async"
       />
     </div>
 

@@ -107,7 +107,26 @@ body {
 }
 
 .msg-pop-in {
+  will-change: transform, opacity;
   animation: tgPopIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* GPU Accelerated Smooth Scrolling */
+.tg-scroll-container {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+}
+
+/* Content Visibility Optimization for fast rendering and smooth scrolling */
+.tg-message-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 52px;
+}
+
+.tg-chat-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 64px;
 }
 
 /* Text direction auto */

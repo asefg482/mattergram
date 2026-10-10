@@ -139,7 +139,7 @@ function handleSelectChat(channelId: string) {
     <FolderTabs />
 
     <!-- Chat List -->
-    <div class="flex-1 overflow-y-auto divide-y divide-[#101921]/50 dark:divide-[#101921]/50 divide-[#dfe1e5]/50 relative">
+    <div class="flex-1 overflow-y-auto tg-scroll-container divide-y divide-[#101921]/50 dark:divide-[#101921]/50 divide-[#dfe1e5]/50 relative">
       <!-- Loading indicator -->
       <div v-if="chatStore.loadingChannels && chatStore.channels.length === 0" class="flex flex-col items-center justify-center h-48 text-[#7f91a4] gap-2">
         <Loader2 class="w-6 h-6 animate-spin text-[#3390ec]" />

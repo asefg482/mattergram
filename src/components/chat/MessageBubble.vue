@@ -43,12 +43,20 @@ const usersStore = useUsersStore()
 const uiStore = useUiStore()
 
 const showMenu = ref(false)
+const isHovered = ref(false)
 
 const myId = computed(() => authStore.currentUser?.id)
 const isOutgoing = computed(() => props.post.user_id === myId.value)
 
+// Only animate recently sent/received messages (within 4 seconds) to avoid batch animation jank
+const isRecent = computed(() => Date.now() - props.post.create_at < 4000)
+
 const sender = computed(() => usersStore.getUser(props.post.user_id))
 const senderName = computed(() => usersStore.getUserDisplayName(props.post.user_id))
+
+// Cached rendered markdown and formatted time
+const renderedMessage = computed(() => renderTelegramMarkdown(props.post.message))
+const formattedTime = computed(() => formatMessageTime(props.post.create_at))
 
 // Parent post if this is a reply
 const parentPost = computed(() => {
@@ -147,8 +155,10 @@ function openFile(file: MattermostFileInfo) {
 <template>
   <div
     :id="`msg-${post.id}`"
-    class="flex items-end gap-2 my-1 px-4 group relative transition-colors duration-300"
+    class="flex items-end gap-2 my-1 px-4 group relative transition-colors duration-150 tg-message-row"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Sender Avatar (Incoming only in groups) -->
@@ -163,9 +173,10 @@ function openFile(file: MattermostFileInfo) {
 
     <!-- Bubble Wrapper with Hover Action Bar -->
     <div class="relative max-w-[85%] md:max-w-[70%]">
-      <!-- Telegram Hover Action Bar (Pill) -->
+      <!-- Telegram Hover Action Bar (Rendered only on hover for massive DOM performance) -->
       <div
-        class="absolute -top-8 hidden group-hover:flex items-center gap-1 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2 py-1 rounded-full shadow-lg z-30 select-none animate-in fade-in duration-150"
+        v-if="isHovered"
+        class="absolute -top-8 flex items-center gap-1 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2 py-1 rounded-full shadow-lg z-30 select-none animate-in fade-in duration-100"
         :class="isOutgoing ? 'right-0' : 'left-0'"
       >
         <!-- Quick Emojis -->
@@ -221,11 +232,12 @@ function openFile(file: MattermostFileInfo) {
 
       <!-- Message Bubble -->
       <div
-        class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative msg-pop-in"
+        class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative"
         :class="[
           isOutgoing
             ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#eeffde] text-white dark:text-white text-[#111827] rounded-br-xs'
-            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs'
+            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs',
+          isRecent ? 'msg-pop-in' : ''
         ]"
       >
         <!-- Sender Name (Incoming Group Message) -->
@@ -304,7 +316,7 @@ function openFile(file: MattermostFileInfo) {
           v-if="post.message"
           class="text-xs sm:text-[13px] leading-relaxed break-words text-auto"
           dir="auto"
-          v-html="renderTelegramMarkdown(post.message)"
+          v-html="renderedMessage"
         ></div>
 
         <!-- Bubble Footer: Timestamp & Read Status -->
@@ -316,7 +328,7 @@ function openFile(file: MattermostFileInfo) {
           <Pin v-if="post.is_pinned" class="w-2.5 h-2.5 opacity-60" />
 
           <!-- Time -->
-          <span>{{ formatMessageTime(post.create_at) }}</span>
+          <span>{{ formattedTime }}</span>
 
           <!-- Telegram Read / Sent Ticks (Outgoing only) -->
           <div v-if="isOutgoing" class="flex items-center ml-0.5">

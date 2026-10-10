@@ -12,23 +12,40 @@ const TG_AVATAR_GRADIENTS = [
   ['#d077d8', '#a851bf'], // Purple
 ]
 
+const gradientCache = new Map<string, string>()
 export function getAvatarGradient(nameOrId: string = ''): string {
+  if (!nameOrId) return 'linear-gradient(135deg, #65aadd, #2481cc)'
+  const cached = gradientCache.get(nameOrId)
+  if (cached) return cached
+
   let hash = 0
   for (let i = 0; i < nameOrId.length; i++) {
     hash = nameOrId.charCodeAt(i) + ((hash << 5) - hash)
   }
   const index = Math.abs(hash) % TG_AVATAR_GRADIENTS.length
   const [c1, c2] = TG_AVATAR_GRADIENTS[index]
-  return `linear-gradient(135deg, ${c1}, ${c2})`
+  const result = `linear-gradient(135deg, ${c1}, ${c2})`
+  if (gradientCache.size > 500) gradientCache.clear()
+  gradientCache.set(nameOrId, result)
+  return result
 }
 
+const initialsCache = new Map<string, string>()
 export function getInitials(name: string = ''): string {
   if (!name) return '?'
+  const cached = initialsCache.get(name)
+  if (cached) return cached
+
+  let res = '?'
   const parts = name.trim().split(/\s+/)
   if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
+    res = (parts[0][0] + parts[1][0]).toUpperCase()
+  } else {
+    res = name.slice(0, 2).toUpperCase()
   }
-  return name.slice(0, 2).toUpperCase()
+  if (initialsCache.size > 500) initialsCache.clear()
+  initialsCache.set(name, res)
+  return res
 }
 
 export function formatChatListTime(timestamp: number): string {
@@ -46,9 +63,16 @@ export function formatChatListTime(timestamp: number): string {
   return format(date, 'dd/MM/yy')
 }
 
+const messageTimeCache = new Map<number, string>()
 export function formatMessageTime(timestamp: number): string {
   if (!timestamp) return ''
-  return format(new Date(timestamp), 'HH:mm')
+  const cached = messageTimeCache.get(timestamp)
+  if (cached) return cached
+
+  const res = format(new Date(timestamp), 'HH:mm')
+  if (messageTimeCache.size > 2000) messageTimeCache.clear()
+  messageTimeCache.set(timestamp, res)
+  return res
 }
 
 export function formatDateSeparator(timestamp: number): string {
@@ -68,9 +92,12 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-// Telegram-style basic markdown renderer
+// Telegram-style basic markdown renderer with high-performance cache
+const markdownCache = new Map<string, string>()
 export function renderTelegramMarkdown(text: string): string {
   if (!text) return ''
+  const cached = markdownCache.get(text)
+  if (cached !== undefined) return cached
 
   let escaped = text
     .replace(/&/g, '&amp;')
@@ -109,5 +136,7 @@ export function renderTelegramMarkdown(text: string): string {
   // Line breaks
   escaped = escaped.replace(/\n/g, '<br/>')
 
+  if (markdownCache.size > 2000) markdownCache.clear()
+  markdownCache.set(text, escaped)
   return escaped
 }

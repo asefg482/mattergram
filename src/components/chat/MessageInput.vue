@@ -93,6 +93,7 @@ watch(
 
 // Computed Candidates for Mention
 const mentionCandidates = computed(() => {
+  if (!showMentions.value) return []
   const currentUserId = authStore.currentUser?.id
   const userList = channelMembers.value.length > 0 ? channelMembers.value : Object.values(usersStore.users)
 
@@ -133,12 +134,17 @@ const mentionCandidates = computed(() => {
     .slice(0, 8)
 })
 
-// Auto resize textarea
+// Auto resize textarea with requestAnimationFrame to prevent synchronous layout thrashing
+let resizeRaf: number | null = null
 function autoResize() {
   const el = textareaRef.value
   if (!el) return
-  el.style.height = 'auto'
-  el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  if (resizeRaf) cancelAnimationFrame(resizeRaf)
+  resizeRaf = requestAnimationFrame(() => {
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+    resizeRaf = null
+  })
 }
 
 // Check mention trigger
@@ -471,7 +477,6 @@ function cancelEdit() {
           @keydown="handleKeydown"
           @input="handleInput"
           @click="checkMention"
-          @keyup="checkMention"
           rows="1"
           dir="auto"
           placeholder="Write a message..."

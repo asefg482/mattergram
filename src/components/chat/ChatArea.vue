@@ -74,12 +74,18 @@ function onMessageSent() {
   setTimeout(() => scrollToBottom(true), 100)
 }
 
-// Track scroll position
+// Track scroll position throttled with requestAnimationFrame to prevent scroll stutter
+let scrollRaf: number | null = null
 function handleScroll() {
-  if (!messagesContainer.value) return
-  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
-  const distanceToBottom = scrollHeight - scrollTop - clientHeight
-  showScrollBottom.value = distanceToBottom > 150
+  if (scrollRaf) return
+  scrollRaf = requestAnimationFrame(() => {
+    if (messagesContainer.value) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+      const distanceToBottom = scrollHeight - scrollTop - clientHeight
+      showScrollBottom.value = distanceToBottom > 150
+    }
+    scrollRaf = null
+  })
 }
 
 // Scroll on channel switch
@@ -158,7 +164,7 @@ onUnmounted(() => {
       <div
         ref="messagesContainer"
         @scroll="handleScroll"
-        class="flex-1 overflow-y-auto overflow-x-hidden p-2 tg-chat-bg relative"
+        class="flex-1 overflow-y-auto overflow-x-hidden p-2 tg-chat-bg tg-scroll-container relative"
       >
         <!-- Loading spinner -->
         <div v-if="chatStore.loadingPosts && posts.length === 0" class="flex items-center justify-center py-12">

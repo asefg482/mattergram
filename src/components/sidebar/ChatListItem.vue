@@ -87,7 +87,7 @@ const avatarBg = computed(() => {
 
 <template>
   <div
-    class="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none transition-colors relative group"
+    class="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none transition-colors relative group tg-chat-item"
     :class="[
       isActive
         ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#3390ec] text-white'
