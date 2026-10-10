@@ -17,9 +17,11 @@ const chatStore = useChatStore()
 const uiStore = useUiStore()
 
 const messagesContainer = ref<HTMLDivElement | null>(null)
+const messagesInnerRef = ref<HTMLDivElement | null>(null)
 const bottomAnchorRef = ref<HTMLDivElement | null>(null)
 const messageInputRef = ref<{ focus: () => void } | null>(null)
 const showScrollBottom = ref(false)
+const isChannelSwitching = ref(false)
 
 // Context Menu State
 const contextPost = ref<MattermostPost | null>(null)
@@ -46,7 +48,7 @@ function isDifferentDay(currTimestamp: number, prevTimestamp?: number): boolean 
   return d1 !== d2
 }
 
-// High-speed smooth scroll animator (160ms snappy Telegram curve)
+// High-speed smooth scroll animator (used only when user clicks floating down arrow button)
 let currentScrollAnimation: number | null = null
 
 function fastAnimateScroll(targetTop: number, duration = 160) {
@@ -66,7 +68,6 @@ function fastAnimateScroll(targetTop: number, duration = 160) {
   }
 
   const startTime = performance.now()
-  // Snappy quartic ease-out
   const easeOut = (t: number) => 1 - Math.pow(1 - t, 4)
 
   function frame(now: number) {
@@ -85,45 +86,87 @@ function fastAnimateScroll(targetTop: number, duration = 160) {
   currentScrollAnimation = requestAnimationFrame(frame)
 }
 
-// Fast scroll to bottom
-function scrollToBottom(smooth = false) {
+// Instant scroll to bottom without any visible scrolling motion
+function performInstantScrollToBottom() {
+  if (currentScrollAnimation) {
+    cancelAnimationFrame(currentScrollAnimation)
+    currentScrollAnimation = null
+  }
+  const el = messagesContainer.value
+  if (!el) return
+
+  el.scrollTop = el.scrollHeight
+  showScrollBottom.value = false
+}
+
+// Scheduled channel switch sequence that guarantees the chat opens already at the latest message
+function onChannelSwitch() {
+  isChannelSwitching.value = true
+  if (currentScrollAnimation) {
+    cancelAnimationFrame(currentScrollAnimation)
+    currentScrollAnimation = null
+  }
+  showScrollBottom.value = false
+
+  // Step 1: Immediate synchronous scroll
+  performInstantScrollToBottom()
+
+  // Step 2: Next tick when Vue updates DOM
   nextTick(() => {
+    performInstantScrollToBottom()
+
+    // Step 3: Frame 1 (layout measurement)
+    requestAnimationFrame(() => {
+      performInstantScrollToBottom()
+
+      // Step 4: Frame 2 (render pass)
+      requestAnimationFrame(() => {
+        performInstantScrollToBottom()
+        isChannelSwitching.value = false
+      })
+    })
+  })
+
+  // Safety settlement checks for late-loading dynamic elements
+  setTimeout(() => {
+    if (!showScrollBottom.value) {
+      performInstantScrollToBottom()
+    }
+  }, 60)
+
+  setTimeout(() => {
+    if (!showScrollBottom.value) {
+      performInstantScrollToBottom()
+    }
+  }, 180)
+}
+
+// Scroll to bottom (smooth only when user explicitly clicks down button)
+function scrollToBottom(smooth = false) {
+  if (smooth) {
     if (!messagesContainer.value) return
     const el = messagesContainer.value
     const target = el.scrollHeight - el.clientHeight
-
-    if (smooth) {
-      fastAnimateScroll(target, 160)
-    } else {
-      if (currentScrollAnimation) {
-        cancelAnimationFrame(currentScrollAnimation)
-        currentScrollAnimation = null
-      }
-      el.scrollTop = target + 10000
-    }
-
-    // Secondary settlement check without restarting smooth animations
-    setTimeout(() => {
-      if (messagesContainer.value && !showScrollBottom.value) {
-        const latestTarget = messagesContainer.value.scrollHeight - messagesContainer.value.clientHeight
-        if (Math.abs(messagesContainer.value.scrollTop - latestTarget) > 2) {
-          messagesContainer.value.scrollTop = latestTarget + 10000
-        }
-      }
-    }, 180)
-  })
+    fastAnimateScroll(target, 160)
+  } else {
+    performInstantScrollToBottom()
+  }
 }
 
 function onMessageSent() {
-  scrollToBottom(true)
+  performInstantScrollToBottom()
   nextTick(() => {
     messageInputRef.value?.focus()
   })
 }
 
-// Track scroll position throttled with requestAnimationFrame to prevent scroll stutter
+// Track scroll position throttled with requestAnimationFrame
 let scrollRaf: number | null = null
 function handleScroll() {
+  if (isChannelSwitching.value) {
+    showScrollBottom.value = false
+    return
+  }
   if (scrollRaf) return
   scrollRaf = requestAnimationFrame(() => {
     if (messagesContainer.value) {
@@ -156,55 +199,95 @@ function handleChatAreaClick(e: MouseEvent) {
   messageInputRef.value?.focus()
 }
 
-// Scroll and focus on channel switch
+// Scroll immediately on channel switch or when clicking active chat in sidebar
 watch(
-  () => chatStore.activeChannelId,
+  () => [chatStore.activeChannelId, chatStore.scrollToBottomTrigger],
   () => {
-    scrollToBottom(false)
+    onChannelSwitch()
     nextTick(() => {
       messageInputRef.value?.focus()
     })
   }
 )
 
-// Scroll when posts load or change
-watch(
-  () => [posts.value.length, posts.value[posts.value.length - 1]?.id],
-  () => {
-    const isNearBottom = !showScrollBottom.value
-    const lastPost = posts.value[posts.value.length - 1]
-    const isMine = lastPost && lastPost.user_id === authStore.currentUser?.id
-    if (isNearBottom || isMine) {
-      scrollToBottom(true)
-    }
-  }
-)
-
+// Scroll immediately when loading finished
 watch(
   () => chatStore.loadingPosts,
   (loading) => {
     if (!loading && posts.value.length > 0) {
-      scrollToBottom(false)
+      onChannelSwitch()
+    }
+  }
+)
+
+// Keep at bottom when posts change or when new messages arrive
+watch(
+  () => [posts.value.length, posts.value[posts.value.length - 1]?.id],
+  ([newLen, newLastId], [oldLen, oldLastId]) => {
+    if (isChannelSwitching.value) {
+      performInstantScrollToBottom()
+      return
+    }
+
+    const isNewMessage = newLen > (oldLen || 0) && newLastId !== oldLastId
+    if (isNewMessage) {
+      const lastPost = posts.value[posts.value.length - 1]
+      const isMine = lastPost && lastPost.user_id === authStore.currentUser?.id
+      const isAtBottom = !showScrollBottom.value
+
+      if (isMine || isAtBottom) {
+        performInstantScrollToBottom()
+      }
     }
   }
 )
 
 let resizeObserver: ResizeObserver | null = null
 
+function onMediaLoad() {
+  if (isChannelSwitching.value || !showScrollBottom.value) {
+    performInstantScrollToBottom()
+  }
+}
+
+// Watch messagesInnerRef so observer is attached when the message container mounts
+watch(
+  () => messagesInnerRef.value,
+  (newEl, oldEl) => {
+    if (oldEl && resizeObserver) {
+      resizeObserver.unobserve(oldEl)
+    }
+    if (newEl && resizeObserver) {
+      resizeObserver.observe(newEl)
+      performInstantScrollToBottom()
+    }
+  }
+)
+
 onMounted(() => {
-  if (messagesContainer.value && typeof ResizeObserver !== 'undefined') {
+  if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(() => {
-      if (!showScrollBottom.value) {
-        scrollToBottom(false)
+      if (isChannelSwitching.value || !showScrollBottom.value) {
+        performInstantScrollToBottom()
       }
     })
-    resizeObserver.observe(messagesContainer.value)
+    if (messagesInnerRef.value) {
+      resizeObserver.observe(messagesInnerRef.value)
+    }
   }
-  scrollToBottom(false)
+
+  if (messagesContainer.value) {
+    messagesContainer.value.addEventListener('load', onMediaLoad, true)
+  }
+
+  onChannelSwitch()
 })
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  if (messagesContainer.value) {
+    messagesContainer.value.removeEventListener('load', onMediaLoad, true)
+  }
 })
 </script>
 
@@ -236,7 +319,8 @@ onUnmounted(() => {
         ref="messagesContainer"
         @scroll="handleScroll"
         @click="handleChatAreaClick"
-        class="flex-1 overflow-y-auto overflow-x-hidden tg-chat-bg tg-scroll-container relative"
+        class="flex-1 overflow-y-auto overflow-x-hidden tg-chat-bg tg-scroll-container relative transition-opacity duration-75"
+        :class="{ 'opacity-0': isChannelSwitching }"
       >
         <!-- Loading spinner -->
         <div v-if="chatStore.loadingPosts && posts.length === 0" class="flex items-center justify-center py-12">
@@ -251,7 +335,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
-        <div v-else dir="ltr" class="w-full px-2 sm:px-4 pt-2 pb-6 flex flex-col">
+        <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-2 sm:px-4 pt-2 pb-6 flex flex-col">
           <template v-for="(post, index) in posts" :key="post.id">
             <!-- Date Divider -->
             <div

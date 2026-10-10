@@ -139,10 +139,9 @@ input, textarea, button, select {
   will-change: scroll-position;
 }
 
-/* Content Visibility Optimization for fast rendering and smooth scrolling */
+/* Fast message bubble rendering */
 .tg-message-row {
-  content-visibility: auto;
-  contain-intrinsic-size: 52px;
+  /* Stabilized real layout height for accurate scroll positioning */
 }
 
 .tg-chat-item {

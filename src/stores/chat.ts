@@ -15,6 +15,7 @@ export const useChatStore = defineStore('chat', () => {
 
   const channels = ref<MattermostChannel[]>([])
   const activeChannelId = ref<string | null>(null)
+  const scrollToBottomTrigger = ref(0)
   const posts = ref<Record<string, MattermostPost[]>>({})
   const loadingChannels = ref(false)
   const loadingPosts = ref(false)
@@ -182,9 +183,13 @@ export const useChatStore = defineStore('chat', () => {
 
   // Select Channel
   async function selectChannel(channelId: string) {
-    if (activeChannelId.value === channelId) return
+    if (activeChannelId.value === channelId) {
+      scrollToBottomTrigger.value++
+      return
+    }
     const prevChannelId = activeChannelId.value || ''
     activeChannelId.value = channelId
+    scrollToBottomTrigger.value++
 
     // Mark as read in Mattermost & local store
     unreadCounts.value[channelId] = 0
@@ -569,6 +574,7 @@ export const useChatStore = defineStore('chat', () => {
   return {
     channels,
     activeChannelId,
+    scrollToBottomTrigger,
     activeChannel,
     posts,
     currentPosts,
