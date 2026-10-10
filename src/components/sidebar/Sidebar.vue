@@ -8,7 +8,8 @@ import DrawerMenu from './DrawerMenu.vue'
 import NewChatModal from './NewChatModal.vue'
 import ChatContextMenu from './ChatContextMenu.vue'
 import type { MattermostChannel } from '../../types/mattermost'
-import { Menu, Search, X, Edit3, Loader2 } from 'lucide-vue-next'
+import { notificationService } from '../../services/notifications'
+import { Menu, Search, X, Edit3, Loader2, Bell } from 'lucide-vue-next'
 
 const chatStore = useChatStore()
 const uiStore = useUiStore()
@@ -24,6 +25,18 @@ function onChatContextMenu(e: MouseEvent, channel: MattermostChannel) {
   contextChannel.value = channel
   contextPos.value = { x: e.clientX, y: e.clientY }
   showChatContextMenu.value = true
+}
+
+const showNotificationBanner = ref(
+  notificationService.isSupported() && notificationService.getPermission() === 'default'
+)
+
+async function enableNotifications() {
+  const granted = await notificationService.requestPermission()
+  showNotificationBanner.value = false
+  if (granted) {
+    notificationService.setEnabled(true)
+  }
 }
 
 // Filter chats based on activeTab and searchQuery
@@ -91,6 +104,31 @@ function handleSelectChat(channelId: string) {
           v-if="uiStore.searchQuery"
           @click="uiStore.searchQuery = ''"
           class="absolute right-2.5 p-0.5 text-[#7f91a4] hover:text-white rounded-full"
+        >
+          <X class="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Telegram Notifications Permission Prompt Banner -->
+    <div
+      v-if="showNotificationBanner"
+      class="px-3 py-2 bg-[#2481cc]/15 border-b border-[#2481cc]/25 flex items-center justify-between text-xs animate-in fade-in duration-200"
+    >
+      <div class="flex items-center gap-2 text-[#3390ec] min-w-0 pr-2">
+        <Bell class="w-4 h-4 shrink-0" />
+        <span class="truncate font-medium">Enable desktop notifications</span>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button
+          @click="enableNotifications"
+          class="px-2.5 py-1 bg-[#2481cc] hover:bg-[#1d73b8] text-white font-semibold rounded-lg text-[11px] transition-colors"
+        >
+          Enable
+        </button>
+        <button
+          @click="showNotificationBanner = false"
+          class="p-1 text-[#7f91a4] hover:text-white rounded-lg transition-colors"
         >
           <X class="w-3.5 h-3.5" />
         </button>

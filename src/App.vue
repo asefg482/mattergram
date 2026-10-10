@@ -9,6 +9,7 @@ import Sidebar from './components/sidebar/Sidebar.vue'
 import ChatArea from './components/chat/ChatArea.vue'
 import ChatInfoDrawer from './components/info/ChatInfoDrawer.vue'
 import SettingsModal from './components/settings/SettingsModal.vue'
+import NotificationToast from './components/common/NotificationToast.vue'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -64,6 +65,9 @@ watch(
 
       <!-- Settings Modal -->
       <SettingsModal />
+
+      <!-- In-App Notification Toast Banner -->
+      <NotificationToast />
     </div>
   </div>
 </template>

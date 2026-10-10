@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { mmApi } from '../services/mattermostApi'
 import { mmWs } from '../services/mattermostWs'
 import { soundService } from '../services/sounds'
+import { notificationService } from '../services/notifications'
 import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
 import type { MattermostChannel, MattermostPost, MattermostReaction } from '../types/mattermost'
@@ -157,6 +158,8 @@ export const useChatStore = defineStore('chat', () => {
 
     // Mark as read in Mattermost & local store
     unreadCounts.value[channelId] = 0
+    const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+    notificationService.updateDocumentTitle(totalUnread)
     try {
       await mmApi.viewChannel(channelId, prevChannelId)
     } catch {}
@@ -366,18 +369,40 @@ export const useChatStore = defineStore('chat', () => {
         sortChannels()
       }
 
-      // Notification sound & unread badge
-      if (channelId !== activeChannelId.value) {
-        unreadCounts.value[channelId] = (unreadCounts.value[channelId] || 0) + 1
-        if (post.user_id !== myId) {
-          soundService.playReceived()
-        }
-      } else {
-        // In active channel: play sound only if other user sent it
-        if (post.user_id !== myId) {
-          soundService.playReceived()
-        }
+      // Notifications, sound & unread tracking
+      const isMe = post.user_id === myId
+      const isMuted = ch?.is_muted || false
+      const isCurrentChat = channelId === activeChannelId.value
+
+      if (!isMe && !isMuted) {
+        // Play Telegram received sound
+        soundService.playReceived()
+
+        // Trigger web notification & toast
+        const authorName = usersStore.getUserDisplayName(post.user_id)
+        const channelTitle = ch?.display_name || ch?.name || 'Chat'
+        const isDirect = ch?.type === 'D'
+
+        notificationService.notifyMessage({
+          channelId,
+          userId: post.user_id,
+          authorName,
+          channelTitle,
+          message: post.message,
+          isDirect,
+          isCurrentChat,
+          isMuted,
+          onOpenChat: () => {
+            selectChannel(channelId)
+          }
+        })
       }
+
+      if (!isCurrentChat) {
+        unreadCounts.value[channelId] = (unreadCounts.value[channelId] || 0) + 1
+      }
+      const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+      notificationService.updateDocumentTitle(totalUnread)
     } catch (err) {
       console.error('Error handling ws posted:', err)
     }

@@ -15,9 +15,12 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  Bell,
+  BellOff
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import { notificationService } from '../../services/notifications'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -51,9 +54,27 @@ async function testConnection() {
   }
 }
 
+const notifEnabled = ref(notificationService.isEnabled())
+const notifPermission = ref(notificationService.getPermission())
+
+async function toggleNotifications() {
+  if (notifPermission.value !== 'granted') {
+    const granted = await notificationService.requestPermission()
+    notifPermission.value = notificationService.getPermission()
+    if (granted) {
+      notifEnabled.value = true
+      notificationService.setEnabled(true)
+    }
+  } else {
+    notifEnabled.value = !notifEnabled.value
+    notificationService.setEnabled(notifEnabled.value)
+  }
+}
+
 function handleSave() {
   authStore.setBaseUrl(serverUrlInput.value)
   soundService.setEnabled(soundEnabled.value)
+  notificationService.setEnabled(notifEnabled.value)
   saveSuccess.value = true
   setTimeout(() => {
     saveSuccess.value = false
@@ -172,6 +193,32 @@ function handleSave() {
               <div
                 class="w-4 h-4 rounded-full bg-white transition-transform"
                 :class="soundEnabled ? 'translate-x-4' : 'translate-x-0'"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Web Notifications -->
+          <div
+            @click="toggleNotifications"
+            class="flex items-center justify-between p-3 rounded-xl hover:bg-[#202b36] cursor-pointer transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <Bell v-if="notifEnabled && notifPermission === 'granted'" class="w-5 h-5 text-[#3390ec]" />
+              <BellOff v-else class="w-5 h-5 text-[#7f91a4]" />
+              <div>
+                <span class="text-xs font-medium text-white dark:text-white text-gray-800 block">Web Notifications</span>
+                <span class="text-[10px] text-[#7f91a4] block">
+                  {{ notifPermission === 'granted' ? (notifEnabled ? 'Enabled' : 'Disabled') : 'Click to enable desktop alerts' }}
+                </span>
+              </div>
+            </div>
+            <div
+              class="w-9 h-5 rounded-full p-0.5 transition-colors"
+              :class="notifEnabled && notifPermission === 'granted' ? 'bg-[#3390ec]' : 'bg-gray-500'"
+            >
+              <div
+                class="w-4 h-4 rounded-full bg-white transition-transform"
+                :class="notifEnabled && notifPermission === 'granted' ? 'translate-x-4' : 'translate-x-0'"
               ></div>
             </div>
           </div>
