@@ -6,6 +6,7 @@ import { useUsersStore } from '../../stores/users'
 import { getAvatarGradient, getInitials } from '../../utils/formatters'
 import type { MattermostUser } from '../../types/mattermost'
 import { X, Search, UserPlus, Hash, Lock, Loader2 } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const props = defineProps<{
   isOpen: boolean
@@ -141,12 +142,12 @@ async function handleCreateChannel() {
             class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <!-- Avatar -->
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-xs shadow"
-              :style="{ background: getAvatarGradient(user.id) }"
-            >
-              {{ getInitials(usersStore.getUserDisplayName(user)) }}
-            </div>
+            <TelegramAvatar
+              :userId="user.id"
+              :name="usersStore.getUserDisplayName(user)"
+              size="md"
+              :lastPictureUpdate="(user as any)?.last_picture_update"
+            />
             <!-- Details -->
             <div class="flex-1 min-w-0">
               <h4 class="text-sm font-semibold text-white truncate">

@@ -41,11 +41,30 @@ const server = http.createServer((req, res) => {
   // 1. Proxy Mattermost API
   if (req.url && (req.url.startsWith('/api/v4') || req.url.startsWith('/mattermost-proxy/api/v4'))) {
     let targetServer = (req.headers['x-mattermost-server'] as string) || 'https://m.dornicadev.ir'
-    targetServer = targetServer.trim().replace(/\/+$/, '')
 
     if (req.url.startsWith('/mattermost-proxy/')) {
       req.url = req.url.replace('/mattermost-proxy', '')
     }
+
+    try {
+      const parsed = new URL(req.url, 'http://localhost')
+      const queryToken = parsed.searchParams.get('mattergram_token')
+      const queryServer = parsed.searchParams.get('mattergram_server')
+
+      if (queryToken) {
+        req.headers['authorization'] = `Bearer ${queryToken}`
+        parsed.searchParams.delete('mattergram_token')
+      }
+      if (queryServer) {
+        targetServer = queryServer
+        parsed.searchParams.delete('mattergram_server')
+      }
+      req.url = parsed.pathname + (parsed.search ? parsed.search : '')
+    } catch (e) {
+      // ignore
+    }
+
+    targetServer = targetServer.trim().replace(/\/+$/, '')
 
     let targetUrl
     try {

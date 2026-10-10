@@ -324,20 +324,36 @@ class MattermostApiService {
   }
 
   public getFileDownloadUrl(fileId: string): string {
-    return `/api/v4/files/${fileId}`
+    const params = new URLSearchParams()
+    if (this.token) params.set('mattergram_token', this.token)
+    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    return `/api/v4/files/${fileId}${qs}`
   }
 
   public getFilePreviewUrl(fileId: string): string {
-    return `/api/v4/files/${fileId}/preview`
+    const params = new URLSearchParams()
+    if (this.token) params.set('mattergram_token', this.token)
+    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    return `/api/v4/files/${fileId}/preview${qs}`
   }
 
   public getFileThumbnailUrl(fileId: string): string {
-    return `/api/v4/files/${fileId}/thumbnail`
+    const params = new URLSearchParams()
+    if (this.token) params.set('mattergram_token', this.token)
+    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    return `/api/v4/files/${fileId}/thumbnail${qs}`
   }
 
   public getUserAvatarUrl(userId: string, lastPictureUpdate?: number): string {
-    const query = lastPictureUpdate ? `?_=${lastPictureUpdate}` : ''
-    return `/api/v4/users/${userId}/image${query}`
+    const params = new URLSearchParams()
+    if (this.token) params.set('mattergram_token', this.token)
+    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
+    if (lastPictureUpdate) params.set('_', String(lastPictureUpdate))
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    return `/api/v4/users/${userId}/image${qs}`
   }
 }
 

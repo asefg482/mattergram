@@ -6,6 +6,7 @@ import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
 import { getAvatarGradient, getInitials, formatChatListTime } from '../../utils/formatters'
 import { Bookmark, Hash, Lock, Pin, VolumeX, FileText } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const props = defineProps<{
   channel: MattermostChannel
@@ -89,32 +90,16 @@ const avatarBg = computed(() => {
         : 'hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'
     ]"
   >
-    <!-- Avatar Container with Online Indicator -->
-    <div class="relative shrink-0">
-      <!-- Saved messages icon avatar -->
-      <div
-        v-if="isSavedMessages"
-        class="w-12 h-12 rounded-full bg-[#2481cc] flex items-center justify-center text-white shadow"
-      >
-        <Bookmark class="w-6 h-6 fill-white" />
-      </div>
-
-      <!-- Regular Chat Avatar -->
-      <div
-        v-else
-        class="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow overflow-hidden"
-        :style="{ background: avatarBg }"
-      >
-        <span>{{ avatarInitials }}</span>
-      </div>
-
-      <!-- Telegram Online Dot (Green) -->
-      <div
-        v-if="isOnline && !isSavedMessages"
-        class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#4fae60] border-2"
-        :class="isActive ? 'border-[#2b5278]' : 'border-[#17212b] dark:border-[#17212b] border-white'"
-      ></div>
-    </div>
+    <!-- Avatar with Online Indicator -->
+    <TelegramAvatar
+      :userId="channel.dm_user?.id"
+      :name="channel.display_name || channel.name"
+      size="lg"
+      :isSavedMessages="isSavedMessages"
+      :showOnlineDot="true"
+      :isOnline="isOnline"
+      :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+    />
 
     <!-- Chat Details -->
     <div class="flex-1 min-w-0 pr-1">

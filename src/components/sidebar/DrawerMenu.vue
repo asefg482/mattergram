@@ -15,6 +15,7 @@ import {
   Layers,
   X
 } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const props = defineProps<{
   isOpen: boolean
@@ -98,12 +99,12 @@ function handleLogout() {
         <div class="p-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#3390ec] text-white">
           <div class="flex items-center justify-between mb-3">
             <!-- User Avatar -->
-            <div
-              class="w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg shadow-md border-2 border-white/20"
-              :style="{ background: avatarGradient }"
-            >
-              {{ getInitials(userFullName) }}
-            </div>
+            <TelegramAvatar
+              :userId="user?.id"
+              :name="userFullName"
+              size="xl"
+              :lastPictureUpdate="(user as any)?.last_picture_update"
+            />
 
             <!-- Close Button -->
             <button

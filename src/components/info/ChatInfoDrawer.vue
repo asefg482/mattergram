@@ -19,6 +19,7 @@ import {
   Shield,
   FileText
 } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -94,19 +95,14 @@ function handleMemberClick(user: MattermostUser) {
       <!-- Profile Card -->
       <div class="p-6 flex flex-col items-center text-center border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5]">
         <!-- Avatar -->
-        <div
-          v-if="isSavedMessages"
-          class="w-20 h-20 rounded-full bg-[#2481cc] flex items-center justify-center text-white mb-3 shadow-lg"
-        >
-          <Bookmark class="w-10 h-10 fill-white" />
-        </div>
-        <div
-          v-else
-          class="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3 shadow-lg"
-          :style="{ background: getAvatarGradient(channel.id) }"
-        >
-          {{ getInitials(channel.display_name || channel.name) }}
-        </div>
+        <TelegramAvatar
+          :userId="channel.dm_user?.id"
+          :name="channel.display_name || channel.name"
+          size="2xl"
+          :isSavedMessages="isSavedMessages"
+          :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+          class="mb-3"
+        />
 
         <!-- Title -->
         <h2 class="text-base font-bold text-white dark:text-white text-gray-900 truncate max-w-full">
@@ -177,18 +173,14 @@ function handleMemberClick(user: MattermostUser) {
             class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] cursor-pointer transition-colors"
           >
             <!-- Member Avatar -->
-            <div class="relative shrink-0">
-              <div
-                class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold"
-                :style="{ background: getAvatarGradient(user.id) }"
-              >
-                {{ getInitials(usersStore.getUserDisplayName(user)) }}
-              </div>
-              <div
-                v-if="usersStore.getStatus(user.id) === 'online'"
-                class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#4fae60] border-2 border-[#17212b]"
-              ></div>
-            </div>
+            <TelegramAvatar
+              :userId="user.id"
+              :name="usersStore.getUserDisplayName(user)"
+              size="sm"
+              :showOnlineDot="true"
+              :isOnline="usersStore.getStatus(user.id) === 'online'"
+              :lastPictureUpdate="(user as any)?.last_picture_update"
+            />
 
             <!-- Member Info -->
             <div class="flex-1 min-w-0">

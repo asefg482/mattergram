@@ -18,6 +18,7 @@ import {
   Trash2,
   Check
 } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -96,27 +97,17 @@ function toggleMute() {
       <!-- Avatar (Clickable to open profile / info) -->
       <div
         @click="toggleRightSidebar"
-        class="relative shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+        class="cursor-pointer hover:opacity-90 transition-opacity shrink-0"
       >
-        <div
-          v-if="isSavedMessages"
-          class="w-10 h-10 rounded-full bg-[#2481cc] flex items-center justify-center text-white shadow"
-        >
-          <Bookmark class="w-5 h-5 fill-white" />
-        </div>
-        <div
-          v-else
-          class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-xs shadow"
-          :style="{ background: getAvatarGradient(channel.id) }"
-        >
-          {{ getInitials(channel.display_name || channel.name) }}
-        </div>
-
-        <!-- Online Green Dot -->
-        <div
-          v-if="isOnline && !isSavedMessages"
-          class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#4fae60] border-2 border-[#17212b] dark:border-[#17212b] border-white"
-        ></div>
+        <TelegramAvatar
+          :userId="channel.dm_user?.id"
+          :name="channel.display_name || channel.name"
+          size="md"
+          :isSavedMessages="isSavedMessages"
+          :showOnlineDot="true"
+          :isOnline="isOnline"
+          :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+        />
       </div>
 
       <!-- Title & Subtitle -->

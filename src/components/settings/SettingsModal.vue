@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -80,12 +81,12 @@ function handleSave() {
       <div class="p-5 overflow-y-auto space-y-6 flex-1">
         <!-- Account Card -->
         <div class="flex items-center gap-4 p-4 rounded-xl bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5]">
-          <div
-            class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shadow"
-            :style="{ background: getAvatarGradient(authStore.currentUser?.id || '') }"
-          >
-            {{ getInitials(authStore.currentUser?.username) }}
-          </div>
+          <TelegramAvatar
+            :userId="authStore.currentUser?.id"
+            :name="authStore.currentUser?.first_name || authStore.currentUser?.username"
+            size="xl"
+            :lastPictureUpdate="(authStore.currentUser as any)?.last_picture_update"
+          />
           <div class="flex-1 min-w-0">
             <h3 class="text-sm font-bold text-white dark:text-white text-gray-900 truncate">
               {{ authStore.currentUser?.first_name || authStore.currentUser?.username }}

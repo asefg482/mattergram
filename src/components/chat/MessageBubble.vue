@@ -25,6 +25,7 @@ import {
   Download,
   MoreHorizontal
 } from 'lucide-vue-next'
+import TelegramAvatar from '../common/TelegramAvatar.vue'
 
 const props = defineProps<{
   post: MattermostPost
@@ -146,13 +147,14 @@ function openFile(file: MattermostFileInfo) {
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
   >
     <!-- Sender Avatar (Incoming only in groups) -->
-    <div
+    <TelegramAvatar
       v-if="!isOutgoing"
-      class="w-8 h-8 rounded-full shrink-0 mb-0.5 overflow-hidden shadow-xs flex items-center justify-center text-white text-[10px] font-bold"
-      :style="{ background: getAvatarGradient(post.user_id) }"
-    >
-      {{ getInitials(senderName) }}
-    </div>
+      :userId="post.user_id"
+      :name="senderName"
+      size="sm"
+      :lastPictureUpdate="(sender as any)?.last_picture_update"
+      class="mb-0.5"
+    />
 
     <!-- Bubble Wrapper with Hover Action Bar -->
     <div class="relative max-w-[85%] md:max-w-[70%]">
