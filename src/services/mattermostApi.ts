@@ -174,6 +174,20 @@ class MattermostApiService {
     })
   }
 
+  public async searchChannels(teamId: string, term: string): Promise<MattermostChannel[]> {
+    return this.request<MattermostChannel[]>(`/api/v4/teams/${teamId}/channels/search`, {
+      method: 'POST',
+      body: JSON.stringify({ term })
+    })
+  }
+
+  public async joinChannel(channelId: string, userId: string): Promise<any> {
+    return this.request(`/api/v4/channels/${channelId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId })
+    })
+  }
+
   public async getChannelMembers(channelId: string, page = 0, perPage = 100): Promise<any[]> {
     return this.request<any[]>(`/api/v4/channels/${channelId}/members?page=${page}&per_page=${perPage}`)
   }

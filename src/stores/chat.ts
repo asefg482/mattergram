@@ -344,6 +344,23 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // Open or Join Channel
+  async function openOrJoinChannel(channel: MattermostChannel) {
+    const myId = authStore.currentUser?.id
+    const existing = channels.value.find((c) => c.id === channel.id)
+    if (!existing) {
+      if (myId && channel.type !== 'D') {
+        try {
+          await mmApi.joinChannel(channel.id, myId)
+        } catch (e) {
+          console.warn('Error joining channel, proceeding to select:', e)
+        }
+      }
+      channels.value.unshift(channel)
+    }
+    await selectChannel(channel.id)
+  }
+
   // --- WebSocket Event Handlers ---
   function handleWsPosted(event: any) {
     try {
@@ -533,6 +550,7 @@ export const useChatStore = defineStore('chat', () => {
     toggleReaction,
     sendTyping,
     openDirectMessage,
+    openOrJoinChannel,
     createNewChannel,
     togglePinChannel,
     toggleMuteChannel,
