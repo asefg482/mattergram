@@ -400,7 +400,10 @@ export const useChatStore = defineStore('chat', () => {
         })
       }
 
-      if (!isCurrentChat) {
+      // Unread tracking: Never count user's own messages sent from other clients!
+      if (isMe) {
+        unreadCounts.value[channelId] = 0
+      } else if (!isCurrentChat) {
         unreadCounts.value[channelId] = (unreadCounts.value[channelId] || 0) + 1
       }
       const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
@@ -500,9 +503,12 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function handleWsChannelViewed(event: any) {
-    const channelId = event.broadcast?.channel_id
-    if (channelId && event.broadcast?.user_id === authStore.currentUser?.id) {
+    const channelId = event.broadcast?.channel_id || event.data?.channel_id
+    const userId = event.broadcast?.user_id || event.data?.user_id
+    if (channelId && userId === authStore.currentUser?.id) {
       unreadCounts.value[channelId] = 0
+      const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+      notificationService.updateDocumentTitle(totalUnread)
     }
   }
 
