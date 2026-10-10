@@ -18,7 +18,8 @@ import {
   Loader2,
   Edit2,
   Reply,
-  AtSign
+  AtSign,
+  Video
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -439,7 +440,11 @@ function cancelEdit() {
         :key="file.id"
         class="flex items-center gap-2 bg-[#242f3d] border border-[#202b36] px-2.5 py-1 rounded-xl text-xs text-white"
       >
-        <FileText class="w-3.5 h-3.5 text-[#3390ec]" />
+        <Video
+          v-if="file.mime_type?.startsWith('video/') || ['mp4', 'webm', 'mov', 'mkv'].includes(file.extension?.toLowerCase())"
+          class="w-3.5 h-3.5 text-rose-400"
+        />
+        <FileText v-else class="w-3.5 h-3.5 text-[#3390ec]" />
         <span class="truncate max-w-[140px]">{{ file.name }}</span>
         <button @click="removeAttachedFile(file.id)" class="text-[#7f91a4] hover:text-red-400">
           <X class="w-3.5 h-3.5" />

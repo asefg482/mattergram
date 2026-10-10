@@ -11,10 +11,19 @@ const file = computed(() => uiStore.previewFile)
 
 const isImage = computed(() => {
   if (!file.value) return false
+  const ext = file.value.extension?.toLowerCase() || ''
+  const mime = file.value.mime_type?.toLowerCase() || ''
   return (
-    file.value.mime_type.startsWith('image/') ||
-    ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(file.value.extension?.toLowerCase())
+    mime.startsWith('image/') ||
+    ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)
   )
+})
+
+const isVideo = computed(() => {
+  if (!file.value) return false
+  const ext = file.value.extension?.toLowerCase() || ''
+  const mime = file.value.mime_type?.toLowerCase() || ''
+  return mime.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'ogg'].includes(ext)
 })
 
 const fileUrl = computed(() => {
@@ -43,8 +52,21 @@ const fileUrl = computed(() => {
         v-if="isImage"
         :src="fileUrl"
         :alt="file.name"
-        class="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+        class="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl"
       />
+
+      <!-- Video Preview Player -->
+      <div v-else-if="isVideo" class="max-w-4xl w-full max-h-[75vh] flex flex-col items-center justify-center">
+        <video
+          :src="fileUrl"
+          controls
+          autoplay
+          playsinline
+          class="max-w-full max-h-[75vh] rounded-2xl shadow-2xl bg-black"
+        >
+          Your browser does not support the video tag.
+        </video>
+      </div>
 
       <!-- Generic Document Preview Card -->
       <div
