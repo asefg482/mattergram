@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
 import { useUiStore } from '../../stores/ui'
+import { showAlert } from '../../stores/alert'
 import { mmApi } from '../../services/mattermostApi'
 import EmojiPicker from './EmojiPicker.vue'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
@@ -376,7 +377,10 @@ async function handleSend() {
     messageText.value = currentText
     attachedFiles.value = filesCopy
     autoResize()
-    alert(err?.message || 'Failed to send message. Please try again.')
+    showAlert(err?.message || 'Failed to send message. Please try again.', {
+      title: 'Message Not Sent',
+      type: 'error'
+    })
   } finally {
     isSending.value = false
   }
@@ -406,7 +410,10 @@ async function uploadFileList(files: FileList | File[] | ArrayLike<File>) {
     }
   } catch (err: any) {
     console.error('File upload failed:', err)
-    alert(err?.message || 'Failed to upload file')
+    showAlert(err?.message || 'Failed to upload file', {
+      title: 'Upload Failed',
+      type: 'error'
+    })
   } finally {
     isUploading.value = false
     if (fileInputRef.value) {

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
 import { useTodoStore } from '../../stores/todo'
+import { showConfirm } from '../../stores/alert'
 import type { MattermostPost } from '../../types/mattermost'
 import {
   Reply,
@@ -182,9 +183,16 @@ async function handleTogglePin() {
 
 async function handleDelete() {
   if (props.post) {
+    const postToDelete = props.post
     emit('close')
-    if (confirm('Are you sure you want to delete this message?')) {
-      await chatStore.deleteMessage(props.post.id)
+    const confirmed = await showConfirm('Are you sure you want to delete this message?', {
+      title: 'Delete Message',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDestructive: true
+    })
+    if (confirmed) {
+      await chatStore.deleteMessage(postToDelete.id)
     }
   }
 }

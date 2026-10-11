@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTodoStore, type TodoItem, type TodoPriority } from '../../stores/todo'
 import type { MattermostUser } from '../../types/mattermost'
 import { useUiStore } from '../../stores/ui'
+import { showConfirm } from '../../stores/alert'
 import { useUsersStore } from '../../stores/users'
 import { useChatStore } from '../../stores/chat'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
@@ -108,6 +109,18 @@ function cancelEdit() {
 
 function closeModal() {
   uiStore.showTodoModal = false
+}
+
+async function handleDeleteTodo(id: string) {
+  const confirmed = await showConfirm('Are you sure you want to delete this task?', {
+    title: 'Delete Task',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    isDestructive: true
+  })
+  if (confirmed) {
+    todoStore.deleteTodo(id)
+  }
 }
 
 function handleJumpToPost(item: TodoItem) {
@@ -482,7 +495,7 @@ onUnmounted(() => {
                     <Edit2 class="w-3.5 h-3.5" />
                   </button>
                   <button
-                    @click="todoStore.deleteTodo(item.id)"
+                    @click="handleDeleteTodo(item.id)"
                     class="p-1 text-[#7f91a4] hover:text-red-400 rounded-md transition-colors cursor-pointer"
                     title="Delete task"
                   >

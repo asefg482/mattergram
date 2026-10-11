@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useTodoStore, type TodoItem } from '../../stores/todo'
 import { useUiStore } from '../../stores/ui'
+import { showConfirm } from '../../stores/alert'
 import {
   CheckSquare,
   Check,
@@ -29,6 +30,18 @@ function handleQuickAdd() {
 
 function openFullModal() {
   uiStore.showTodoModal = true
+}
+
+async function handleDeleteTodo(id: string) {
+  const confirmed = await showConfirm('Are you sure you want to delete this task?', {
+    title: 'Delete Task',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    isDestructive: true
+  })
+  if (confirmed) {
+    todoStore.deleteTodo(id)
+  }
 }
 
 function handleJumpToPost(item: TodoItem) {
@@ -183,7 +196,7 @@ function handleJumpToPost(item: TodoItem) {
         </div>
 
         <button
-          @click="todoStore.deleteTodo(item.id)"
+          @click="handleDeleteTodo(item.id)"
           class="opacity-0 group-hover:opacity-100 p-1 text-[#7f91a4] hover:text-red-400 transition-opacity shrink-0 cursor-pointer"
           title="Delete task"
         >

@@ -5,6 +5,7 @@ import MentionUserModal from './components/chat/MentionUserModal.vue'
 import AvatarPreviewModal from './components/common/AvatarPreviewModal.vue'
 import PwaInstallPrompt from './components/common/PwaInstallPrompt.vue'
 import TodoModal from './components/todo/TodoModal.vue'
+import CustomAlertModal from './components/common/CustomAlertModal.vue'
 import { notificationService } from './services/notifications'
 import { useAuthStore } from './stores/auth'
 import { Loader2 } from 'lucide-vue-next'
@@ -35,6 +36,9 @@ onMounted(() => {
 
     <!-- Global Mattermost TODO List Modal -->
     <TodoModal />
+
+    <!-- Global Custom Alert & Confirm Modal -->
+    <CustomAlertModal />
 
     <!-- Global Logout Loading Overlay -->
     <transition
