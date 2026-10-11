@@ -88,7 +88,7 @@ export const useUiStore = defineStore('ui', () => {
   // Initial DOM apply
   applyThemeToDom()
 
-  const activeTab = ref<'all' | 'channels' | 'direct' | 'unread' | 'todo'>('all')
+  const activeTab = ref<'all' | 'channels' | 'direct' | 'unread'>('all')
   const searchQuery = ref('')
   const replyingTo = ref<MattermostPost | null>(null)
   const editingPost = ref<MattermostPost | null>(null)
