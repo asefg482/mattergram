@@ -132,10 +132,10 @@ const groupedReactions = computed<ReactionGroup[]>(() => {
   for (const r of reactions) {
     const rawName = r.emoji_name
     const char = toEmojiChar(rawName)
-    const normalizedKey = toEmojiName(rawName)
+    const key = char
 
-    if (!map[normalizedKey]) {
-      map[normalizedKey] = {
+    if (!map[key]) {
+      map[key] = {
         emoji: char,
         rawName,
         count: 0,
@@ -144,14 +144,18 @@ const groupedReactions = computed<ReactionGroup[]>(() => {
         users: []
       }
     }
-    map[normalizedKey].count++
-    map[normalizedKey].userIds.push(r.user_id)
-    const isMe = r.user_id === myId.value
-    if (isMe) {
-      map[normalizedKey].hasReacted = true
+
+    // Deduplicate: each user can only react once per emoji
+    if (!map[key].userIds.includes(r.user_id)) {
+      map[key].count++
+      map[key].userIds.push(r.user_id)
+      const isMe = r.user_id === myId.value
+      if (isMe) {
+        map[key].hasReacted = true
+      }
+      const name = isMe ? 'You' : usersStore.getUserDisplayName(r.user_id)
+      map[key].users.push({ id: r.user_id, name, isMe })
     }
-    const name = isMe ? 'You' : usersStore.getUserDisplayName(r.user_id)
-    map[normalizedKey].users.push({ id: r.user_id, name, isMe })
   }
 
   return Object.values(map)

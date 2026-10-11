@@ -131,16 +131,28 @@ async function loadData() {
   isLoadingReactions.value = true
   reactionsList.value = []
   try {
+    function dedupeReactions(list: MattermostReaction[]): MattermostReaction[] {
+      const map = new Map<string, MattermostReaction>()
+      for (const r of list) {
+        const key = `${r.user_id}_${toEmojiChar(r.emoji_name)}`
+        if (!map.has(key)) {
+          map.set(key, r)
+        }
+      }
+      return Array.from(map.values())
+    }
+
     // Start with cached reactions
     const cached = props.post.metadata?.reactions || []
-    reactionsList.value = [...cached]
+    reactionsList.value = dedupeReactions(cached)
 
     // Fetch fresh reactions from Mattermost API
     const fresh = await mmApi.getPostReactions(props.post.id)
     if (Array.isArray(fresh)) {
-      reactionsList.value = fresh
+      const deduped = dedupeReactions(fresh)
+      reactionsList.value = deduped
       if (props.post.metadata) {
-        props.post.metadata.reactions = fresh
+        props.post.metadata.reactions = deduped
       }
     }
 

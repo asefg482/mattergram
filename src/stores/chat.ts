@@ -458,7 +458,7 @@ export const useChatStore = defineStore('chat', () => {
     recordReactionUsage(emojiChar)
 
     const existing = post.metadata?.reactions?.find(
-      (r) => r.user_id === myId && (r.emoji_name === normalizedName || r.emoji_name === emojiName)
+      (r) => r.user_id === myId && (toEmojiChar(r.emoji_name) === emojiChar || r.emoji_name === normalizedName || r.emoji_name === emojiName)
     )
 
     try {
@@ -466,19 +466,21 @@ export const useChatStore = defineStore('chat', () => {
         await mmApi.removeReaction(myId, post.id, existing.emoji_name)
         if (post.metadata?.reactions) {
           post.metadata.reactions = post.metadata.reactions.filter(
-            (r) => !(r.user_id === myId && (r.emoji_name === normalizedName || r.emoji_name === emojiName))
+            (r) => !(r.user_id === myId && (toEmojiChar(r.emoji_name) === emojiChar || r.emoji_name === existing.emoji_name || r.emoji_name === normalizedName))
           )
         }
       } else {
         await mmApi.addReaction(myId, post.id, normalizedName)
         if (!post.metadata) post.metadata = {}
         if (!post.metadata.reactions) post.metadata.reactions = []
-        post.metadata.reactions.push({
-          user_id: myId,
-          post_id: post.id,
-          emoji_name: normalizedName,
-          create_at: Date.now()
-        })
+        if (!post.metadata.reactions.some((r) => r.user_id === myId && toEmojiChar(r.emoji_name) === emojiChar)) {
+          post.metadata.reactions.push({
+            user_id: myId,
+            post_id: post.id,
+            emoji_name: normalizedName,
+            create_at: Date.now()
+          })
+        }
       }
     } catch (err) {
       console.error('Failed to toggle reaction:', err)
@@ -665,14 +667,20 @@ export const useChatStore = defineStore('chat', () => {
   function handleWsReactionAdded(event: any) {
     try {
       const reaction: MattermostReaction = JSON.parse(event.data.reaction)
-      const postList = posts.value[event.broadcast?.channel_id || '']
+      const channelId = event.broadcast?.channel_id || activeChannelId.value || ''
+      const postList = posts.value[channelId] || (activeChannelId.value ? posts.value[activeChannelId.value] : null)
       if (postList) {
         const post = postList.find((p) => p.id === reaction.post_id)
         if (post) {
           if (!post.metadata) post.metadata = {}
           if (!post.metadata.reactions) post.metadata.reactions = []
-          if (!post.metadata.reactions.some((r) => r.user_id === reaction.user_id && r.emoji_name === reaction.emoji_name)) {
+          const reactChar = toEmojiChar(reaction.emoji_name)
+          const alreadyExists = post.metadata.reactions.some(
+            (r) => r.user_id === reaction.user_id && (toEmojiChar(r.emoji_name) === reactChar || r.emoji_name === reaction.emoji_name)
+          )
+          if (!alreadyExists) {
             post.metadata.reactions.push(reaction)
+            usersStore.fetchUsers([reaction.user_id])
           }
         }
       }
@@ -684,12 +692,14 @@ export const useChatStore = defineStore('chat', () => {
   function handleWsReactionRemoved(event: any) {
     try {
       const reaction: MattermostReaction = JSON.parse(event.data.reaction)
-      const postList = posts.value[event.broadcast?.channel_id || '']
+      const channelId = event.broadcast?.channel_id || activeChannelId.value || ''
+      const postList = posts.value[channelId] || (activeChannelId.value ? posts.value[activeChannelId.value] : null)
       if (postList) {
         const post = postList.find((p) => p.id === reaction.post_id)
         if (post && post.metadata?.reactions) {
+          const reactChar = toEmojiChar(reaction.emoji_name)
           post.metadata.reactions = post.metadata.reactions.filter(
-            (r) => !(r.user_id === reaction.user_id && r.emoji_name === reaction.emoji_name)
+            (r) => !(r.user_id === reaction.user_id && (toEmojiChar(r.emoji_name) === reactChar || r.emoji_name === reaction.emoji_name))
           )
         }
       }
