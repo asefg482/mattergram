@@ -110,9 +110,15 @@ onUnmounted(() => {
 
 watch(
   () => props.channelId,
-  () => {
+  (newId) => {
     loadChannelMembers()
     showMentions.value = false
+    if (uiStore.replyingTo && uiStore.replyingTo.channel_id !== newId) {
+      uiStore.setReplyingTo(null)
+    }
+    if (uiStore.editingPost && uiStore.editingPost.channel_id !== newId) {
+      uiStore.setEditingPost(null)
+    }
     focusInput()
   },
   { immediate: true }
@@ -276,7 +282,9 @@ function handleInput() {
   const now = Date.now()
   if (now - lastTypingTime > 3000) {
     lastTypingTime = now
-    chatStore.sendTyping(props.channelId, uiStore.replyingTo?.id || '')
+    const replyPost = uiStore.replyingTo && uiStore.replyingTo.channel_id === props.channelId ? uiStore.replyingTo : null
+    const typingRootId = replyPost ? (replyPost.root_id || replyPost.id) : ''
+    chatStore.sendTyping(props.channelId, typingRootId.startsWith('temp_') ? '' : typingRootId)
   }
 }
 
@@ -313,7 +321,21 @@ async function handleSend() {
   // Normal Send: Capture inputs then immediately clear for instant snappy response
   const currentText = text
   const currentFileIds = fileIds
-  const rootId = uiStore.replyingTo?.id || ''
+  let rootId = ''
+  if (uiStore.replyingTo && uiStore.replyingTo.channel_id === props.channelId) {
+    // In Mattermost, replies cannot be nested: root_id MUST always be the root post of the thread
+    rootId = uiStore.replyingTo.root_id || uiStore.replyingTo.id || ''
+    if (rootId.startsWith('temp_')) {
+      const realPost = (chatStore.posts[props.channelId] || []).find(
+        (p) => p.pending_post_id === rootId || p.id === rootId
+      )
+      if (realPost && !realPost.id.startsWith('temp_')) {
+        rootId = realPost.root_id || realPost.id
+      } else {
+        rootId = ''
+      }
+    }
+  }
 
   messageText.value = ''
   attachedFiles.value = []

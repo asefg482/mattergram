@@ -398,8 +398,40 @@ export const useChatStore = defineStore('chat', () => {
       sortChannels()
     }
 
+    // Sanitize rootId: Mattermost does not allow nested replies or invalid IDs
+    let targetRootId = rootId
+    if (targetRootId) {
+      if (targetRootId.startsWith('temp_')) {
+        const realPost = (posts.value[channelId] || []).find(
+          (p) => p.pending_post_id === targetRootId || p.id === targetRootId
+        )
+        if (realPost && !realPost.id.startsWith('temp_')) {
+          targetRootId = realPost.root_id || realPost.id
+        } else {
+          targetRootId = ''
+        }
+      } else {
+        const parent = (posts.value[channelId] || []).find((p) => p.id === targetRootId)
+        if (parent && parent.root_id) {
+          targetRootId = parent.root_id
+        }
+      }
+    }
+
     try {
-      const newPost = await mmApi.createPost(channelId, message, rootId, fileIds)
+      let newPost: MattermostPost
+      try {
+        newPost = await mmApi.createPost(channelId, message, targetRootId, fileIds)
+      } catch (postErr: any) {
+        const msg = String(postErr?.message || '').toLowerCase()
+        const errId = String(postErr?.id || '').toLowerCase()
+        if (targetRootId && (msg.includes('root_id') || msg.includes('rootid') || errId.includes('root_id'))) {
+          console.warn('Root post was invalid or deleted on server, fallback to top-level post:', postErr)
+          newPost = await mmApi.createPost(channelId, message, '', fileIds)
+        } else {
+          throw postErr
+        }
+      }
       newPost.pending_post_id = tempId
       animatedPostIds.value.add(newPost.id)
       setTimeout(() => {
