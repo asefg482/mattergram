@@ -185,6 +185,7 @@ onUnmounted(() => {
   <div
     v-if="uiStore.showTodoModal"
     class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150 select-none"
+    style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
     @click.self="closeModal"
   >
     <div

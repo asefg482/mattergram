@@ -189,7 +189,10 @@ async function handleRegister() {
 </script>
 
 <template>
-  <div class="min-h-screen w-full flex items-center justify-center p-4 bg-[#e4ecf2] dark:bg-[#0e1621] relative overflow-hidden transition-colors">
+  <div
+    class="min-h-screen w-full flex items-center justify-center px-4 bg-[#e4ecf2] dark:bg-[#0e1621] relative overflow-hidden transition-colors"
+    style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+  >
     <!-- Telegram Background Pattern -->
     <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#2481cc_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
 

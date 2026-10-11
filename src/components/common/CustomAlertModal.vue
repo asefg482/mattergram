@@ -44,6 +44,7 @@ onUnmounted(() => {
     <div
       v-if="alertStore.isOpen"
       class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-none"
+      style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
       @click.self="alertStore.handleCancel"
     >
       <transition

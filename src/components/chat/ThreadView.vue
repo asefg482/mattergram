@@ -270,7 +270,10 @@ onUnmounted(() => {
     </div>
 
     <!-- Thread View Header -->
-    <div class="h-14 border-b border-[#dfe1e5] dark:border-[#101921] px-4 flex items-center justify-between bg-white dark:bg-[#17212b] z-20 shrink-0 shadow-xs">
+    <div
+      class="border-b border-[#dfe1e5] dark:border-[#101921] px-4 flex items-center justify-between bg-white dark:bg-[#17212b] z-20 shrink-0 shadow-xs"
+      style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
+    >
       <div class="flex items-center gap-3 min-w-0">
         <!-- Back Button to Main Channel -->
         <button

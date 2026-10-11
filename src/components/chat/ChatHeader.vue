@@ -98,7 +98,8 @@ function toggleMute() {
 <template>
   <div
     v-if="channel"
-    class="h-14 px-4 bg-white dark:bg-[#17212b] border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between z-10 shrink-0 select-none"
+    class="px-4 bg-white dark:bg-[#17212b] border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between z-10 shrink-0 select-none"
+    style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
   >
     <!-- Left: Mobile Back Button & Chat Info Header -->
     <div class="flex items-center gap-3 min-w-0">

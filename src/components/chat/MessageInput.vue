@@ -535,7 +535,10 @@ defineExpose({
 </script>
 
 <template>
-  <div class="px-3 pb-3 pt-1 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#101921] relative z-20">
+  <div
+    class="px-3 pt-1 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#101921] relative z-20"
+    style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
+  >
     <!-- Telegram Mention Autocomplete Popover -->
     <div
       v-if="showMentions && mentionCandidates.length > 0"

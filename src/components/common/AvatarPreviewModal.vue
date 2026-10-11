@@ -162,6 +162,7 @@ onUnmounted(() => {
   <div
     v-if="preview.isOpen"
     class="fixed inset-0 z-50 flex flex-col items-center justify-between p-2 sm:p-4 bg-black/90 backdrop-blur-md select-none animate-in fade-in duration-200"
+    style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));"
     @click.self="handleClose"
   >
     <!-- Top Action Bar -->

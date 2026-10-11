@@ -370,7 +370,10 @@ const backdropStyle = computed(() => {
         :style="isDragging || isSnapping ? drawerStyle : {}"
       >
         <!-- User Profile Header -->
-        <div class="p-4 bg-[#3390ec] dark:bg-[#242f3d] text-white">
+        <div
+          class="px-4 pb-4 bg-[#3390ec] dark:bg-[#242f3d] text-white"
+          style="padding-top: calc(1rem + env(safe-area-inset-top, 0px));"
+        >
           <div class="flex items-center justify-between mb-3">
             <!-- User Avatar -->
             <div
@@ -533,7 +536,10 @@ const backdropStyle = computed(() => {
         </div>
 
         <!-- Footer Info -->
-        <div class="p-3 border-t border-[#dfe1e5] dark:border-[#101921] text-[11px] text-[#7f91a4] text-center space-y-1">
+        <div
+          class="p-3 border-t border-[#dfe1e5] dark:border-[#101921] text-[11px] text-[#7f91a4] text-center space-y-1"
+          style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
+        >
           <p class="font-medium text-[#111827] dark:text-[#f5f5f5]">Mattergram for Mattermost</p>
           <p class="text-[10px] text-[#7f91a4] flex items-center justify-center gap-1">
             <span>Developed By Asef Ghorbani for Dornica</span>

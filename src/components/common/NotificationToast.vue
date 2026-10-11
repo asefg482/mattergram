@@ -29,7 +29,10 @@ function handleDismiss(e: MouseEvent, toastId: string) {
 </script>
 
 <template>
-  <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none select-none px-2 sm:px-0">
+  <div
+    class="fixed right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none select-none px-2 sm:px-0"
+    style="top: calc(1rem + env(safe-area-inset-top, 0px));"
+  >
     <transition-group
       enter-active-class="transition duration-300 ease-out transform"
       enter-from-class="-translate-y-4 opacity-0 scale-95"

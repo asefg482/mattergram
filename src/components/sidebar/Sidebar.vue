@@ -321,7 +321,10 @@ function finishSearch() {
     class="w-full md:w-80 lg:w-96 h-full flex flex-col bg-white dark:bg-[#17212b] border-r border-[#dfe1e5] dark:border-[#101921] relative shrink-0 select-none z-20"
   >
     <!-- Top Header: Hamburger & Search Input -->
-    <div class="p-2.5 flex items-center gap-2 bg-white dark:bg-[#17212b]">
+    <div
+      class="p-2.5 flex items-center gap-2 bg-white dark:bg-[#17212b]"
+      style="padding-top: calc(0.625rem + env(safe-area-inset-top, 0px));"
+    >
       <!-- Hamburger Menu Button -->
       <button
         @click="isDrawerOpen = true"

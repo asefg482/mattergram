@@ -106,7 +106,10 @@ function handleMemberClick(user: MattermostUser) {
     class="w-full md:w-80 lg:w-88 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none z-30 animate-in slide-in-from-right duration-200"
   >
     <!-- Header -->
-    <div class="h-14 px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between">
+    <div
+      class="px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between"
+      style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
+    >
       <h3 class="text-sm font-bold text-gray-900 dark:text-white">
         {{ isDirect ? 'User Info' : 'Channel Info' }}
       </h3>

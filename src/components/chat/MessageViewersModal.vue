@@ -294,7 +294,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="isOpen && post" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 select-none">
+  <div
+    v-if="isOpen && post"
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 select-none"
+    style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
+  >
     <!-- Backdrop -->
     <div
       class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"

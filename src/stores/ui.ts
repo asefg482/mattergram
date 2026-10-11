@@ -44,6 +44,11 @@ export const useUiStore = defineStore('ui', () => {
       document.documentElement.classList.remove('dark')
       document.documentElement.classList.add('light')
     }
+
+    const metaTheme = document.querySelector('meta[name="theme-color"]')
+    if (metaTheme) {
+      metaTheme.setAttribute('content', active.mode === 'dark' ? '#17212b' : '#ffffff')
+    }
   }
 
   function setThemePreset(id: string) {
