@@ -81,10 +81,12 @@ input, textarea, button, select {
   position: absolute;
   bottom: 0;
   left: -7px;
-  width: 14px;
+  width: 8px;
   height: 14px;
-  background: inherit;
-  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+  background-color: var(--tg-bubble-in, #182533);
+  background-color: inherit;
+  clip-path: polygon(100% 0, 85% 35%, 60% 65%, 30% 85%, 0 100%, 100% 100%);
+  pointer-events: none;
 }
 
 .bubble-out-tail::after {
@@ -92,10 +94,12 @@ input, textarea, button, select {
   position: absolute;
   bottom: 0;
   right: -7px;
-  width: 14px;
+  width: 8px;
   height: 14px;
-  background: inherit;
-  clip-path: polygon(0 0, 0 100%, 100% 100%);
+  background-color: var(--tg-bubble-out, #2b5278);
+  background-color: inherit;
+  clip-path: polygon(0 0, 15% 35%, 40% 65%, 70% 85%, 100% 100%, 0 100%);
+  pointer-events: none;
 }
 
 /* Fluid Telegram Message Entry Animations */

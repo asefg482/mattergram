@@ -509,8 +509,8 @@ function handleSenderClick() {
         class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative"
         :class="[
           isOutgoing
-            ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#eeffde] text-white dark:text-white text-[#111827] rounded-br-xs bubble-out-tail mr-1'
-            : 'bg-[#182533] dark:bg-[#182533] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-bl-xs bubble-in-tail ml-1'
+            ? 'bg-[#eeffde] dark:bg-[#2b5278] text-[#111827] dark:text-white rounded-br-none bubble-out-tail mr-1.5'
+            : 'bg-white dark:bg-[#182533] text-[#111827] dark:text-[#f5f5f5] rounded-bl-none bubble-in-tail ml-1.5'
         ]"
       >
         <!-- Sender Name (Incoming Group Message) -->
