@@ -19,19 +19,14 @@ import {
   Check,
   CheckCheck,
   Clock,
-  Reply,
-  Edit2,
-  Trash2,
   Pin,
-  Copy,
   FileText,
   Download,
-  MoreHorizontal,
   SmilePlus
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import ReactionPicker from './ReactionPicker.vue'
-import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
+import { recordReactionUsage } from '../../utils/reactions'
 
 const props = defineProps<{
   post: MattermostPost
@@ -50,24 +45,6 @@ const usersStore = useUsersStore()
 const uiStore = useUiStore()
 
 const showMenu = ref(false)
-const isHovered = ref(false)
-let hoverTimer: any = null
-
-function onMouseEnter() {
-  if (hoverTimer) {
-    clearTimeout(hoverTimer)
-    hoverTimer = null
-  }
-  isHovered.value = true
-}
-
-function onMouseLeave() {
-  if (hoverTimer) clearTimeout(hoverTimer)
-  hoverTimer = setTimeout(() => {
-    isHovered.value = false
-    hoverTimer = null
-  }, 250)
-}
 
 const myId = computed(() => authStore.currentUser?.id)
 const isOutgoing = computed(() => props.post.user_id === myId.value)
@@ -111,8 +88,6 @@ const parentSenderName = computed(() => {
   return usersStore.getUserDisplayName(parentPost.value.user_id)
 })
 
-// Frequently used reaction emojis (top 6 from user's history)
-const quickEmojis = computed(() => frequentReactions.value.slice(0, 6))
 const showReactionPicker = ref(false)
 
 export interface ReactionGroup {
@@ -288,25 +263,6 @@ function handleBubbleTouchEnd(e: TouchEvent) {
   }
 }
 
-function handleEdit() {
-  uiStore.setEditingPost(props.post)
-  showMenu.value = false
-}
-
-async function handleDelete() {
-  showMenu.value = false
-  if (confirm('Are you sure you want to delete this message?')) {
-    await chatStore.deleteMessage(props.post.id)
-  }
-}
-
-function handleCopy() {
-  if (props.post.message) {
-    navigator.clipboard.writeText(props.post.message)
-  }
-  showMenu.value = false
-}
-
 function handleQuickReaction(emoji: string) {
   recordReactionUsage(emoji)
   chatStore.toggleReaction(props.post, emoji)
@@ -395,8 +351,6 @@ function handleSenderClick() {
     :id="`msg-${post.id}`"
     class="flex items-end gap-1.5 my-1 px-0.5 sm:px-1 group relative transition-colors duration-150 tg-message-row w-full rounded-lg hover:z-20"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Sender Avatar (Incoming only in groups) -->
@@ -410,7 +364,7 @@ function handleSenderClick() {
       @click.stop="handleSenderClick"
     />
 
-    <!-- Bubble Wrapper with Hover Action Bar -->
+    <!-- Bubble Wrapper -->
     <div
       class="relative max-w-[88%] sm:max-w-[82%] md:max-w-[75%]"
       :class="[
@@ -418,78 +372,7 @@ function handleSenderClick() {
           ? (isOutgoing ? 'tg-msg-send-glide' : 'tg-msg-receive-glide')
           : ''
       ]"
-      @mouseenter="onMouseEnter"
-      @mouseleave="onMouseLeave"
     >
-      <!-- Telegram Hover Action Bar (With invisible bridge and debounce grace period) -->
-      <div
-        v-if="isHovered"
-        @mouseenter="onMouseEnter"
-        @mouseleave="onMouseLeave"
-        class="absolute -top-7 flex items-center gap-1 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2 py-1 rounded-full shadow-lg z-30 select-none animate-in fade-in duration-100 after:absolute after:inset-x-0 after:-bottom-3 after:h-3 after:content-['']"
-        :class="isOutgoing ? 'right-0' : 'left-0'"
-      >
-        <!-- Quick Emojis -->
-        <button
-          v-for="emoji in quickEmojis"
-          :key="emoji"
-          @click="handleQuickReaction(emoji)"
-          :title="`React with ${emoji}`"
-          class="hover:scale-125 text-xs transition-transform px-0.5 cursor-pointer"
-        >
-          {{ emoji }}
-        </button>
-
-        <!-- More Reactions / Choose from All Emojis -->
-        <button
-          @click.stop="showReactionPicker = !showReactionPicker"
-          class="p-0.5 text-[#7f91a4] hover:text-[#3390ec] hover:scale-115 transition-all rounded-full cursor-pointer"
-          title="Choose reaction..."
-        >
-          <SmilePlus class="w-3.5 h-3.5" />
-        </button>
-
-        <div class="w-px h-3 bg-gray-600/40 mx-0.5"></div>
-
-        <!-- Reply Button -->
-        <button
-          @click="handleReply"
-          class="p-0.5 text-[#7f91a4] hover:text-[#3390ec] transition-colors"
-          title="Reply"
-        >
-          <Reply class="w-3.5 h-3.5" />
-        </button>
-
-        <!-- Edit Button (Outgoing only) -->
-        <button
-          v-if="isOutgoing"
-          @click="handleEdit"
-          class="p-0.5 text-[#7f91a4] hover:text-[#3390ec] transition-colors"
-          title="Edit"
-        >
-          <Edit2 class="w-3.5 h-3.5" />
-        </button>
-
-        <!-- Copy -->
-        <button
-          @click="handleCopy"
-          class="p-0.5 text-[#7f91a4] hover:text-[#3390ec] transition-colors"
-          title="Copy text"
-        >
-          <Copy class="w-3.5 h-3.5" />
-        </button>
-
-        <!-- Delete Button (Outgoing only) -->
-        <button
-          v-if="isOutgoing"
-          @click="handleDelete"
-          class="p-0.5 text-[#7f91a4] hover:text-red-400 transition-colors"
-          title="Delete"
-        >
-          <Trash2 class="w-3.5 h-3.5" />
-        </button>
-      </div>
-
       <!-- Full Reaction Picker Popover -->
       <div
         v-if="showReactionPicker"
