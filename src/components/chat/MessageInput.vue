@@ -91,16 +91,29 @@ async function loadChannelMembers() {
   }
 }
 
-function focusInput() {
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  return (
+    window.innerWidth < 768 ||
+    window.matchMedia('(max-width: 767px)').matches ||
+    ('ontouchstart' in window && window.innerWidth < 1024)
+  )
+}
+
+function focusInput(force = false) {
+  if (!force && isMobileDevice()) {
+    return
+  }
   nextTick(() => {
-    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal) {
+    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal && !uiStore.showTodoModal && !uiStore.showSettingsModal) {
       if (document.activeElement?.tagName !== 'INPUT') {
         textareaRef.value?.focus()
       }
     }
   })
   setTimeout(() => {
-    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal) {
+    if (!force && isMobileDevice()) return
+    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal && !uiStore.showTodoModal && !uiStore.showSettingsModal) {
       if (document.activeElement !== textareaRef.value && document.activeElement?.tagName !== 'INPUT') {
         textareaRef.value?.focus()
       }
@@ -109,7 +122,9 @@ function focusInput() {
 }
 
 onMounted(() => {
-  focusInput()
+  if (!isMobileDevice()) {
+    focusInput()
+  }
   window.addEventListener('paste', handleGlobalPaste)
 })
 
@@ -128,7 +143,9 @@ watch(
     if (uiStore.editingPost && uiStore.editingPost.channel_id !== newId) {
       uiStore.setEditingPost(null)
     }
-    focusInput()
+    if (!isMobileDevice()) {
+      focusInput()
+    }
   },
   { immediate: true }
 )
@@ -137,7 +154,7 @@ watch(
   () => uiStore.replyingTo,
   (val) => {
     if (val) {
-      focusInput()
+      focusInput(true)
     }
   }
 )

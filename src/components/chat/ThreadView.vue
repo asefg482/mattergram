@@ -184,9 +184,11 @@ function scrollToNewMessageBottom(duration = 220) {
 
 function onThreadMessageSent() {
   scrollToNewMessageBottom(220)
-  nextTick(() => {
-    messageInputRef.value?.focus()
-  })
+  if (window.innerWidth >= 768) {
+    nextTick(() => {
+      messageInputRef.value?.focus()
+    })
+  }
 }
 
 // Track scroll position
@@ -228,7 +230,9 @@ onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
   nextTick(() => {
     performInstantScrollToBottom()
-    messageInputRef.value?.focus()
+    if (window.innerWidth >= 768) {
+      messageInputRef.value?.focus()
+    }
   })
 })
 

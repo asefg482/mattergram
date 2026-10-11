@@ -268,9 +268,11 @@ function scrollToNewMessageBottom(duration = 220) {
 
 function onMessageSent() {
   scrollToNewMessageBottom(220)
-  nextTick(() => {
-    messageInputRef.value?.focus()
-  })
+  if (window.innerWidth >= 768) {
+    nextTick(() => {
+      messageInputRef.value?.focus()
+    })
+  }
 }
 
 // Track scroll position throttled with requestAnimationFrame
@@ -295,6 +297,8 @@ function handleScroll() {
 }
 
 function handleChatAreaClick(e: MouseEvent) {
+  if (window.innerWidth < 768) return
+
   const target = e.target as HTMLElement
   if (
     target.closest('button') ||
@@ -320,9 +324,11 @@ watch(
   () => [chatStore.activeChannelId, chatStore.scrollToBottomTrigger],
   () => {
     onChannelSwitch()
-    nextTick(() => {
-      messageInputRef.value?.focus()
-    })
+    if (window.innerWidth >= 768) {
+      nextTick(() => {
+        messageInputRef.value?.focus()
+      })
+    }
   }
 )
 
