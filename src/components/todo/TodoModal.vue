@@ -7,6 +7,9 @@ import { showConfirm } from '../../stores/alert'
 import { useUsersStore } from '../../stores/users'
 import { useChatStore } from '../../stores/chat'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import TodoPrioritySelect from './TodoPrioritySelect.vue'
+import TodoDatePicker from './TodoDatePicker.vue'
+import TodoAssigneeSelect from './TodoAssigneeSelect.vue'
 import {
   CheckSquare,
   Square,
@@ -43,15 +46,9 @@ const editingId = ref<string | null>(null)
 const editText = ref('')
 const editPriority = ref<TodoPriority>('none')
 const editDueDate = ref('')
+const editAssigneeId = ref('')
 
 const isAdding = ref(false)
-
-// Team members for assignee dropdown
-const teamMembers = computed(() => {
-  return (Object.values(usersStore.users) as MattermostUser[]).filter(
-    (u) => !u.roles?.includes('system_bot') && (u as any).is_bot !== true && u.delete_at === 0
-  )
-})
 
 function handleAddTodo() {
   const text = newTodoText.value.trim()
@@ -84,6 +81,7 @@ function startEdit(item: TodoItem) {
   editText.value = item.message
   editPriority.value = item.priority
   editDueDate.value = item.due_date ? new Date(item.due_date).toISOString().split('T')[0] : ''
+  editAssigneeId.value = item.user_id && item.user_id !== todoStore.myId ? item.user_id : ''
 }
 
 function saveEdit(id: string) {
@@ -97,7 +95,8 @@ function saveEdit(id: string) {
   todoStore.editTodo(id, {
     message: editText.value.trim(),
     priority: editPriority.value,
-    due_date: dueTimestamp
+    due_date: dueTimestamp,
+    user_id: editAssigneeId.value || todoStore.myId
   })
 
   editingId.value = null
@@ -352,37 +351,10 @@ onUnmounted(() => {
           </div>
 
           <!-- Quick Options Bar -->
-          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div class="flex items-center gap-2">
-              <!-- Priority Selector -->
-              <select
-                v-model="newPriority"
-                class="bg-[#f4f4f5] dark:bg-[#242f3d] border border-[#dfe1e5] dark:border-[#202b36] rounded-lg px-2.5 py-1 text-xs text-[#111827] dark:text-[#f5f5f5] outline-none focus:border-[#3390ec] cursor-pointer"
-              >
-                <option value="none">Priority: None</option>
-                <option value="low">Priority: Low 🟢</option>
-                <option value="medium">Priority: Medium 🟡</option>
-                <option value="high">Priority: High 🔴</option>
-              </select>
-
-              <!-- Due Date Selector -->
-              <input
-                v-model="newDueDate"
-                type="date"
-                class="bg-[#f4f4f5] dark:bg-[#242f3d] border border-[#dfe1e5] dark:border-[#202b36] rounded-lg px-2.5 py-1 text-xs text-[#111827] dark:text-[#f5f5f5] outline-none focus:border-[#3390ec] cursor-pointer"
-              />
-
-              <!-- Assignee Selector -->
-              <select
-                v-model="newAssigneeId"
-                class="bg-[#f4f4f5] dark:bg-[#242f3d] border border-[#dfe1e5] dark:border-[#202b36] rounded-lg px-2.5 py-1 text-xs text-[#111827] dark:text-[#f5f5f5] outline-none focus:border-[#3390ec] cursor-pointer max-w-[140px] truncate"
-              >
-                <option value="">Assign: Myself</option>
-                <option v-for="user in teamMembers" :key="user.id" :value="user.id">
-                  {{ usersStore.getUserDisplayName(user) }}
-                </option>
-              </select>
-            </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <TodoPrioritySelect v-model="newPriority" />
+            <TodoDatePicker v-model="newDueDate" />
+            <TodoAssigneeSelect v-model="newAssigneeId" />
           </div>
         </form>
       </div>
@@ -425,31 +397,20 @@ onUnmounted(() => {
               @keydown.enter="saveEdit(item.id)"
               @keydown.esc="cancelEdit"
             />
-            <div class="flex items-center gap-2">
-              <select
-                v-model="editPriority"
-                class="bg-[#f4f4f5] dark:bg-[#242f3d] border border-[#dfe1e5] dark:border-[#202b36] rounded-lg px-2.5 py-1 text-xs text-[#111827] dark:text-[#f5f5f5] outline-none cursor-pointer"
-              >
-                <option value="none">Priority: None</option>
-                <option value="low">Low 🟢</option>
-                <option value="medium">Medium 🟡</option>
-                <option value="high">High 🔴</option>
-              </select>
-              <input
-                v-model="editDueDate"
-                type="date"
-                class="bg-[#f4f4f5] dark:bg-[#242f3d] border border-[#dfe1e5] dark:border-[#202b36] rounded-lg px-2.5 py-1 text-xs text-[#111827] dark:text-[#f5f5f5] outline-none cursor-pointer"
-              />
+            <div class="flex flex-wrap items-center gap-2">
+              <TodoPrioritySelect v-model="editPriority" :labelPrefix="false" />
+              <TodoDatePicker v-model="editDueDate" />
+              <TodoAssigneeSelect v-model="editAssigneeId" />
               <div class="flex-1"></div>
               <button
                 @click="saveEdit(item.id)"
-                class="px-3 py-1 bg-[#3390ec] text-white text-xs font-semibold rounded-lg hover:bg-[#2481cc] cursor-pointer"
+                class="px-3 py-1.5 bg-[#3390ec] text-white text-xs font-semibold rounded-xl hover:bg-[#2481cc] cursor-pointer shadow-xs transition-colors"
               >
                 Save
               </button>
               <button
                 @click="cancelEdit"
-                class="px-3 py-1 text-xs text-[#7f91a4] hover:text-[#111827] dark:hover:text-white cursor-pointer"
+                class="px-3 py-1.5 text-xs text-[#7f91a4] hover:text-[#111827] dark:hover:text-white cursor-pointer transition-colors"
               >
                 Cancel
               </button>
