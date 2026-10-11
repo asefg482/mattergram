@@ -77,35 +77,71 @@ Starts the production HTTP & WebSocket proxy server serving the compiled fronten
 
 ## 🐳 Docker & Docker Compose
 
-### Option 1: Run directly from GitHub Packages (Recommended)
-Pre-built container images are automatically published on every push to `master`:
+### 📦 Option 1: Docker Compose with GitHub Packages (`ghcr.io`) — Recommended
+
+You can instantly deploy Mattergram using the pre-built container image published on **GitHub Container Registry (`ghcr.io`)**. 
+
+Create a `docker-compose.yml` file with the following configuration:
+
+```yaml
+services:
+  mattergram:
+    image: ghcr.io/asefg482/mattergram:latest
+    container_name: mattergram
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      # Set your Mattermost server URL here:
+      - MATTERMOST_BASE_URL=https://your-mattermost-server.com
+      - PORT=5173
+    # Optional: automatically load values from .env if present
+    env_file:
+      - path: .env
+        required: false
+```
+
+Then launch the container in detached mode:
+
+```bash
+docker compose up -d
+```
+
+The application will be accessible at `http://localhost:5173`.
+
+---
+
+### 🚀 Option 2: Docker CLI with GitHub Packages (`ghcr.io`)
+
+Run directly using the single `docker run` command:
 
 ```bash
 docker run -d \
   --name mattergram \
+  --restart unless-stopped \
   -p 5173:5173 \
   -e MATTERMOST_BASE_URL=https://your-mattermost-server.com \
   ghcr.io/asefg482/mattergram:latest
 ```
 
-### Option 2: Build and run locally with Docker
+---
+
+### 🛠 Option 3: Build and Run Locally with Docker
+
+If you want to build the Docker image locally from source:
+
 ```bash
+# Build the local container image
 docker build -t mattergram .
 
+# Run the container
 docker run -d \
   --name mattergram \
+  --restart unless-stopped \
   -p 5173:5173 \
   -e MATTERMOST_BASE_URL=https://your-mattermost-server.com \
   mattergram
 ```
-
-### Option 3: Run with Docker Compose
-Configure your `.env` file, then run:
-
-```bash
-docker compose up -d
-```
-The service will be live at `http://localhost:5173`.
 
 ---
 
