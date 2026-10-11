@@ -40,6 +40,7 @@ function loadEnvFiles() {
 loadEnvFiles()
 
 const PORT = process.env.PORT || 5173
+const HOST = process.env.HOST || '0.0.0.0'
 const DIST_DIR = path.resolve(__dirname, 'dist')
 
 // Read Mattermost base URL dynamically from .env
@@ -235,6 +236,6 @@ server.on('upgrade', (req, socket, head) => {
   }
 })
 
-server.listen(PORT, () => {
-  console.log(`Mattergram production server running on http://localhost:${PORT}`)
+server.listen(PORT, HOST, () => {
+  console.log(`Mattergram production server running on http://${HOST}:${PORT}`)
 })
