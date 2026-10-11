@@ -68,6 +68,8 @@ function adjustPosition() {
   const menuWidth = el?.offsetWidth || 208
   const menuHeight = el?.offsetHeight || 260
   const padding = 8
+  const safeTop = 56
+  const safeBottom = 60
 
   let x = props.position.x + 2
   let y = props.position.y + 2
@@ -85,14 +87,18 @@ function adjustPosition() {
   }
 
   // If menu overflows bottom side, flip to above cursor
-  if (props.position.y + menuHeight + padding > window.innerHeight) {
+  if (props.position.y + menuHeight + safeBottom > window.innerHeight) {
     y = props.position.y - menuHeight - 2
     originY = 'bottom'
-    if (y < padding) {
-      y = padding
+    if (y < safeTop) {
+      y = safeTop
       originY = 'top'
     }
   }
+
+  // Ensure within viewport bounds
+  x = Math.max(padding, Math.min(x, window.innerWidth - menuWidth - padding))
+  y = Math.max(safeTop, Math.min(y, window.innerHeight - menuHeight - safeBottom))
 
   transformOrigin.value = `${originY} ${originX}`
   adjustedX.value = Math.round(x)
@@ -102,6 +108,17 @@ function adjustPosition() {
 const pickerStyle = computed(() => {
   const winW = typeof window !== 'undefined' ? window.innerWidth : 1000
   const winH = typeof window !== 'undefined' ? window.innerHeight : 800
+
+  // Mobile centered positioning for reaction picker
+  if (winW < 640) {
+    return {
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
+      maxWidth: 'calc(100vw - 32px)'
+    }
+  }
+
   const left = adjustedX.value + 215 + 320 > winW ? Math.max(8, adjustedX.value - 325) : adjustedX.value + 215
   const top = Math.min(adjustedY.value, Math.max(10, winH - 350))
   return {
@@ -222,9 +239,9 @@ onUnmounted(() => {
 
 <template>
   <div v-if="isOpen && post" class="fixed inset-0 z-50 pointer-events-none">
-    <!-- Backdrop to capture right clicks -->
+    <!-- Backdrop to capture right clicks & mobile taps -->
     <div
-      class="absolute inset-0 pointer-events-auto"
+      class="absolute inset-0 pointer-events-auto bg-black/20 dark:bg-black/35 sm:bg-transparent backdrop-blur-xs sm:backdrop-blur-none transition-opacity"
       @click="emit('close')"
       @contextmenu.prevent="emit('close')"
     ></div>

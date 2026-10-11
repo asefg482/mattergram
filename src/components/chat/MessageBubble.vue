@@ -248,17 +248,42 @@ function handleBubbleDoubleClick(event: MouseEvent) {
   handleReply()
 }
 
-// Mobile double-tap support
+// Mobile tap & hold context menu support
 let touchStartX = 0
 let touchStartY = 0
 let touchMoved = false
-let lastTouchTapTime = 0
+let longPressTimer: any = null
+let didLongPress = false
+
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  return (
+    window.innerWidth < 768 ||
+    window.matchMedia('(max-width: 767px)').matches ||
+    ('ontouchstart' in window && window.innerWidth < 1024)
+  )
+}
 
 function handleBubbleTouchStart(e: TouchEvent) {
   if (e.touches.length === 1) {
     touchStartX = e.touches[0].clientX
     touchStartY = e.touches[0].clientY
     touchMoved = false
+    didLongPress = false
+
+    // Long press support (hold 450ms opens context menu)
+    clearTimeout(longPressTimer)
+    longPressTimer = setTimeout(() => {
+      if (!touchMoved) {
+        didLongPress = true
+        const fakeMouseEvent = new MouseEvent('contextmenu', {
+          clientX: touchStartX,
+          clientY: touchStartY,
+          bubbles: true
+        })
+        emit('contextmenu', fakeMouseEvent)
+      }
+    }, 450)
   }
 }
 
@@ -266,32 +291,48 @@ function handleBubbleTouchMove(e: TouchEvent) {
   if (e.touches.length === 1) {
     const dx = Math.abs(e.touches[0].clientX - touchStartX)
     const dy = Math.abs(e.touches[0].clientY - touchStartY)
-    if (dx > 10 || dy > 10) {
+    if (dx > 8 || dy > 8) {
       touchMoved = true
+      clearTimeout(longPressTimer)
     }
   }
 }
 
-function handleBubbleTouchEnd(e: TouchEvent) {
-  if (touchMoved) return
+function handleBubbleTouchEnd() {
+  clearTimeout(longPressTimer)
+}
+
+function handleBubbleClick(e: MouseEvent) {
+  // If long press already opened the menu, skip click
+  if (didLongPress) {
+    didLongPress = false
+    return
+  }
+
+  // Only open context menu on click/tap in mobile mode
+  if (!isMobileDevice()) return
+
   const target = e.target as HTMLElement | null
   if (!target) return
 
+  // Don't trigger if clicked on interactive elements
   if (
-    target.closest('a, button, input, textarea, video, audio, [data-mention], .tg-spoiler, [data-no-bubble-reply]')
+    target.closest(
+      'a, button, input, textarea, video, audio, [data-mention], .tg-spoiler, [data-no-bubble-reply], .tg-reaction-item, .tg-thread-badge'
+    )
   ) {
     return
   }
 
-  const now = Date.now()
-  if (now - lastTouchTapTime < 350) {
-    window.getSelection()?.removeAllRanges()
-    flashBubble()
-    handleReply()
-    lastTouchTapTime = 0
-  } else {
-    lastTouchTapTime = now
+  // Don't override native text selection
+  const selection = window.getSelection()
+  if (selection && selection.toString().trim().length > 0) {
+    return
   }
+
+  e.preventDefault()
+  e.stopPropagation()
+  emit('contextmenu', e)
 }
 
 function handleQuickReaction(emoji: string) {
@@ -324,44 +365,57 @@ async function handleTextClick(e: MouseEvent) {
   }
 
   const target = (e.target as HTMLElement).closest('[data-mention]') as HTMLElement | null
-  if (!target) return
-  e.preventDefault()
-  e.stopPropagation()
+  if (target) {
+    e.preventDefault()
+    e.stopPropagation()
 
-  const rawUsername = target.getAttribute('data-mention')
-  if (!rawUsername) return
+    const rawUsername = target.getAttribute('data-mention')
+    if (!rawUsername) return
 
-  const clean = rawUsername.toLowerCase().trim()
-  const BROADCAST_TAGS = ['all', 'channel', 'here']
+    const clean = rawUsername.toLowerCase().trim()
+    const BROADCAST_TAGS = ['all', 'channel', 'here']
 
-  // 1. If broadcast mention tag (@all, @channel, @here)
-  if (BROADCAST_TAGS.includes(clean)) {
+    // 1. If broadcast mention tag (@all, @channel, @here)
+    if (BROADCAST_TAGS.includes(clean)) {
+      uiStore.openMentionModal({
+        type: 'broadcast',
+        username: rawUsername
+      })
+      return
+    }
+
+    // 2. Regular user mention: show loading state
     uiStore.openMentionModal({
-      type: 'broadcast',
+      type: 'loading',
       username: rawUsername
     })
+
+    // 3. Look up user by username
+    const foundUser = await usersStore.fetchUserByUsername(clean)
+    if (foundUser) {
+      uiStore.updateMentionModal({
+        type: 'user',
+        username: rawUsername,
+        user: foundUser
+      })
+    } else {
+      uiStore.updateMentionModal({
+        type: 'not_found',
+        username: rawUsername
+      })
+    }
     return
   }
 
-  // 2. Regular user mention: show loading state
-  uiStore.openMentionModal({
-    type: 'loading',
-    username: rawUsername
-  })
+  const linkTarget = (e.target as HTMLElement).closest('a') as HTMLElement | null
+  if (linkTarget) {
+    e.stopPropagation()
+    return
+  }
 
-  // 3. Look up user by username
-  const foundUser = await usersStore.fetchUserByUsername(clean)
-  if (foundUser) {
-    uiStore.updateMentionModal({
-      type: 'user',
-      username: rawUsername,
-      user: foundUser
-    })
-  } else {
-    uiStore.updateMentionModal({
-      type: 'not_found',
-      username: rawUsername
-    })
+  // On mobile devices, clicking plain text inside message opens context menu
+  if (isMobileDevice()) {
+    handleBubbleClick(e)
   }
 }
 
@@ -420,11 +474,12 @@ function handleSenderClick() {
 
       <!-- Message Bubble -->
       <div
+        @click="handleBubbleClick"
         @dblclick="handleBubbleDoubleClick"
         @touchstart.passive="handleBubbleTouchStart"
         @touchmove.passive="handleBubbleTouchMove"
         @touchend="handleBubbleTouchEnd"
-        class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative"
+        class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative cursor-pointer md:cursor-default"
         :class="[
           isOutgoing
             ? 'bg-[#eeffde] dark:bg-[#2b5278] text-[#111827] dark:text-white rounded-br-none bubble-out-tail mr-1.5'
@@ -444,7 +499,7 @@ function handleSenderClick() {
         <!-- Reply Quote Preview Box -->
         <div
           v-if="replyToId"
-          @click="scrollToParent"
+          @click.stop="scrollToParent"
           data-no-bubble-reply
           class="mb-1.5 pl-2 border-l-2 border-[#3390ec] bg-black/15 rounded-r py-1 pr-2 cursor-pointer text-xs"
         >
@@ -461,7 +516,7 @@ function handleSenderClick() {
           <div
             v-for="img in imageFiles"
             :key="img.id"
-            @click="openFile(img)"
+            @click.stop="openFile(img)"
             data-no-bubble-reply
             class="cursor-pointer overflow-hidden rounded-lg relative group/img bg-black/20"
           >
@@ -475,7 +530,7 @@ function handleSenderClick() {
         </div>
 
         <!-- Video Files (Playable directly inside chat with custom Telegram Video Player) -->
-        <div v-if="videoFiles.length > 0" class="my-1.5 space-y-2 max-w-sm sm:max-w-md rounded-2xl overflow-hidden">
+        <div v-if="videoFiles.length > 0" @click.stop class="my-1.5 space-y-2 max-w-sm sm:max-w-md rounded-2xl overflow-hidden">
           <TelegramVideoPlayer
             v-for="vid in videoFiles"
             :key="vid.id"
@@ -493,7 +548,7 @@ function handleSenderClick() {
           <div
             v-for="doc in documentFiles"
             :key="doc.id"
-            @click="openFile(doc)"
+            @click.stop="openFile(doc)"
             data-no-bubble-reply
             class="flex items-center gap-3 p-2 bg-black/15 hover:bg-black/25 rounded-xl cursor-pointer transition-colors"
           >
