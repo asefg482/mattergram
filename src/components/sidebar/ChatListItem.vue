@@ -200,14 +200,16 @@ const avatarBg = computed(() => {
           <Pin v-if="channel.is_pinned" class="w-3.5 h-3.5 opacity-60" />
           <VolumeX v-if="channel.is_muted" class="w-3.5 h-3.5 opacity-60" />
 
-          <!-- Telegram Unread Badge (Circle) -->
+          <!-- Telegram Unread Badge (Circle/Pill) -->
           <span
             v-if="unreadCount > 0"
-            class="min-w-5 h-5 px-1 rounded-full text-[11px] font-bold flex items-center justify-center leading-none text-center select-none"
-            :class="isActive ? 'bg-white text-[#2b5278]' : 'bg-[#4fae60] text-white'"
-          >
-            {{ unreadCount }}
-          </span>
+            class="inline-flex items-center justify-center h-5 min-w-5 rounded-full text-[11px] font-bold leading-none select-none transition-colors"
+            :class="[
+              String(unreadCount).length > 1 ? 'px-1.5' : 'w-5 p-0',
+              isActive ? 'bg-white text-[#2b5278]' : 'bg-[#4fae60] text-white'
+            ]"
+            style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;"
+          ><span class="inline-block transform -translate-y-[0.5px]">{{ unreadCount > 99 ? '99+' : unreadCount }}</span></span>
         </div>
       </div>
     </div>

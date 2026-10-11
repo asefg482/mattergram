@@ -6,16 +6,36 @@ import { computed } from 'vue'
 const uiStore = useUiStore()
 const chatStore = useChatStore()
 
+const unreadChannelsCount = computed(() => {
+  return chatStore.channels.filter(
+    (c) => c.type !== 'D' && (chatStore.unreadCounts[c.id] || 0) > 0
+  ).length
+})
+
+const unreadDirectCount = computed(() => {
+  return chatStore.channels.filter(
+    (c) => c.type === 'D' && (chatStore.unreadCounts[c.id] || 0) > 0
+  ).length
+})
+
 const tabs = computed(() => {
-  const count = chatStore.unreadChatsCount
+  const totalCount = chatStore.unreadChatsCount
+  const channelsCount = unreadChannelsCount.value
+  const directCount = unreadDirectCount.value
 
   return [
-    { id: 'all', label: 'All Chats', count: count > 0 ? count : undefined },
-    { id: 'channels', label: 'Channels' },
-    { id: 'direct', label: 'Direct Messages' },
-    { id: 'unread', label: 'Unread', count: count > 0 ? count : undefined }
+    { id: 'all', label: 'All Chats', count: totalCount > 0 ? totalCount : undefined },
+    { id: 'channels', label: 'Channels', count: channelsCount > 0 ? channelsCount : undefined },
+    { id: 'direct', label: 'Direct Messages', count: directCount > 0 ? directCount : undefined },
+    { id: 'unread', label: 'Unread', count: totalCount > 0 ? totalCount : undefined }
   ]
 })
+
+function formatCount(count?: number) {
+  if (!count) return ''
+  if (count > 99) return '99+'
+  return String(count)
+}
 </script>
 
 <template>
@@ -24,7 +44,7 @@ const tabs = computed(() => {
       v-for="tab in tabs"
       :key="tab.id"
       @click="uiStore.activeTab = tab.id as any"
-      class="relative py-2.5 px-3 text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
+      class="group relative py-2.5 px-3 text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer"
       :class="[
         uiStore.activeTab === tab.id
           ? 'text-[#3390ec] font-semibold'
@@ -33,11 +53,16 @@ const tabs = computed(() => {
     >
       <span>{{ tab.label }}</span>
       <span
-        v-if="tab.count"
-        class="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] bg-[#2481cc] text-white font-bold flex items-center justify-center leading-none text-center select-none"
-      >
-        {{ tab.count }}
-      </span>
+        v-if="tab.count !== undefined && tab.count > 0"
+        class="inline-flex items-center justify-center h-[18px] min-w-[18px] rounded-full text-[11px] font-bold leading-none select-none transition-colors"
+        :class="[
+          String(tab.count).length > 1 ? 'px-1.5' : 'w-[18px] p-0',
+          uiStore.activeTab === tab.id
+            ? 'bg-[#3390ec] text-white shadow-xs'
+            : 'bg-[#e4e7ea] dark:bg-[#242f3d] text-[#687480] dark:text-[#8aa2b9] group-hover:bg-[#dfe1e5] dark:group-hover:bg-[#2c3847]'
+        ]"
+        style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;"
+      ><span class="inline-block transform -translate-y-[0.5px]">{{ formatCount(tab.count) }}</span></span>
 
       <!-- Telegram Active Tab Underline Indicator -->
       <div
