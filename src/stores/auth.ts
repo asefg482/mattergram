@@ -43,9 +43,44 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function register(payload: {
+    email: string
+    username: string
+    password: string
+    first_name?: string
+    last_name?: string
+    nickname?: string
+  }) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const user = await mmApi.register(payload)
+      // Automatically log the user in after successful registration
+      await login(payload.username || payload.email, payload.password)
+      return user
+    } catch (err: any) {
+      error.value = err.message || 'Registration failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function loadTeams() {
     try {
-      const myTeams = await mmApi.getMyTeams()
+      let myTeams = await mmApi.getMyTeams()
+      if (myTeams.length === 0) {
+        // If the user has no teams, attempt to find open teams to join
+        try {
+          const openTeams = await mmApi.getOpenTeams()
+          if (openTeams.length > 0 && currentUser.value) {
+            await mmApi.addUserToTeam(openTeams[0].id, currentUser.value.id)
+            myTeams = await mmApi.getMyTeams()
+          }
+        } catch (teamErr) {
+          console.warn('Could not auto-join open team:', teamErr)
+        }
+      }
       teams.value = myTeams
       if (myTeams.length > 0) {
         currentTeam.value = myTeams[0]
@@ -97,6 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     setBaseUrl,
     login,
+    register,
     logout,
     loadTeams,
     selectTeam,

@@ -160,6 +160,41 @@ class MattermostApiService {
     return { user, token }
   }
 
+  public async register(payload: {
+    email: string
+    username: string
+    password: string
+    first_name?: string
+    last_name?: string
+    nickname?: string
+  }): Promise<MattermostUser> {
+    if (!this.baseUrl) {
+      throw new Error('Mattermost server URL is not configured. Please set MATTERMOST_BASE_URL in your .env file.')
+    }
+    const url = this.resolveEndpoint('/api/v4/users')
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Mattermost-Server': this.baseUrl
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+      let errText = `Registration failed (${res.status})`
+      try {
+        const errJson = await res.json()
+        errText = errJson.message || errJson.detailed_error || errText
+      } catch {}
+      throw new Error(errText)
+    }
+
+    return res.json()
+  }
+
   public async logout(): Promise<void> {
     try {
       await this.request('/api/v4/users/logout', { method: 'POST' })
@@ -177,6 +212,20 @@ class MattermostApiService {
   // --- Teams ---
   public async getMyTeams(): Promise<MattermostTeam[]> {
     return this.request<MattermostTeam[]>('/api/v4/users/me/teams')
+  }
+
+  public async getOpenTeams(): Promise<MattermostTeam[]> {
+    return this.request<MattermostTeam[]>('/api/v4/teams')
+  }
+
+  public async addUserToTeam(teamId: string, userId: string): Promise<any> {
+    return this.request(`/api/v4/teams/${teamId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({
+        team_id: teamId,
+        user_id: userId
+      })
+    })
   }
 
   // --- Channels ---
