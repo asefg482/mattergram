@@ -39,6 +39,11 @@ export const useChatStore = defineStore('chat', () => {
     return posts.value[activeChannelId.value] || []
   })
 
+  // Count of chats (channels, groups, DMs) that have unread messages
+  const unreadChatsCount = computed(() => {
+    return channels.value.filter((c) => (unreadCounts.value[c.id] || 0) > 0).length
+  })
+
   // Group posts by date for Telegram date separators
   const activePostsWithSeparators = computed(() => {
     const list = currentPosts.value
@@ -163,8 +168,6 @@ export const useChatStore = defineStore('chat', () => {
             }
           }
         }
-        const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-        notificationService.updateDocumentTitle(totalUnread)
       }
 
       // 6. Enrich channels with DM users and formatted names
@@ -199,6 +202,7 @@ export const useChatStore = defineStore('chat', () => {
 
       // 8. Atomically update channels so UI receives the ready, sorted list
       channels.value = enrichedChannels
+      notificationService.updateDocumentTitle(unreadChatsCount.value)
     } catch (err) {
       console.error('Failed to load channels:', err)
     } finally {
@@ -245,8 +249,7 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
     }
-    const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-    notificationService.updateDocumentTitle(totalUnread)
+    notificationService.updateDocumentTitle(unreadChatsCount.value)
   }
 
   async function togglePinPost(post: MattermostPost) {
@@ -288,8 +291,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // Mark as read in Mattermost & local store
     unreadCounts.value[targetId] = 0
-    const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-    notificationService.updateDocumentTitle(totalUnread)
+    notificationService.updateDocumentTitle(unreadChatsCount.value)
     try {
       await mmApi.viewChannel(targetId, prevChannelId)
     } catch {}
@@ -651,8 +653,7 @@ export const useChatStore = defineStore('chat', () => {
           markActiveChannelViewed()
         }
       }
-      const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-      notificationService.updateDocumentTitle(totalUnread)
+      notificationService.updateDocumentTitle(unreadChatsCount.value)
     } catch (err) {
       console.error('Error handling ws posted:', err)
     }
@@ -782,8 +783,7 @@ export const useChatStore = defineStore('chat', () => {
 
     if (userId === authStore.currentUser?.id) {
       unreadCounts.value[channelId] = 0
-      const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-      notificationService.updateDocumentTitle(totalUnread)
+      notificationService.updateDocumentTitle(unreadChatsCount.value)
     }
   }
 
@@ -791,8 +791,7 @@ export const useChatStore = defineStore('chat', () => {
     if (!activeChannelId.value) return
     const channelId = activeChannelId.value
     unreadCounts.value[channelId] = 0
-    const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-    notificationService.updateDocumentTitle(totalUnread)
+    notificationService.updateDocumentTitle(unreadChatsCount.value)
     try {
       await mmApi.viewChannel(channelId)
     } catch {}
@@ -919,6 +918,7 @@ export const useChatStore = defineStore('chat', () => {
     loadingChannels,
     loadingPosts,
     unreadCounts,
+    unreadChatsCount,
     firstUnreadPostIds,
     channelLastViewedAt,
     channelViewedByUser,

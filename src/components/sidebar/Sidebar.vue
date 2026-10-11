@@ -425,7 +425,7 @@ function finishSearch() {
       <!-- Normal Mode (No search query active) -->
       <template v-else-if="!uiStore.searchQuery.trim()">
         <div v-if="filteredChannels.length === 0" class="p-8 text-center text-xs text-[#7f91a4]">
-          <p v-if="uiStore.activeTab === 'unread'">No unread messages</p>
+          <p v-if="uiStore.activeTab === 'unread'">No unread chats</p>
           <p v-else>No chats available in this folder</p>
         </div>
         <template v-else>

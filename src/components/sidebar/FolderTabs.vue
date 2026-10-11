@@ -7,13 +7,13 @@ const uiStore = useUiStore()
 const chatStore = useChatStore()
 
 const tabs = computed(() => {
-  const totalUnread = Object.values(chatStore.unreadCounts).reduce((a, b) => a + b, 0)
-  
+  const count = chatStore.unreadChatsCount
+
   return [
-    { id: 'all', label: 'All Chats', count: totalUnread > 0 ? totalUnread : undefined },
+    { id: 'all', label: 'All Chats', count: count > 0 ? count : undefined },
     { id: 'channels', label: 'Channels' },
     { id: 'direct', label: 'Direct Messages' },
-    { id: 'unread', label: 'Unread', count: totalUnread > 0 ? totalUnread : undefined }
+    { id: 'unread', label: 'Unread', count: count > 0 ? count : undefined }
   ]
 })
 </script>
