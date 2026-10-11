@@ -25,7 +25,10 @@ import {
   Flag,
   User,
   Clock,
-  ChevronDown
+  ChevronDown,
+  RefreshCw,
+  Cloud,
+  Bookmark
 } from 'lucide-vue-next'
 
 const todoStore = useTodoStore()
@@ -214,12 +217,43 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <div class="flex items-center gap-1">
+          <!-- Refresh / Sync button -->
+          <button
+            @click="todoStore.fetchServerTodos()"
+            :disabled="todoStore.isSyncingServer"
+            class="p-2 text-[#7f91a4] hover:text-[#3390ec] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors cursor-pointer"
+            :title="todoStore.isSyncingServer ? 'Syncing with Mattermost...' : 'Sync with Mattermost server'"
+          >
+            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin text-[#3390ec]': todoStore.isSyncingServer }" />
+          </button>
+
+          <button
+            @click="closeModal"
+            class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors cursor-pointer"
+            title="Close (Esc)"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Sync Status Notification (when server plugin is not installed) -->
+      <div
+        v-if="todoStore.isPluginSupported === false"
+        class="px-5 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between gap-2"
+      >
+        <div class="flex items-center gap-1.5 truncate">
+          <AlertCircle class="w-4 h-4 shrink-0 text-amber-500" />
+          <span class="truncate text-[11px]">
+            Mattermost Todo plugin is not active on this server. Running in local mode with Saved Posts sync.
+          </span>
+        </div>
         <button
-          @click="closeModal"
-          class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors cursor-pointer"
-          title="Close (Esc)"
+          @click="todoStore.fetchServerTodos()"
+          class="underline font-semibold hover:text-amber-800 dark:hover:text-amber-200 shrink-0 cursor-pointer text-[11px]"
         >
-          <X class="w-5 h-5" />
+          Check again
         </button>
       </div>
 
@@ -524,6 +558,24 @@ onUnmounted(() => {
                   <ExternalLink class="w-2.5 h-2.5 group-hover/link:scale-110 transition-transform" />
                   <span>From {{ item.channel_name ? `#${item.channel_name}` : 'Chat' }}</span>
                 </button>
+
+                <!-- Server Synced / Saved Post Badge -->
+                <span
+                  v-if="item.is_flagged_post"
+                  class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center gap-1"
+                  title="Imported from Mattermost Saved Posts"
+                >
+                  <Bookmark class="w-2.5 h-2.5" />
+                  Saved Post
+                </span>
+                <span
+                  v-else-if="item.is_from_server"
+                  class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#3390ec]/15 text-[#3390ec] flex items-center gap-1"
+                  title="Synced from Mattermost Server"
+                >
+                  <Cloud class="w-2.5 h-2.5" />
+                  Server Synced
+                </span>
               </div>
             </div>
           </div>

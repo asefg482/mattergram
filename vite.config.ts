@@ -25,7 +25,12 @@ function mattermostProxyPlugin(defaultFallback = ''): Plugin {
     configureServer(server) {
       // Dynamic HTTP Proxy middleware
       server.middlewares.use((req, res, next) => {
-        if (req.url && (req.url.startsWith('/api/v4') || req.url.startsWith('/mattermost-proxy/api/v4'))) {
+        if (req.url && (
+          req.url.startsWith('/api/v4') ||
+          req.url.startsWith('/mattermost-proxy/api/v4') ||
+          req.url.startsWith('/plugins') ||
+          req.url.startsWith('/mattermost-proxy/plugins')
+        )) {
           let targetServer = (req.headers['x-mattermost-server'] as string) || defaultFallback
 
           if (req.url.startsWith('/mattermost-proxy/')) {

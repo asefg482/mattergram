@@ -3,6 +3,8 @@ import { ref, computed, watch } from 'vue'
 import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
 import { useChatStore } from './chat'
+import { mmApi } from '../services/mattermostApi'
+import { mmWs } from '../services/mattermostWs'
 import { notificationService } from '../services/notifications'
 import type { MattermostPost } from '../types/mattermost'
 
@@ -24,6 +26,8 @@ export interface TodoItem {
   channel_name?: string
   post_snippet?: string
   author_name?: string
+  is_from_server?: boolean
+  is_flagged_post?: boolean
 }
 
 export const useTodoStore = defineStore('todo', () => {
@@ -33,6 +37,10 @@ export const useTodoStore = defineStore('todo', () => {
 
   const todos = ref<TodoItem[]>([])
   const isLoaded = ref(false)
+  const isSyncingServer = ref(false)
+  const isPluginSupported = ref<boolean | null>(null)
+  const lastSyncTime = ref<number | null>(null)
+  const serverError = ref<string | null>(null)
   const searchQuery = ref('')
   const activeFilter = ref<'my' | 'sent' | 'completed' | 'all'>('my')
 
@@ -43,21 +51,19 @@ export const useTodoStore = defineStore('todo', () => {
   })
 
   // Load from localStorage
-  function loadTodos() {
+  function loadLocalTodos() {
     if (typeof localStorage === 'undefined') return
     try {
       const raw = localStorage.getItem(storageKey.value)
       if (raw) {
         todos.value = JSON.parse(raw)
       } else {
-        // Sample default welcome task for new users
         todos.value = []
       }
     } catch (e) {
       console.error('Failed to parse todos from localStorage:', e)
       todos.value = []
     }
-    isLoaded.value = true
   }
 
   // Save to localStorage
@@ -69,6 +75,178 @@ export const useTodoStore = defineStore('todo', () => {
       console.error('Failed to save todos to localStorage:', e)
     }
   }
+
+  // Fetch from Mattermost Server (com.mattermost.plugin-todo & Flagged Posts)
+  async function fetchServerTodos() {
+    if (!authStore.isAuthenticated) return
+    isSyncingServer.value = true
+    serverError.value = null
+
+    // 1. Try Mattermost Todo Plugin API
+    try {
+      const lists = await mmApi.getPluginTodoLists()
+      if (lists && (Array.isArray(lists.my) || Array.isArray(lists.in) || Array.isArray(lists.out))) {
+        isPluginSupported.value = true
+
+        const serverItems: TodoItem[] = []
+
+        // Map 'my' list (items assigned to me)
+        if (Array.isArray(lists.my)) {
+          for (const item of lists.my) {
+            serverItems.push({
+              id: String(item.id),
+              message: item.message || '',
+              description: item.description || '',
+              completed: false,
+              create_at: Number(item.create_at) || Date.now(),
+              priority: 'none',
+              user_id: myId.value,
+              creator_id: myId.value,
+              post_id: item.post_id || undefined,
+              is_from_server: true
+            })
+          }
+        }
+
+        // Map 'in' list (items sent to me by others)
+        if (Array.isArray(lists.in)) {
+          for (const item of lists.in) {
+            serverItems.push({
+              id: String(item.id),
+              message: item.message || '',
+              description: item.description || '',
+              completed: false,
+              create_at: Number(item.create_at) || Date.now(),
+              priority: 'none',
+              user_id: myId.value,
+              creator_id: item.user || myId.value,
+              post_id: item.post_id || undefined,
+              is_from_server: true
+            })
+          }
+        }
+
+        // Map 'out' list (items I sent to others)
+        if (Array.isArray(lists.out)) {
+          for (const item of lists.out) {
+            serverItems.push({
+              id: String(item.id),
+              message: item.message || '',
+              description: item.description || '',
+              completed: false,
+              create_at: Number(item.create_at) || Date.now(),
+              priority: 'none',
+              user_id: item.user || '',
+              creator_id: myId.value,
+              post_id: item.post_id || undefined,
+              is_from_server: true
+            })
+          }
+        }
+
+        // Merge with existing local properties (priority, due_date, channels)
+        const localMap = new Map(todos.value.map((t) => [t.id, t]))
+        const merged: TodoItem[] = []
+
+        for (const sItem of serverItems) {
+          const existing = localMap.get(sItem.id)
+          if (existing) {
+            merged.push({
+              ...sItem,
+              priority: existing.priority || 'none',
+              due_date: existing.due_date || null,
+              channel_name: existing.channel_name,
+              channel_id: existing.channel_id,
+              post_snippet: existing.post_snippet,
+              author_name: existing.author_name
+            })
+            localMap.delete(sItem.id)
+          } else {
+            merged.push(sItem)
+          }
+        }
+
+        // Keep local-only tasks (e.g. created offline or before sync)
+        for (const remaining of localMap.values()) {
+          if (!remaining.is_from_server) {
+            merged.push(remaining)
+          }
+        }
+
+        todos.value = merged
+        saveTodos()
+      }
+    } catch {
+      // com.mattermost.plugin-todo is not installed or enabled on this server
+      isPluginSupported.value = false
+    }
+
+    // 2. Also sync Flagged / Saved Posts from Mattermost
+    try {
+      if (myId.value) {
+        const flagged = await mmApi.getFlaggedPosts(myId.value)
+        if (flagged && flagged.posts && flagged.order) {
+          let addedCount = 0
+          for (const postId of flagged.order) {
+            const post = flagged.posts[postId]
+            if (!post) continue
+
+            const exists = todos.value.some((t) => t.post_id === postId)
+            if (!exists) {
+              const ch = chatStore.channels.find((c) => c.id === post.channel_id)
+              const author = usersStore.getUserDisplayName(post.user_id)
+              const taskText = post.message?.trim()
+                ? post.message.length > 120
+                  ? post.message.slice(0, 120) + '...'
+                  : post.message
+                : `Saved post from ${author}`
+
+              todos.value.unshift({
+                id: `flagged_${postId}`,
+                message: taskText,
+                description: post.message,
+                completed: false,
+                create_at: post.create_at || Date.now(),
+                priority: 'none',
+                user_id: myId.value,
+                creator_id: post.user_id,
+                post_id: postId,
+                channel_id: post.channel_id,
+                channel_name: ch?.display_name || ch?.name || 'Chat',
+                post_snippet: post.message ? post.message.slice(0, 150) : '',
+                author_name: author,
+                is_from_server: true,
+                is_flagged_post: true
+              })
+              addedCount++
+            }
+          }
+          if (addedCount > 0) {
+            saveTodos()
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    lastSyncTime.value = Date.now()
+    isSyncingServer.value = false
+  }
+
+  // Initial load
+  function loadTodos() {
+    loadLocalTodos()
+    isLoaded.value = true
+    if (authStore.isAuthenticated) {
+      fetchServerTodos()
+    }
+  }
+
+  // Register WebSocket listener for realtime sync
+  mmWs.on('custom_com.mattermost.plugin-todo_refresh', () => {
+    fetchServerTodos()
+  })
 
   // Watch for auth user changes to re-load correct todos
   watch(
@@ -140,7 +318,7 @@ export const useTodoStore = defineStore('todo', () => {
   })
 
   // Add new Todo item
-  function addTodo(params: {
+  async function addTodo(params: {
     message: string
     description?: string
     priority?: TodoPriority
@@ -186,6 +364,32 @@ export const useTodoStore = defineStore('todo', () => {
     todos.value.unshift(item)
     saveTodos()
 
+    // Sync to Mattermost server if plugin is supported
+    if (isPluginSupported.value) {
+      try {
+        let sendToUsername = ''
+        if (assignee && assignee !== creator) {
+          const u = usersStore.users[assignee]
+          if (u?.username) {
+            sendToUsername = u.username
+          }
+        }
+
+        await mmApi.addPluginTodo({
+          message: text,
+          description: params.description?.trim() || '',
+          send_to: sendToUsername,
+          post_id: params.post?.id,
+          postPermalink: ''
+        })
+
+        // Refresh to fetch server assigned ID
+        fetchServerTodos()
+      } catch (err) {
+        console.warn('Failed to push todo to server plugin:', err)
+      }
+    }
+
     notificationService.showToast({
       title: 'TODO Added',
       message: `"${text.slice(0, 40)}${text.length > 40 ? '...' : ''}" added to your list.`,
@@ -216,12 +420,20 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   // Toggle Complete / Reopen
-  function toggleComplete(id: string) {
+  async function toggleComplete(id: string) {
     const item = todos.value.find((t) => t.id === id)
     if (item) {
       item.completed = !item.completed
       item.completed_at = item.completed ? Date.now() : undefined
       saveTodos()
+
+      if (item.completed && isPluginSupported.value && !id.startsWith('todo_') && !id.startsWith('flagged_')) {
+        try {
+          await mmApi.completePluginTodo(id)
+        } catch (e) {
+          console.warn('Failed to complete todo on server plugin:', e)
+        }
+      }
 
       if (item.completed) {
         notificationService.showToast({
@@ -234,7 +446,7 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   // Edit Todo item
-  function editTodo(id: string, updates: Partial<TodoItem>) {
+  async function editTodo(id: string, updates: Partial<TodoItem>) {
     const idx = todos.value.findIndex((t) => t.id === id)
     if (idx !== -1) {
       todos.value[idx] = {
@@ -242,13 +454,30 @@ export const useTodoStore = defineStore('todo', () => {
         ...updates
       }
       saveTodos()
+
+      if (isPluginSupported.value && !id.startsWith('todo_') && !id.startsWith('flagged_')) {
+        try {
+          await mmApi.editPluginTodo(id, updates.message || todos.value[idx].message, updates.description)
+        } catch (e) {
+          console.warn('Failed to edit todo on server plugin:', e)
+        }
+      }
     }
   }
 
   // Delete Todo item
-  function deleteTodo(id: string) {
+  async function deleteTodo(id: string) {
+    const item = todos.value.find((t) => t.id === id)
     todos.value = todos.value.filter((t) => t.id !== id)
     saveTodos()
+
+    if (item && isPluginSupported.value && !id.startsWith('todo_') && !id.startsWith('flagged_')) {
+      try {
+        await mmApi.removePluginTodo(id)
+      } catch (e) {
+        console.warn('Failed to remove todo on server plugin:', e)
+      }
+    }
   }
 
   // Jump to linked post in chat
@@ -269,6 +498,10 @@ export const useTodoStore = defineStore('todo', () => {
   return {
     todos,
     isLoaded,
+    isSyncingServer,
+    isPluginSupported,
+    lastSyncTime,
+    serverError,
     searchQuery,
     activeFilter,
     myId,
@@ -283,6 +516,7 @@ export const useTodoStore = defineStore('todo', () => {
     editTodo,
     deleteTodo,
     jumpToPost,
-    loadTodos
+    loadTodos,
+    fetchServerTodos
   }
 })

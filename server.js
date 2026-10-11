@@ -84,8 +84,12 @@ const MIME_TYPES = {
 }
 
 const server = http.createServer((req, res) => {
-  // 1. Proxy Mattermost API
-  if (req.url && (req.url.startsWith('/api/v4') || req.url.startsWith('/mattermost-proxy/api/v4'))) {
+  if (req.url && (
+    req.url.startsWith('/api/v4') ||
+    req.url.startsWith('/mattermost-proxy/api/v4') ||
+    req.url.startsWith('/plugins') ||
+    req.url.startsWith('/mattermost-proxy/plugins')
+  )) {
     let targetServer = req.headers['x-mattermost-server'] || DEFAULT_MATTERMOST_SERVER
 
     if (req.url.startsWith('/mattermost-proxy/')) {
