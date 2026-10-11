@@ -11,7 +11,7 @@ import MessageContextMenu from './MessageContextMenu.vue'
 import MessageViewersModal from './MessageViewersModal.vue'
 import { formatDateSeparator } from '../../utils/formatters'
 import type { MattermostPost } from '../../types/mattermost'
-import { MessageSquare, ArrowDown, Loader2 } from 'lucide-vue-next'
+import { MessageSquare, ArrowDown, Loader2, UploadCloud } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -20,9 +20,77 @@ const uiStore = useUiStore()
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const messagesInnerRef = ref<HTMLDivElement | null>(null)
 const bottomAnchorRef = ref<HTMLDivElement | null>(null)
-const messageInputRef = ref<{ focus: () => void } | null>(null)
+const messageInputRef = ref<{ focus: () => void; uploadFiles: (files: FileList | File[] | ArrayLike<File>) => Promise<void> } | null>(null)
 const showScrollBottom = ref(false)
 const isChannelSwitching = ref(false)
+
+// Drag & Drop State
+const isDraggingOver = ref(false)
+let dragCounter = 0
+
+function handleDragEnter(e: DragEvent) {
+  if (!channel.value) return
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.preventDefault()
+    dragCounter++
+    isDraggingOver.value = true
+  }
+}
+
+function handleDragOver(e: DragEvent) {
+  if (!channel.value) return
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function handleDragLeave(e: DragEvent) {
+  if (!channel.value) return
+  e.preventDefault()
+  dragCounter--
+  if (dragCounter <= 0) {
+    dragCounter = 0
+    isDraggingOver.value = false
+  }
+}
+
+async function handleDrop(e: DragEvent) {
+  if (!channel.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  dragCounter = 0
+  isDraggingOver.value = false
+
+  const files = e.dataTransfer?.files
+  if (files && files.length > 0) {
+    await messageInputRef.value?.uploadFiles(files)
+  }
+}
+
+function onWindowDragEnd() {
+  dragCounter = 0
+  isDraggingOver.value = false
+}
+
+function onWindowDragLeave(e: DragEvent) {
+  if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+    dragCounter = 0
+    isDraggingOver.value = false
+  }
+}
+
+function preventWindowDragOver(e: DragEvent) {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.preventDefault()
+  }
+}
+
+function preventWindowDrop(e: DragEvent) {
+  dragCounter = 0
+  isDraggingOver.value = false
+  e.preventDefault()
+}
 
 // Context Menu State
 const contextPost = ref<MattermostPost | null>(null)
@@ -331,6 +399,11 @@ onMounted(() => {
   }
 
   onChannelSwitch()
+
+  window.addEventListener('dragend', onWindowDragEnd)
+  window.addEventListener('dragleave', onWindowDragLeave)
+  window.addEventListener('dragover', preventWindowDragOver)
+  window.addEventListener('drop', preventWindowDrop)
 })
 
 onUnmounted(() => {
@@ -338,11 +411,42 @@ onUnmounted(() => {
   if (messagesContainer.value) {
     messagesContainer.value.removeEventListener('load', onMediaLoad, true)
   }
+  window.removeEventListener('dragend', onWindowDragEnd)
+  window.removeEventListener('dragleave', onWindowDragLeave)
+  window.removeEventListener('dragover', preventWindowDragOver)
+  window.removeEventListener('drop', preventWindowDrop)
 })
 </script>
 
 <template>
-  <div class="flex-1 h-full flex flex-col relative overflow-hidden bg-[#0e1621] dark:bg-[#0e1621] bg-[#e4ecf2]">
+  <div
+    class="flex-1 h-full flex flex-col relative overflow-hidden bg-[#0e1621] dark:bg-[#0e1621] bg-[#e4ecf2]"
+    @dragenter="handleDragEnter"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+  >
+    <!-- Drag & Drop Overlay (Telegram Style) -->
+    <div
+      v-if="isDraggingOver && channel"
+      class="absolute inset-0 z-50 pointer-events-none p-6 flex items-center justify-center animate-in fade-in zoom-in-95 duration-150"
+    >
+      <div class="absolute inset-0 bg-[#0e1621]/80 dark:bg-[#0e1621]/80 bg-[#e4ecf2]/85 backdrop-blur-md"></div>
+      <div
+        class="relative z-10 w-full max-w-md p-8 border-2 border-dashed border-[#3390ec] rounded-3xl bg-[#17212b]/95 dark:bg-[#17212b]/95 bg-white/95 shadow-2xl flex flex-col items-center justify-center text-center"
+      >
+        <div class="w-16 h-16 rounded-2xl bg-[#3390ec]/15 dark:bg-[#3390ec]/20 flex items-center justify-center text-[#3390ec] mb-4 shadow-inner">
+          <UploadCloud class="w-8 h-8 stroke-[1.8] animate-bounce" />
+        </div>
+        <h3 class="text-base font-bold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] mb-1.5">
+          Drop files here to send
+        </h3>
+        <p class="text-xs text-[#7f91a4] max-w-xs leading-relaxed">
+          Drop images, videos, or documents to attach them to your message
+        </p>
+      </div>
+    </div>
+
     <!-- Empty State: No chat selected -->
     <div
       v-if="!channel"

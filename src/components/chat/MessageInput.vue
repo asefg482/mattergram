@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
@@ -101,6 +101,11 @@ function focusInput() {
 
 onMounted(() => {
   focusInput()
+  window.addEventListener('paste', handleGlobalPaste)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('paste', handleGlobalPaste)
 })
 
 watch(
@@ -338,28 +343,108 @@ async function handleSend() {
   }
 }
 
-// File Attachment Upload
+// File Attachment Upload Helpers
 function triggerFileInput() {
   fileInputRef.value?.click()
+}
+
+async function uploadFileList(files: FileList | File[] | ArrayLike<File>) {
+  if (!files || files.length === 0 || !props.channelId) return
+  isUploading.value = true
+  try {
+    for (let i = 0; i < files.length; i++) {
+      let file = files[i]
+      if (!file) continue
+      // Ensure file has a valid name and extension (clipboard images often have name "blob" or "image")
+      if (!file.name || file.name === 'blob' || file.name === 'image') {
+        const ext = file.type ? file.type.split('/')[1] || 'png' : 'png'
+        file = new File([file], `image_${Date.now()}_${i + 1}.${ext}`, {
+          type: file.type || 'image/png'
+        })
+      }
+      const uploaded = await mmApi.uploadFile(props.channelId, file)
+      attachedFiles.value.push(uploaded)
+    }
+  } catch (err: any) {
+    console.error('File upload failed:', err)
+    alert(err?.message || 'Failed to upload file')
+  } finally {
+    isUploading.value = false
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+  }
 }
 
 async function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement
   if (!input.files || !input.files.length) return
+  await uploadFileList(input.files)
+}
 
-  isUploading.value = true
-  try {
-    for (let i = 0; i < input.files.length; i++) {
-      const file = input.files[i]
-      const uploaded = await mmApi.uploadFile(props.channelId, file)
-      attachedFiles.value.push(uploaded)
+function extractFilesFromClipboard(clipboardData: DataTransfer | null): File[] {
+  if (!clipboardData) return []
+  const files: File[] = []
+  const items = clipboardData.items
+
+  if (items && items.length > 0) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) {
+          let fileToUpload = file
+          if (!fileToUpload.name || fileToUpload.name === 'blob' || fileToUpload.name === 'image') {
+            const ext = fileToUpload.type ? fileToUpload.type.split('/')[1] || 'png' : 'png'
+            fileToUpload = new File([fileToUpload], `image_${Date.now()}_${i + 1}.${ext}`, {
+              type: fileToUpload.type || 'image/png'
+            })
+          }
+          files.push(fileToUpload)
+        }
+      }
     }
-  } catch (err) {
-    console.error('File upload failed:', err)
-    alert('Failed to upload file')
-  } finally {
-    isUploading.value = false
-    input.value = ''
+  }
+
+  if (files.length === 0 && clipboardData.files && clipboardData.files.length > 0) {
+    for (let i = 0; i < clipboardData.files.length; i++) {
+      files.push(clipboardData.files[i])
+    }
+  }
+
+  return files
+}
+
+function handlePaste(e: ClipboardEvent) {
+  if (!e.clipboardData) return
+  const files = extractFilesFromClipboard(e.clipboardData)
+  if (files.length > 0) {
+    e.preventDefault()
+    e.stopPropagation()
+    uploadFileList(files)
+  }
+}
+
+function handleGlobalPaste(e: ClipboardEvent) {
+  // If target is already our textarea, handlePaste on textarea handles it
+  if (e.target === textareaRef.value) return
+
+  // If another input/textarea is active, ignore
+  const activeEl = document.activeElement as HTMLElement | null
+  if (activeEl && (activeEl.tagName === 'INPUT' || (activeEl.tagName === 'TEXTAREA' && activeEl !== textareaRef.value))) {
+    return
+  }
+
+  // If modals are open, ignore
+  if (uiStore.previewFile || uiStore.showNewChatModal || uiStore.mentionModal.isOpen) {
+    return
+  }
+
+  const files = extractFilesFromClipboard(e.clipboardData)
+  if (files.length > 0) {
+    e.preventDefault()
+    uploadFileList(files)
+    focusInput()
   }
 }
 
@@ -398,7 +483,8 @@ function cancelEdit() {
 }
 
 defineExpose({
-  focus: focusInput
+  focus: focusInput,
+  uploadFiles: uploadFileList
 })
 </script>
 
@@ -510,21 +596,40 @@ defineExpose({
     </div>
 
     <!-- Attached Files Preview Bar -->
-    <div v-if="attachedFiles.length > 0" class="mb-2 flex flex-wrap gap-2">
+    <div v-if="attachedFiles.length > 0 || isUploading" class="mb-2 flex flex-wrap gap-2">
       <div
         v-for="file in attachedFiles"
         :key="file.id"
-        class="flex items-center gap-2 bg-[#242f3d] border border-[#202b36] px-2.5 py-1 rounded-xl text-xs text-white"
+        class="flex items-center gap-2 bg-[#242f3d] dark:bg-[#242f3d] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2.5 py-1.5 rounded-xl text-xs text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] shadow-xs"
       >
-        <Video
-          v-if="file.mime_type?.startsWith('video/') || ['mp4', 'webm', 'mov', 'mkv'].includes(file.extension?.toLowerCase())"
-          class="w-3.5 h-3.5 text-rose-400"
+        <img
+          v-if="file.mime_type?.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(file.extension?.toLowerCase())"
+          :src="mmApi.getFileThumbnailUrl(file.id)"
+          class="w-7 h-7 rounded-lg object-cover bg-black/20 shrink-0"
+          alt=""
         />
-        <FileText v-else class="w-3.5 h-3.5 text-[#3390ec]" />
-        <span class="truncate max-w-[140px]">{{ file.name }}</span>
-        <button @click="removeAttachedFile(file.id)" class="text-[#7f91a4] hover:text-red-400">
+        <Video
+          v-else-if="file.mime_type?.startsWith('video/') || ['mp4', 'webm', 'mov', 'mkv'].includes(file.extension?.toLowerCase())"
+          class="w-4 h-4 text-rose-400 shrink-0"
+        />
+        <FileText v-else class="w-4 h-4 text-[#3390ec] shrink-0" />
+        <span class="truncate max-w-[140px] font-medium">{{ file.name }}</span>
+        <button
+          @click="removeAttachedFile(file.id)"
+          class="text-[#7f91a4] hover:text-red-400 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          title="Remove file"
+        >
           <X class="w-3.5 h-3.5" />
         </button>
+      </div>
+
+      <!-- Uploading Indicator Chip -->
+      <div
+        v-if="isUploading"
+        class="flex items-center gap-2 bg-[#242f3d]/70 dark:bg-[#242f3d]/70 bg-white/70 border border-[#3390ec]/40 px-3 py-1.5 rounded-xl text-xs text-[#3390ec] shadow-xs"
+      >
+        <Loader2 class="w-3.5 h-3.5 animate-spin" />
+        <span>Uploading file...</span>
       </div>
     </div>
 
@@ -558,6 +663,7 @@ defineExpose({
           @keydown="handleKeydown"
           @input="handleInput"
           @click="checkMention"
+          @paste="handlePaste"
           rows="1"
           dir="auto"
           placeholder="Write a message..."
