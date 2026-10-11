@@ -483,9 +483,13 @@ const backdropStyle = computed(() => {
         </div>
 
         <!-- Footer Info -->
-        <div class="p-3 border-t border-[#101921] dark:border-[#101921] border-[#dfe1e5] text-[11px] text-[#7f91a4] text-center">
-          <p>Mattergram for Mattermost</p>
-          <p class="opacity-60">{{ authStore.baseUrl }}</p>
+        <div class="p-3 border-t border-[#101921] dark:border-[#101921] border-[#dfe1e5] text-[11px] text-[#7f91a4] text-center space-y-1">
+          <p class="font-medium text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]">Mattergram for Mattermost</p>
+          <p class="text-[10px] text-[#7f91a4] flex items-center justify-center gap-1">
+            <span>Developed By Asef Ghorbani for Dornica</span>
+            <span class="inline-block text-xs">💜</span>
+          </p>
+          <p class="text-[10px] opacity-60 truncate">{{ authStore.baseUrl }}</p>
         </div>
       </div>
     </transition>
