@@ -13,6 +13,7 @@ import {
   Sun,
   LogOut,
   Loader2,
+  Download,
   Users,
   Shield,
   Layers,
@@ -20,6 +21,7 @@ import {
   X
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import { pwaService } from '../../services/pwa'
 
 const props = defineProps<{
   isOpen: boolean
@@ -97,6 +99,11 @@ async function handleLogout() {
     closeDrawer()
     router.push('/login')
   }
+}
+
+function handleInstallApp() {
+  closeDrawer()
+  pwaService.installApp()
 }
 
 // --- Mobile Touch Drag & Swipe Gestures ---
@@ -474,6 +481,19 @@ const backdropStyle = computed(() => {
               <span>⭐ Star</span>
             </span>
           </a>
+
+          <!-- Install App (PWA) -->
+          <button
+            v-if="!pwaService.isInstalled.value"
+            @click="handleInstallApp"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors group cursor-pointer"
+          >
+            <Download class="w-5 h-5 text-[#3390ec] group-hover:scale-110 transition-transform shrink-0" />
+            <span class="flex-1 text-left">Install App</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#3390ec] text-white flex items-center gap-1 shadow-xs">
+              Install
+            </span>
+          </button>
 
           <div class="my-2 border-t border-[#dfe1e5] dark:border-[#101921]"></div>
 

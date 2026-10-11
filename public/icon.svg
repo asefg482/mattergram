@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="tg-grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2aabee" />
+      <stop offset="100%" stop-color="#229ed9" />
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#tg-grad)" />
+  <!-- Telegram Paper Airplane Icon -->
+  <path
+    d="M108 248l240-98c11-5 21 2 17 19l-41 192c-3 14-12 17-23 11l-63-46-30 29c-3 3-6 6-13 6l4-63 115-104c5-5-1-7-8-3L161 283l-61-19c-13-4-13-13 8-16z"
+    fill="#ffffff"
+  />
+</svg>
