@@ -94,15 +94,22 @@ export const useAuthStore = defineStore('auth', () => {
     currentTeam.value = team
   }
 
+  const isLoggingOut = ref(false)
+
   async function logout() {
+    isLoggingOut.value = true
     try {
       await mmApi.logout()
-    } catch {}
-    mmWs.disconnect()
-    currentUser.value = null
-    token.value = null
-    teams.value = []
-    currentTeam.value = null
+    } catch (err) {
+      console.error('Logout error:', err)
+    } finally {
+      mmWs.disconnect()
+      currentUser.value = null
+      token.value = null
+      teams.value = []
+      currentTeam.value = null
+      isLoggingOut.value = false
+    }
   }
 
   async function initAuth() {
@@ -128,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     teams,
     currentTeam,
     isLoading,
+    isLoggingOut,
     error,
     isAuthenticated,
     setBaseUrl,

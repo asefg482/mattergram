@@ -12,6 +12,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  Loader2,
   Users,
   Shield,
   Layers,
@@ -87,11 +88,15 @@ function openSettings() {
   }
 }
 
-function handleLogout() {
-  closeDrawer()
+async function handleLogout() {
+  if (authStore.isLoggingOut) return
   chatStore.activeChannelId = null
-  authStore.logout()
-  router.push('/login')
+  try {
+    await authStore.logout()
+  } finally {
+    closeDrawer()
+    router.push('/login')
+  }
 }
 
 // --- Mobile Touch Drag & Swipe Gestures ---
@@ -475,10 +480,12 @@ const backdropStyle = computed(() => {
           <!-- Logout -->
           <button
             @click="handleLogout"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-red-400 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
+            :disabled="authStore.isLoggingOut"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-red-400 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <LogOut class="w-5 h-5" />
-            <span class="flex-1 text-left">Log Out</span>
+            <Loader2 v-if="authStore.isLoggingOut" class="w-5 h-5 animate-spin shrink-0 text-red-400" />
+            <LogOut v-else class="w-5 h-5 shrink-0" />
+            <span class="flex-1 text-left">{{ authStore.isLoggingOut ? 'Logging out...' : 'Log Out' }}</span>
           </button>
         </div>
 
