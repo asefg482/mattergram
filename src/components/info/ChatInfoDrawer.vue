@@ -103,11 +103,11 @@ function handleMemberClick(user: MattermostUser) {
 <template>
   <div
     v-if="uiStore.showRightSidebar && channel"
-    class="w-full md:w-80 lg:w-88 h-full bg-[#17212b] dark:bg-[#17212b] bg-white border-l border-[#101921] dark:border-[#101921] border-[#dfe1e5] flex flex-col shrink-0 select-none z-30 animate-in slide-in-from-right duration-200"
+    class="w-full md:w-80 lg:w-88 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none z-30 animate-in slide-in-from-right duration-200"
   >
     <!-- Header -->
-    <div class="h-14 px-4 border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5] flex items-center justify-between">
-      <h3 class="text-sm font-bold text-white dark:text-white text-gray-900">
+    <div class="h-14 px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between">
+      <h3 class="text-sm font-bold text-gray-900 dark:text-white">
         {{ isDirect ? 'User Info' : 'Channel Info' }}
       </h3>
       <button
@@ -121,7 +121,7 @@ function handleMemberClick(user: MattermostUser) {
     <!-- Scrollable Content -->
     <div class="flex-1 overflow-y-auto">
       <!-- Profile Card -->
-      <div class="p-6 flex flex-col items-center text-center border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5]">
+      <div class="p-6 flex flex-col items-center text-center border-b border-[#dfe1e5] dark:border-[#101921]">
         <!-- Avatar (Clickable to Enlarge if DM) -->
         <div
           v-if="isDirect && channel.dm_user"
@@ -150,7 +150,7 @@ function handleMemberClick(user: MattermostUser) {
         />
 
         <!-- Title -->
-        <h2 class="text-base font-bold text-white dark:text-white text-gray-900 truncate max-w-full">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white truncate max-w-full">
           {{ channel.display_name || channel.name }}
         </h2>
 
@@ -164,7 +164,7 @@ function handleMemberClick(user: MattermostUser) {
       </div>
 
       <!-- DM Profile Details (If Direct Message) -->
-      <div v-if="isDirect && channel.dm_user" class="p-4 space-y-3 border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5]">
+      <div v-if="isDirect && channel.dm_user" class="p-4 space-y-3 border-b border-[#dfe1e5] dark:border-[#101921]">
         <!-- Username -->
         <div class="flex items-center justify-between text-xs">
           <div class="flex items-center gap-2 text-[#7f91a4]">
@@ -190,7 +190,7 @@ function handleMemberClick(user: MattermostUser) {
             <Briefcase class="w-4 h-4" />
             <span>Position / Bio</span>
           </div>
-          <span class="text-white dark:text-white text-gray-800 font-medium truncate max-w-[170px]">{{ channel.dm_user.position }}</span>
+          <span class="text-gray-800 dark:text-white font-medium truncate max-w-[170px]">{{ channel.dm_user.position }}</span>
         </div>
 
         <!-- Email -->
@@ -200,7 +200,7 @@ function handleMemberClick(user: MattermostUser) {
             <span>Email</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-white/90 dark:text-white/90 text-gray-700 truncate max-w-[150px]">{{ channel.dm_user.email }}</span>
+            <span class="text-gray-700 dark:text-white/90 truncate max-w-[150px]">{{ channel.dm_user.email }}</span>
             <button
               @click="copyText(channel.dm_user.email, 'email')"
               class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
@@ -223,12 +223,12 @@ function handleMemberClick(user: MattermostUser) {
       </div>
 
       <!-- Info Details -->
-      <div class="p-4 space-y-4 border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5]">
+      <div class="p-4 space-y-4 border-b border-[#dfe1e5] dark:border-[#101921]">
         <!-- Purpose / Bio -->
         <div v-if="channel.purpose || channel.header" class="flex items-start gap-3">
           <Info class="w-4 h-4 text-[#7f91a4] shrink-0 mt-0.5" />
           <div class="text-xs">
-            <div class="font-medium text-white dark:text-white text-gray-800">About</div>
+            <div class="font-medium text-gray-800 dark:text-white">About</div>
             <div class="text-[#7f91a4] mt-0.5 leading-relaxed">
               {{ channel.purpose || channel.header }}
             </div>
@@ -243,7 +243,7 @@ function handleMemberClick(user: MattermostUser) {
           <div class="flex items-center gap-3">
             <Bell v-if="!channel.is_muted" class="w-4 h-4 text-[#7f91a4]" />
             <BellOff v-else class="w-4 h-4 text-[#7f91a4]" />
-            <span class="text-xs text-white dark:text-white text-gray-800 font-medium">Notifications</span>
+            <span class="text-xs text-gray-800 dark:text-white font-medium">Notifications</span>
           </div>
 
           <!-- Switch -->
@@ -274,7 +274,7 @@ function handleMemberClick(user: MattermostUser) {
             v-for="user in members"
             :key="user.id"
             @click="handleMemberClick(user)"
-            class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] cursor-pointer transition-colors"
+            class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <!-- Member Avatar -->
             <TelegramAvatar
@@ -288,7 +288,7 @@ function handleMemberClick(user: MattermostUser) {
 
             <!-- Member Info -->
             <div class="flex-1 min-w-0">
-              <div class="text-xs font-semibold text-white dark:text-white text-gray-900 truncate">
+              <div class="text-xs font-semibold text-gray-900 dark:text-white truncate">
                 {{ usersStore.getUserDisplayName(user) }}
               </div>
               <div class="text-[11px] text-[#7f91a4] truncate">

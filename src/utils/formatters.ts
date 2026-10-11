@@ -135,14 +135,14 @@ const markedInstance = new Marked({
     },
     blockquote(token) {
       const body = this.parser.parse(token.tokens)
-      return `<blockquote class="border-l-3 border-[#3390ec] pl-2.5 py-1 my-1.5 bg-black/15 dark:bg-black/15 bg-black/5 rounded-r text-xs opacity-90 leading-relaxed">${body}</blockquote>`
+      return `<blockquote class="border-l-3 border-[#3390ec] pl-2.5 py-1 my-1.5 bg-black/5 dark:bg-black/15 rounded-r text-xs opacity-90 leading-relaxed">${body}</blockquote>`
     },
     code(token) {
       const lang = token.lang ? `language-${token.lang}` : ''
-      return `<pre class="bg-black/30 dark:bg-black/30 bg-black/5 text-emerald-400 dark:text-emerald-400 text-emerald-700 p-2.5 my-1.5 rounded-xl text-xs font-mono overflow-x-auto border border-white/10 dark:border-white/10 border-gray-300"><code class="${lang}">${escapeHtml(token.text)}</code></pre>`
+      return `<pre class="bg-black/5 dark:bg-black/30 text-emerald-700 dark:text-emerald-400 p-2.5 my-1.5 rounded-xl text-xs font-mono overflow-x-auto border border-gray-300 dark:border-white/10"><code class="${lang}">${escapeHtml(token.text)}</code></pre>`
     },
     codespan(token) {
-      return `<code class="bg-black/25 dark:bg-black/25 bg-black/5 text-pink-400 dark:text-pink-400 text-pink-600 px-1 py-0.5 rounded text-xs font-mono">${escapeHtml(token.text)}</code>`
+      return `<code class="bg-black/5 dark:bg-black/25 text-pink-600 dark:text-pink-400 px-1 py-0.5 rounded text-xs font-mono">${escapeHtml(token.text)}</code>`
     }
   },
   extensions: [
@@ -193,7 +193,7 @@ const markedInstance = new Marked({
       return html
         .replace(
           /<table>/g,
-          '<div class="tg-table-wrapper overflow-x-auto max-w-full my-2 rounded-xl border border-white/15 dark:border-white/15 border-gray-300"><table class="w-full text-xs text-start border-collapse">'
+          '<div class="tg-table-wrapper overflow-x-auto max-w-full my-2 rounded-xl border border-gray-300 dark:border-white/15"><table class="w-full text-xs text-start border-collapse">'
         )
         .replace(/<\/table>/g, '</table></div>')
     }

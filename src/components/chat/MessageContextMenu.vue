@@ -196,16 +196,16 @@ onUnmounted(() => {
     <!-- Telegram Message Context Menu -->
     <div
       ref="menuRef"
-      class="fixed pointer-events-auto w-52 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
+      class="fixed pointer-events-auto w-52 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
       :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin }"
     >
       <!-- Quick Reactions Row -->
-      <div class="px-2 py-1.5 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-center justify-between gap-0.5 overflow-x-auto no-scrollbar">
+      <div class="px-2 py-1.5 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between gap-0.5 overflow-x-auto no-scrollbar">
         <button
           v-for="emoji in quickEmojis"
           :key="emoji"
           @click="handleReaction(emoji)"
-          class="w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] hover:scale-125 transition-transform cursor-pointer"
+          class="w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:scale-125 transition-transform cursor-pointer"
           :title="`React with ${emoji}`"
         >
           {{ emoji }}
@@ -213,7 +213,7 @@ onUnmounted(() => {
         <!-- More Reactions Button -->
         <button
           @click="showReactionPicker = !showReactionPicker"
-          class="w-7 h-7 flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] rounded-lg transition-colors cursor-pointer"
+          class="w-7 h-7 flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-lg transition-colors cursor-pointer"
           title="More reactions..."
         >
           <SmilePlus class="w-4 h-4" />
@@ -225,7 +225,7 @@ onUnmounted(() => {
         <!-- Add Reaction Item -->
         <button
           @click="showReactionPicker = !showReactionPicker"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors cursor-pointer"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <SmilePlus class="w-4 h-4 text-[#3390ec]" />
           <span>Add Reaction...</span>
@@ -234,7 +234,7 @@ onUnmounted(() => {
         <!-- Reply -->
         <button
           @click="handleReply"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors cursor-pointer"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <Reply class="w-4 h-4 text-[#3390ec]" />
           <span>Reply</span>
@@ -243,7 +243,7 @@ onUnmounted(() => {
         <!-- Viewers -->
         <button
           @click="handleViewers"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors cursor-pointer"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <Eye class="w-4 h-4 text-[#3390ec]" />
           <span>Viewers</span>
@@ -253,7 +253,7 @@ onUnmounted(() => {
         <button
           v-if="canEdit"
           @click="handleEdit"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <Edit2 class="w-4 h-4 text-amber-400" />
           <span>Edit</span>
@@ -263,7 +263,7 @@ onUnmounted(() => {
         <button
           v-if="post.message"
           @click="handleCopy"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <Copy class="w-4 h-4 text-[#7f91a4]" />
           <span>Copy Text</span>
@@ -272,7 +272,7 @@ onUnmounted(() => {
         <!-- Pin / Unpin -->
         <button
           @click="handleTogglePin"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <Pin class="w-4 h-4 text-[#7f91a4]" />
           <span>{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
@@ -282,7 +282,7 @@ onUnmounted(() => {
         <button
           v-if="canDelete"
           @click="handleDelete"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-red-400 hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-red-400 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <Trash2 class="w-4 h-4 text-red-400" />
           <span>Delete</span>

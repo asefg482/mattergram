@@ -443,7 +443,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="flex-1 h-full flex flex-col relative overflow-hidden bg-[#0e1621] dark:bg-[#0e1621] bg-[#e4ecf2]"
+    class="flex-1 h-full flex flex-col relative overflow-hidden bg-[#e4ecf2] dark:bg-[#0e1621]"
     @dragenter="handleDragEnter"
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"
@@ -454,14 +454,14 @@ onUnmounted(() => {
       v-if="isDraggingOver && channel"
       class="absolute inset-0 z-50 pointer-events-none p-6 flex items-center justify-center animate-in fade-in zoom-in-95 duration-150"
     >
-      <div class="absolute inset-0 bg-[#0e1621]/80 dark:bg-[#0e1621]/80 bg-[#e4ecf2]/85 backdrop-blur-md"></div>
+      <div class="absolute inset-0 bg-[#e4ecf2]/85 dark:bg-[#0e1621]/80 backdrop-blur-md"></div>
       <div
-        class="relative z-10 w-full max-w-md p-8 border-2 border-dashed border-[#3390ec] rounded-3xl bg-[#17212b]/95 dark:bg-[#17212b]/95 bg-white/95 shadow-2xl flex flex-col items-center justify-center text-center"
+        class="relative z-10 w-full max-w-md p-8 border-2 border-dashed border-[#3390ec] rounded-3xl bg-white/95 dark:bg-[#17212b]/95 shadow-2xl flex flex-col items-center justify-center text-center"
       >
         <div class="w-16 h-16 rounded-2xl bg-[#3390ec]/15 dark:bg-[#3390ec]/20 flex items-center justify-center text-[#3390ec] mb-4 shadow-inner">
           <UploadCloud class="w-8 h-8 stroke-[1.8] animate-bounce" />
         </div>
-        <h3 class="text-base font-bold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] mb-1.5">
+        <h3 class="text-base font-bold text-[#111827] dark:text-[#f5f5f5] mb-1.5">
           Drop files here to send
         </h3>
         <p class="text-xs text-[#7f91a4] max-w-xs leading-relaxed">
@@ -475,10 +475,10 @@ onUnmounted(() => {
       v-if="!channel"
       class="flex-1 flex flex-col items-center justify-center p-6 text-center select-none tg-chat-bg"
     >
-      <div class="w-20 h-20 rounded-full bg-[#17212b] dark:bg-[#17212b] bg-white/60 flex items-center justify-center text-[#7f91a4] mb-4 shadow-md">
+      <div class="w-20 h-20 rounded-full bg-white/60 dark:bg-[#17212b] flex items-center justify-center text-[#7f91a4] mb-4 shadow-md">
         <MessageSquare class="w-10 h-10 stroke-[1.5]" />
       </div>
-      <h3 class="text-sm font-semibold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] mb-1">
+      <h3 class="text-sm font-semibold text-[#111827] dark:text-[#f5f5f5] mb-1">
         Select a chat to start messaging
       </h3>
       <p class="text-xs text-[#7f91a4] max-w-xs">
@@ -562,7 +562,7 @@ onUnmounted(() => {
         <button
           v-if="showScrollBottom"
           @click="scrollToBottom(true)"
-          class="sticky bottom-4 float-right mr-4 w-10 h-10 rounded-full bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] shadow-lg flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] transition-all z-20"
+          class="sticky bottom-4 float-right mr-4 w-10 h-10 rounded-full bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] shadow-lg flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] transition-all z-20"
         >
           <ArrowDown class="w-5 h-5" />
           <span

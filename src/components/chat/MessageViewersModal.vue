@@ -303,17 +303,17 @@ onUnmounted(() => {
 
     <!-- Modal Box -->
     <div
-      class="relative w-full max-w-md bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+      class="relative w-full max-w-md bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
     >
       <!-- Header -->
-      <div class="px-4 py-3 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-center justify-between">
+      <div class="px-4 py-3 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-full bg-[#3390ec]/15 flex items-center justify-center text-[#3390ec]">
             <Eye v-if="activeTab === 'viewers'" class="w-4 h-4" />
             <SmilePlus v-else class="w-4 h-4" />
           </div>
           <div>
-            <h3 class="text-sm font-semibold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]">
+            <h3 class="text-sm font-semibold text-[#111827] dark:text-[#f5f5f5]">
               Message Info
             </h3>
             <p class="text-[11px] text-[#7f91a4]">
@@ -324,7 +324,7 @@ onUnmounted(() => {
 
         <button
           @click="emit('close')"
-          class="p-1.5 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827] rounded-full hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-gray-100 transition-colors"
+          class="p-1.5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] rounded-full hover:bg-gray-100 dark:hover:bg-[#202b36] transition-colors"
           title="Close"
         >
           <X class="w-4 h-4" />
@@ -332,7 +332,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Message Snippet Preview -->
-      <div class="px-4 py-2.5 bg-[#0e1621]/60 dark:bg-[#0e1621]/60 bg-gray-50 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-start gap-2.5 text-xs">
+      <div class="px-4 py-2.5 bg-gray-50 dark:bg-[#0e1621]/60 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-start gap-2.5 text-xs">
         <TelegramAvatar
           :userId="post.user_id"
           :name="senderName"
@@ -344,14 +344,14 @@ onUnmounted(() => {
             <span class="font-semibold text-[#3390ec] truncate">{{ senderName }}</span>
             <span class="text-[#7f91a4] shrink-0">{{ postTime }}</span>
           </div>
-          <p class="text-[11px] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#374151] line-clamp-2 mt-0.5" dir="auto">
+          <p class="text-[11px] text-[#374151] dark:text-[#f5f5f5] line-clamp-2 mt-0.5" dir="auto">
             {{ messageSnippet }}
           </p>
         </div>
       </div>
 
       <!-- Tabs Navigation -->
-      <div class="flex border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] bg-[#17212b] dark:bg-[#17212b] bg-white">
+      <div class="flex border-b border-[#dfe1e5] dark:border-[#202b36] bg-white dark:bg-[#17212b]">
         <!-- Viewers Tab Button -->
         <button
           @click="activeTab = 'viewers'"
@@ -359,7 +359,7 @@ onUnmounted(() => {
           :class="[
             activeTab === 'viewers'
               ? 'border-[#3390ec] text-[#3390ec]'
-              : 'border-transparent text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827]'
+              : 'border-transparent text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5]'
           ]"
         >
           <Eye class="w-3.5 h-3.5" />
@@ -379,7 +379,7 @@ onUnmounted(() => {
           :class="[
             activeTab === 'reactions'
               ? 'border-[#3390ec] text-[#3390ec]'
-              : 'border-transparent text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827]'
+              : 'border-transparent text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5]'
           ]"
         >
           <SmilePlus class="w-3.5 h-3.5" />
@@ -408,10 +408,10 @@ onUnmounted(() => {
             v-else-if="viewersList.length === 0"
             class="flex flex-col items-center justify-center py-10 text-center px-4"
           >
-            <div class="w-12 h-12 rounded-full bg-[#202b36] dark:bg-[#202b36] bg-gray-100 flex items-center justify-center text-[#7f91a4] mb-3">
+            <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-[#202b36] flex items-center justify-center text-[#7f91a4] mb-3">
               <Eye class="w-6 h-6 opacity-60" />
             </div>
-            <p class="text-xs font-semibold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] mb-1">
+            <p class="text-xs font-semibold text-[#111827] dark:text-[#f5f5f5] mb-1">
               No viewers yet
             </p>
             <p class="text-[11px] text-[#7f91a4] max-w-xs">
@@ -424,7 +424,7 @@ onUnmounted(() => {
             <div
               v-for="item in viewersList"
               :key="item.userId"
-              class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-[#202b36]/60 dark:hover:bg-[#202b36]/60 hover:bg-gray-100/80 transition-colors"
+              class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-gray-100/80 dark:hover:bg-[#202b36]/60 transition-colors"
             >
               <!-- Avatar & Name -->
               <div class="flex items-center gap-2.5 min-w-0">
@@ -439,7 +439,7 @@ onUnmounted(() => {
                   <div class="flex items-center gap-1.5">
                     <span
                       class="text-xs font-semibold truncate"
-                      :class="item.isMe ? 'text-[#3390ec]' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
+                      :class="item.isMe ? 'text-[#3390ec]' : 'text-[#111827] dark:text-[#f5f5f5]'"
                     >
                       {{ item.isMe ? 'You' : usersStore.getUserDisplayName(item.userId) }}
                     </span>
@@ -462,7 +462,7 @@ onUnmounted(() => {
           <!-- Reactions Filter Badges -->
           <div
             v-if="uniqueReactionEmojis.length > 0"
-            class="flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto no-scrollbar border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] mb-1"
+            class="flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto no-scrollbar border-b border-[#dfe1e5] dark:border-[#202b36] mb-1"
           >
             <button
               @click="selectedEmojiFilter = 'all'"
@@ -470,7 +470,7 @@ onUnmounted(() => {
               :class="[
                 selectedEmojiFilter === 'all'
                   ? 'bg-[#3390ec] text-white font-semibold'
-                  : 'bg-[#202b36] dark:bg-[#202b36] bg-gray-100 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827]'
+                  : 'bg-gray-100 dark:bg-[#202b36] text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5]'
               ]"
             >
               All {{ reactionsList.length }}
@@ -483,7 +483,7 @@ onUnmounted(() => {
               :class="[
                 selectedEmojiFilter === item.char
                   ? 'bg-[#3390ec] text-white font-semibold'
-                  : 'bg-[#202b36] dark:bg-[#202b36] bg-gray-100 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827]'
+                  : 'bg-gray-100 dark:bg-[#202b36] text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5]'
               ]"
             >
               <span>{{ item.char }}</span>
@@ -502,10 +502,10 @@ onUnmounted(() => {
             v-else-if="reactionsList.length === 0"
             class="flex flex-col items-center justify-center py-10 text-center px-4"
           >
-            <div class="w-12 h-12 rounded-full bg-[#202b36] dark:bg-[#202b36] bg-gray-100 flex items-center justify-center text-[#7f91a4] mb-3">
+            <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-[#202b36] flex items-center justify-center text-[#7f91a4] mb-3">
               <SmilePlus class="w-6 h-6 opacity-60" />
             </div>
-            <p class="text-xs font-semibold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] mb-1">
+            <p class="text-xs font-semibold text-[#111827] dark:text-[#f5f5f5] mb-1">
               No reactions yet
             </p>
             <p class="text-[11px] text-[#7f91a4] max-w-xs">
@@ -518,7 +518,7 @@ onUnmounted(() => {
             <div
               v-for="r in filteredReactions"
               :key="`${r.user_id}_${r.emoji_name}`"
-              class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-[#202b36]/60 dark:hover:bg-[#202b36]/60 hover:bg-gray-100/80 transition-colors"
+              class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-gray-100/80 dark:hover:bg-[#202b36]/60 transition-colors"
             >
               <!-- Avatar & Name -->
               <div class="flex items-center gap-2.5 min-w-0">
@@ -533,7 +533,7 @@ onUnmounted(() => {
                   <div class="flex items-center gap-1.5">
                     <span
                       class="text-xs font-semibold truncate"
-                      :class="r.user_id === authStore.currentUser?.id ? 'text-[#3390ec]' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
+                      :class="r.user_id === authStore.currentUser?.id ? 'text-[#3390ec]' : 'text-[#111827] dark:text-[#f5f5f5]'"
                     >
                       {{ r.user_id === authStore.currentUser?.id ? 'You' : usersStore.getUserDisplayName(r.user_id) }}
                     </span>
@@ -548,7 +548,7 @@ onUnmounted(() => {
               </div>
 
               <!-- Big Reaction Emoji Badge -->
-              <div class="w-9 h-9 rounded-full bg-[#202b36] dark:bg-[#202b36] bg-gray-100 flex items-center justify-center text-lg shadow-xs shrink-0 select-none">
+              <div class="w-9 h-9 rounded-full bg-gray-100 dark:bg-[#202b36] flex items-center justify-center text-lg shadow-xs shrink-0 select-none">
                 {{ toEmojiChar(r.emoji_name) }}
               </div>
             </div>
@@ -557,7 +557,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Footer -->
-      <div class="p-3 bg-[#17212b] dark:bg-[#17212b] bg-white border-t border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex justify-end">
+      <div class="p-3 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#202b36] flex justify-end">
         <button
           @click="emit('close')"
           class="px-4 py-1.5 rounded-xl bg-[#3390ec] hover:bg-[#2881db] text-white text-xs font-semibold transition-colors cursor-pointer shadow-md"

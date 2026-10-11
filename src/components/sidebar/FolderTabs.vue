@@ -19,7 +19,7 @@ const tabs = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center px-2 border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5] overflow-x-auto no-scrollbar select-none bg-[#17212b] dark:bg-[#17212b] bg-white">
+  <div class="flex items-center px-2 border-b border-[#dfe1e5] dark:border-[#101921] overflow-x-auto no-scrollbar select-none bg-white dark:bg-[#17212b]">
     <button
       v-for="tab in tabs"
       :key="tab.id"
@@ -28,7 +28,7 @@ const tabs = computed(() => {
       :class="[
         uiStore.activeTab === tab.id
           ? 'text-[#3390ec] font-semibold'
-          : 'text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827]'
+          : 'text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5]'
       ]"
     >
       <span>{{ tab.label }}</span>

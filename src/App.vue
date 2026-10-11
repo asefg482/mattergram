@@ -11,7 +11,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-screen w-screen flex overflow-hidden bg-[#0e1621] dark:bg-[#0e1621] bg-[#8ea6b4] font-sans antialiased">
+  <div class="h-screen w-screen flex overflow-hidden bg-[#8ea6b4] dark:bg-[#0e1621] font-sans antialiased">
     <!-- Router View for Page Components -->
     <router-view />
 

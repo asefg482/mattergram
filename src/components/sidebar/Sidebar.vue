@@ -317,14 +317,14 @@ function finishSearch() {
 
 <template>
   <div
-    class="w-full md:w-80 lg:w-96 h-full flex flex-col bg-[#17212b] dark:bg-[#17212b] bg-white border-r border-[#101921] dark:border-[#101921] border-[#dfe1e5] relative shrink-0 select-none z-20"
+    class="w-full md:w-80 lg:w-96 h-full flex flex-col bg-white dark:bg-[#17212b] border-r border-[#dfe1e5] dark:border-[#101921] relative shrink-0 select-none z-20"
   >
     <!-- Top Header: Hamburger & Search Input -->
-    <div class="p-2.5 flex items-center gap-2 bg-[#17212b] dark:bg-[#17212b] bg-white">
+    <div class="p-2.5 flex items-center gap-2 bg-white dark:bg-[#17212b]">
       <!-- Hamburger Menu Button -->
       <button
         @click="isDrawerOpen = true"
-        class="p-2 rounded-full text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors shrink-0"
+        class="p-2 rounded-full text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors shrink-0"
         title="Menu"
       >
         <Menu class="w-5 h-5" />
@@ -343,7 +343,7 @@ function finishSearch() {
           @keyup.esc.stop.prevent="handleSearchEsc"
           type="text"
           placeholder="Search"
-          class="w-full bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] border border-transparent focus:border-[#3390ec] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] placeholder-[#7f91a4] text-xs rounded-full pl-9 pr-8 py-2 outline-none transition-all"
+          class="w-full bg-[#f4f4f5] dark:bg-[#242f3d] border border-transparent focus:border-[#3390ec] text-[#111827] dark:text-[#f5f5f5] placeholder-[#7f91a4] text-xs rounded-full pl-9 pr-8 py-2 outline-none transition-all"
         />
         <!-- Clear search button -->
         <button
@@ -385,32 +385,32 @@ function finishSearch() {
     <FolderTabs v-if="!uiStore.searchQuery.trim()" />
 
     <!-- Chat List / Search Results -->
-    <div class="flex-1 overflow-y-auto tg-scroll-container divide-y divide-[#101921]/50 dark:divide-[#101921]/50 divide-[#dfe1e5]/50 relative">
+    <div class="flex-1 overflow-y-auto tg-scroll-container divide-y divide-[#dfe1e5]/50 dark:divide-[#101921]/50 relative">
       <!-- Telegram Skeleton Loader when initial channels load -->
-      <div v-if="chatStore.loadingChannels && chatStore.channels.length === 0" class="divide-y divide-[#101921]/30 dark:divide-[#101921]/30 divide-gray-100">
+      <div v-if="chatStore.loadingChannels && chatStore.channels.length === 0" class="divide-y divide-gray-100 dark:divide-[#101921]/30">
         <div
           v-for="i in 8"
           :key="i"
           class="flex items-center gap-3 px-3 py-2.5 animate-pulse select-none"
         >
           <!-- Skeleton Avatar -->
-          <div class="w-12 h-12 rounded-full bg-[#242f3d]/60 dark:bg-[#242f3d]/60 bg-gray-200 shrink-0"></div>
+          <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-[#242f3d]/60 shrink-0"></div>
 
           <!-- Skeleton Details -->
           <div class="flex-1 min-w-0 space-y-2">
             <!-- Title & Time Row -->
             <div class="flex items-center justify-between">
               <div
-                class="h-3.5 bg-[#242f3d]/80 dark:bg-[#242f3d]/80 bg-gray-200 rounded-md"
+                class="h-3.5 bg-gray-200 dark:bg-[#242f3d]/80 rounded-md"
                 :style="{ width: [100, 130, 85, 115, 140, 95, 125, 110][(i - 1) % 8] + 'px' }"
               ></div>
-              <div class="h-2.5 w-9 bg-[#242f3d]/50 dark:bg-[#242f3d]/50 bg-gray-200 rounded-md"></div>
+              <div class="h-2.5 w-9 bg-gray-200 dark:bg-[#242f3d]/50 rounded-md"></div>
             </div>
 
             <!-- Message Snippet Row -->
             <div class="flex items-center justify-between">
               <div
-                class="h-3 bg-[#242f3d]/50 dark:bg-[#242f3d]/50 bg-gray-200/80 rounded-md"
+                class="h-3 bg-gray-200/80 dark:bg-[#242f3d]/50 rounded-md"
                 :style="{ width: [180, 220, 150, 190, 230, 160, 200, 175][(i - 1) % 8] + 'px' }"
               ></div>
               <div
@@ -453,7 +453,7 @@ function finishSearch() {
 
         <!-- 1. Local Chats & Contacts Section -->
         <div v-if="filteredChannels.length > 0">
-          <div class="px-3.5 py-1 text-[11px] font-bold text-[#7f91a4] uppercase tracking-wider bg-[#101921]/30 dark:bg-[#101921]/30 bg-gray-100">
+          <div class="px-3.5 py-1 text-[11px] font-bold text-[#7f91a4] uppercase tracking-wider bg-gray-100 dark:bg-[#101921]/30">
             Chats and Contacts
           </div>
           <ChatListItem
@@ -468,7 +468,7 @@ function finishSearch() {
 
         <!-- 2. Global Search Section -->
         <div v-if="globalChannels.length > 0 || globalUsers.length > 0">
-          <div class="px-3.5 py-1 text-[11px] font-bold text-[#3390ec] uppercase tracking-wider bg-[#101921]/30 dark:bg-[#101921]/30 bg-gray-100 flex items-center justify-between">
+          <div class="px-3.5 py-1 text-[11px] font-bold text-[#3390ec] uppercase tracking-wider bg-gray-100 dark:bg-[#101921]/30 flex items-center justify-between">
             <span class="flex items-center gap-1.5">
               <Globe class="w-3 h-3 text-[#3390ec]" />
               <span>Global Search</span>
@@ -481,14 +481,14 @@ function finishSearch() {
             :key="ch.id"
             @click="handleSelectGlobalChannel(ch)"
             class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors"
-            :class="selectedSearchIndex === (filteredChannels.length + cIdx) ? 'bg-[#242f3d] dark:bg-[#242f3d] bg-[#e3effa]' : 'hover:bg-[#202b36]/60 dark:hover:bg-[#202b36]/60 hover:bg-gray-100'"
+            :class="selectedSearchIndex === (filteredChannels.length + cIdx) ? 'bg-[#e3effa] dark:bg-[#242f3d]' : 'hover:bg-gray-100 dark:hover:bg-[#202b36]/60'"
           >
             <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-sm font-bold text-sm">
               <Hash class="w-5 h-5" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-white dark:text-white text-gray-900 truncate">
+                <span class="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {{ ch.display_name || ch.name }}
                 </span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#3390ec]/20 text-[#3390ec] font-semibold">
@@ -505,7 +505,7 @@ function finishSearch() {
             :key="u.id"
             @click="handleSelectGlobalUser(u)"
             class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors"
-            :class="selectedSearchIndex === (filteredChannels.length + globalChannels.length + uIdx) ? 'bg-[#242f3d] dark:bg-[#242f3d] bg-[#e3effa]' : 'hover:bg-[#202b36]/60 dark:hover:bg-[#202b36]/60 hover:bg-gray-100'"
+            :class="selectedSearchIndex === (filteredChannels.length + globalChannels.length + uIdx) ? 'bg-[#e3effa] dark:bg-[#242f3d]' : 'hover:bg-gray-100 dark:hover:bg-[#202b36]/60'"
           >
             <div
               @click.stop="handleUserAvatarClick(u)"
@@ -523,7 +523,7 @@ function finishSearch() {
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-white dark:text-white text-gray-900 truncate">
+                <span class="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {{ usersStore.getUserDisplayName(u) }}
                 </span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">

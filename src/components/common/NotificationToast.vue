@@ -42,7 +42,7 @@ function handleDismiss(e: MouseEvent, toastId: string) {
         v-for="toast in toasts"
         :key="toast.id"
         @click="handleClick(toast)"
-        class="pointer-events-auto p-3 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl flex items-center gap-3 cursor-pointer hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f8f9fa] transition-all group backdrop-blur-md"
+        class="pointer-events-auto p-3 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl flex items-center gap-3 cursor-pointer hover:bg-[#f8f9fa] dark:hover:bg-[#202b36] transition-all group backdrop-blur-md"
       >
         <!-- Sender Avatar -->
         <TelegramAvatar
@@ -54,7 +54,7 @@ function handleDismiss(e: MouseEvent, toastId: string) {
         <!-- Notification Content -->
         <div class="flex-1 min-w-0 pr-1">
           <div class="flex items-center justify-between mb-0.5">
-            <h4 class="text-xs font-bold text-white dark:text-white text-gray-900 truncate">
+            <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">
               {{ toast.authorName }}
             </h4>
             <span class="text-[10px] text-[#7f91a4] shrink-0 truncate ml-1 max-w-[100px]">

@@ -122,8 +122,8 @@ const avatarBg = computed(() => {
     class="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none transition-colors relative group tg-chat-item"
     :class="[
       isActive
-        ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#3390ec] text-white'
-        : 'hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'
+        ? 'bg-[#3390ec] dark:bg-[#2b5278] text-white'
+        : 'hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-[#111827] dark:text-[#f5f5f5]'
     ]"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
@@ -166,7 +166,7 @@ const avatarBg = computed(() => {
           <!-- Title -->
           <h3
             class="text-sm font-semibold truncate"
-            :class="isActive ? 'text-white' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
+            :class="isActive ? 'text-white' : 'text-[#111827] dark:text-[#f5f5f5]'"
           >
             {{ channel.display_name || channel.name }}
           </h3>

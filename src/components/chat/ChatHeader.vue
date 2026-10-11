@@ -98,7 +98,7 @@ function toggleMute() {
 <template>
   <div
     v-if="channel"
-    class="h-14 px-4 bg-[#17212b] dark:bg-[#17212b] bg-white border-b border-[#101921] dark:border-[#101921] border-[#dfe1e5] flex items-center justify-between z-10 shrink-0 select-none"
+    class="h-14 px-4 bg-white dark:bg-[#17212b] border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between z-10 shrink-0 select-none"
   >
     <!-- Left: Mobile Back Button & Chat Info Header -->
     <div class="flex items-center gap-3 min-w-0">
@@ -135,7 +135,7 @@ function toggleMute() {
         <div class="flex items-center gap-1.5">
           <Lock v-if="isPrivate" class="w-3.5 h-3.5 text-[#7f91a4]" />
           <Hash v-else-if="isPublic" class="w-3.5 h-3.5 text-[#7f91a4]" />
-          <h2 class="text-sm font-bold text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] truncate leading-tight">
+          <h2 class="text-sm font-bold text-[#111827] dark:text-[#f5f5f5] truncate leading-tight">
             {{ channel.display_name || channel.name }}
           </h2>
         </div>
@@ -157,7 +157,7 @@ function toggleMute() {
     <div class="flex items-center gap-1">
       <!-- Search in Chat -->
       <button
-        class="p-2 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] rounded-full transition-colors"
+        class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
         title="Search in this chat"
       >
         <Search class="w-4 h-4" />
@@ -166,7 +166,7 @@ function toggleMute() {
       <!-- Toggle Right Sidebar Info -->
       <button
         @click="toggleRightSidebar"
-        class="p-2 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] rounded-full transition-colors"
+        class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
         :class="{ 'text-[#3390ec]': uiStore.showRightSidebar }"
         title="Chat info"
       >
@@ -177,7 +177,7 @@ function toggleMute() {
       <div class="relative">
         <button
           @click="showMoreMenu = !showMoreMenu"
-          class="p-2 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] rounded-full transition-colors"
+          class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
         >
           <MoreVertical class="w-4 h-4" />
         </button>
@@ -185,11 +185,11 @@ function toggleMute() {
         <!-- Dropdown Menu -->
         <div
           v-if="showMoreMenu"
-          class="absolute right-0 top-11 w-48 bg-[#242f3d] dark:bg-[#242f3d] bg-white rounded-xl shadow-2xl border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] py-1.5 z-50 text-xs"
+          class="absolute right-0 top-11 w-48 bg-white dark:bg-[#242f3d] rounded-xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] py-1.5 z-50 text-xs"
         >
           <button
             @click="toggleMute"
-            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
           >
             <VolumeX v-if="channel.is_muted" class="w-4 h-4 text-[#7f91a4]" />
             <Volume2 v-else class="w-4 h-4 text-[#7f91a4]" />
@@ -198,7 +198,7 @@ function toggleMute() {
 
           <button
             @click="toggleRightSidebar(); showMoreMenu = false"
-            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
           >
             <PanelRight class="w-4 h-4 text-[#7f91a4]" />
             <span>View Info</span>

@@ -489,13 +489,13 @@ defineExpose({
 </script>
 
 <template>
-  <div class="px-3 pb-3 pt-1 bg-[#17212b] dark:bg-[#17212b] bg-white border-t border-[#101921] dark:border-[#101921] border-[#dfe1e5] relative z-20">
+  <div class="px-3 pb-3 pt-1 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#101921] relative z-20">
     <!-- Telegram Mention Autocomplete Popover -->
     <div
       v-if="showMentions && mentionCandidates.length > 0"
-      class="absolute bottom-full mb-2 left-3 right-3 md:left-14 md:right-16 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-40 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150"
+      class="absolute bottom-full mb-2 left-3 right-3 md:left-14 md:right-16 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-40 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150"
     >
-      <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#7f91a4] border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] bg-[#0e1621]/40 flex items-center justify-between">
+      <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#7f91a4] border-b border-[#dfe1e5] dark:border-[#202b36] bg-[#0e1621]/40 flex items-center justify-between">
         <span>Mention Members</span>
         <span class="text-[10px] font-normal lowercase opacity-75">↑↓ navigate • enter select</span>
       </div>
@@ -509,8 +509,8 @@ defineExpose({
           class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors"
           :class="[
             selectedMentionIndex === idx
-              ? 'bg-[#2b5278] dark:bg-[#2b5278] bg-[#3390ec] text-white'
-              : 'hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'
+              ? 'bg-[#3390ec] dark:bg-[#2b5278] text-white'
+              : 'hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-[#111827] dark:text-[#f5f5f5]'
           ]"
         >
           <!-- Special Mention Icon -->
@@ -558,7 +558,7 @@ defineExpose({
     <!-- Reply Banner Preview -->
     <div
       v-if="uiStore.replyingTo"
-      class="mb-2 px-3 py-1.5 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] rounded-xl flex items-center justify-between border-l-4 border-[#3390ec] animate-in fade-in duration-150"
+      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-[#3390ec] animate-in fade-in duration-150"
     >
       <div class="flex items-center gap-2 min-w-0 pr-2">
         <Reply class="w-4 h-4 text-[#3390ec] shrink-0" />
@@ -579,7 +579,7 @@ defineExpose({
     <!-- Edit Banner Preview -->
     <div
       v-if="uiStore.editingPost"
-      class="mb-2 px-3 py-1.5 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] rounded-xl flex items-center justify-between border-l-4 border-amber-400 animate-in fade-in duration-150"
+      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-amber-400 animate-in fade-in duration-150"
     >
       <div class="flex items-center gap-2 min-w-0 pr-2">
         <Edit2 class="w-4 h-4 text-amber-400 shrink-0" />
@@ -600,7 +600,7 @@ defineExpose({
       <div
         v-for="file in attachedFiles"
         :key="file.id"
-        class="flex items-center gap-2 bg-[#242f3d] dark:bg-[#242f3d] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] px-2.5 py-1.5 rounded-xl text-xs text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] shadow-xs"
+        class="flex items-center gap-2 bg-white dark:bg-[#242f3d] border border-[#dfe1e5] dark:border-[#202b36] px-2.5 py-1.5 rounded-xl text-xs text-[#111827] dark:text-[#f5f5f5] shadow-xs"
       >
         <img
           v-if="file.mime_type?.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(file.extension?.toLowerCase())"
@@ -626,7 +626,7 @@ defineExpose({
       <!-- Uploading Indicator Chip -->
       <div
         v-if="isUploading"
-        class="flex items-center gap-2 bg-[#242f3d]/70 dark:bg-[#242f3d]/70 bg-white/70 border border-[#3390ec]/40 px-3 py-1.5 rounded-xl text-xs text-[#3390ec] shadow-xs"
+        class="flex items-center gap-2 bg-white/70 dark:bg-[#242f3d]/70 border border-[#3390ec]/40 px-3 py-1.5 rounded-xl text-xs text-[#3390ec] shadow-xs"
       >
         <Loader2 class="w-3.5 h-3.5 animate-spin" />
         <span>Uploading file...</span>
@@ -639,7 +639,7 @@ defineExpose({
       <button
         @click="triggerFileInput"
         :disabled="isUploading"
-        class="p-2.5 text-[#7f91a4] hover:text-[#f5f5f5] dark:hover:text-[#f5f5f5] hover:text-[#111827] rounded-full hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors shrink-0 mb-0.5"
+        class="p-2.5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] rounded-full hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors shrink-0 mb-0.5"
         title="Attach file"
       >
         <Loader2 v-if="isUploading" class="w-5 h-5 animate-spin text-[#3390ec]" />
@@ -655,7 +655,7 @@ defineExpose({
       />
 
       <!-- Textarea & Emoji Container -->
-      <div class="flex-1 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] rounded-2xl flex items-end px-3 py-1.5 border border-transparent focus-within:border-[#3390ec] transition-all">
+      <div class="flex-1 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-2xl flex items-end px-3 py-1.5 border border-transparent focus-within:border-[#3390ec] transition-all">
         <!-- Textarea -->
         <textarea
           ref="textareaRef"
@@ -667,7 +667,7 @@ defineExpose({
           rows="1"
           dir="auto"
           placeholder="Write a message..."
-          class="flex-1 bg-transparent text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] placeholder-[#7f91a4] text-sm outline-none resize-none max-h-36 py-1 leading-relaxed text-auto"
+          class="flex-1 bg-transparent text-[#111827] dark:text-[#f5f5f5] placeholder-[#7f91a4] text-sm outline-none resize-none max-h-36 py-1 leading-relaxed text-auto"
         ></textarea>
 
         <!-- Emoji Picker Button -->

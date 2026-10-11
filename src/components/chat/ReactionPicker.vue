@@ -94,19 +94,19 @@ onUnmounted(() => {
 <template>
   <div
     ref="pickerRef"
-    class="w-72 sm:w-80 bg-[#17212b] dark:bg-[#17212b] bg-white rounded-2xl shadow-2xl border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex flex-col overflow-hidden select-none z-50 animate-in fade-in zoom-in-95 duration-150"
+    class="w-72 sm:w-80 bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col overflow-hidden select-none z-50 animate-in fade-in zoom-in-95 duration-150"
     :class="alignRight ? 'origin-top-right' : 'origin-top-left'"
     @click.stop
   >
     <!-- Search Bar -->
-    <div class="p-2 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] bg-[#0e1621]/40">
+    <div class="p-2 border-b border-[#dfe1e5] dark:border-[#202b36] bg-[#0e1621]/40">
       <div class="relative flex items-center">
         <Search class="w-3.5 h-3.5 text-[#7f91a4] absolute left-2.5 pointer-events-none" />
         <input
           v-model="searchQuery"
           type="text"
           placeholder="Search reaction..."
-          class="w-full bg-[#0e1621] dark:bg-[#0e1621] bg-gray-100 border border-[#202b36] dark:border-[#202b36] border-gray-300 text-white dark:text-white text-gray-800 text-xs rounded-xl pl-8 pr-7 py-1.5 outline-none focus:border-[#3390ec] transition-colors"
+          class="w-full bg-gray-100 dark:bg-[#0e1621] border border-gray-300 dark:border-[#202b36] text-gray-800 dark:text-white text-xs rounded-xl pl-8 pr-7 py-1.5 outline-none focus:border-[#3390ec] transition-colors"
           autofocus
         />
         <button
@@ -122,7 +122,7 @@ onUnmounted(() => {
     <!-- Category Tabs (Hidden when searching) -->
     <div
       v-if="!searchQuery"
-      class="flex items-center px-1.5 py-1 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] bg-[#0e1621]/20 gap-0.5 overflow-x-auto"
+      class="flex items-center px-1.5 py-1 border-b border-[#dfe1e5] dark:border-[#202b36] bg-[#0e1621]/20 gap-0.5 overflow-x-auto"
     >
       <!-- Frequent Tab -->
       <button
@@ -165,7 +165,7 @@ onUnmounted(() => {
             :key="item.char + item.name"
             @click="handlePick(item.char)"
             :title="item.name"
-            class="w-8 h-8 flex items-center justify-center text-lg hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-gray-100 rounded-lg transition-transform hover:scale-125 cursor-pointer active:scale-95"
+            class="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-lg transition-transform hover:scale-125 cursor-pointer active:scale-95"
           >
             {{ item.char }}
           </button>
@@ -190,7 +190,7 @@ onUnmounted(() => {
             :key="item.char"
             @click="handlePick(item.char)"
             :title="item.name || item.char"
-            class="w-8 h-8 flex items-center justify-center text-lg hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-gray-100 rounded-lg transition-transform hover:scale-125 cursor-pointer active:scale-95"
+            class="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-lg transition-transform hover:scale-125 cursor-pointer active:scale-95"
           >
             {{ item.char }}
           </button>

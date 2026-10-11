@@ -345,12 +345,12 @@ onUnmounted(() => {
       <!-- Generic Document Preview Card -->
       <div
         v-else
-        class="bg-[#17212b] border border-[#202b36] p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm animate-in zoom-in-95 fade-in duration-200"
+        class="bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm animate-in zoom-in-95 fade-in duration-200"
       >
         <div class="w-16 h-16 rounded-2xl bg-[#2481cc]/20 flex items-center justify-center text-[#2481cc] mb-4">
           <FileText class="w-8 h-8" />
         </div>
-        <h3 class="text-white font-semibold text-sm mb-1 truncate max-w-xs">{{ file.name }}</h3>
+        <h3 class="text-gray-900 dark:text-white font-semibold text-sm mb-1 truncate max-w-xs">{{ file.name }}</h3>
         <p class="text-xs text-[#7f91a4] mb-4">{{ formatFileSize(file.size) }} • {{ file.extension.toUpperCase() }}</p>
         <a
           :href="fileUrl"

@@ -582,7 +582,7 @@ function handleSenderClick() {
             :class="[
               r.hasReacted
                 ? 'bg-[#3390ec]/20 border-[#3390ec] text-[#3390ec] font-semibold'
-                : 'bg-[#182533] dark:bg-[#182533] bg-white border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] text-[#7f91a4] hover:border-gray-500'
+                : 'bg-white dark:bg-[#182533] border-[#dfe1e5] dark:border-[#202b36] text-[#7f91a4] hover:border-gray-500'
             ]"
           >
             <span>{{ r.emoji }}</span>
@@ -595,11 +595,11 @@ function handleSenderClick() {
             :class="isOutgoing ? 'right-0' : 'left-0'"
           >
             <div
-              class="bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] shadow-2xl rounded-xl py-1.5 px-2.5 text-xs min-w-[140px] max-w-[240px] whitespace-normal backdrop-blur-md"
+              class="bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] shadow-2xl rounded-xl py-1.5 px-2.5 text-xs min-w-[140px] max-w-[240px] whitespace-normal backdrop-blur-md"
             >
               <!-- Tooltip Header -->
               <div
-                class="flex items-center justify-between gap-1.5 pb-1 mb-1 border-b border-[#202b36] dark:border-[#202b36] border-gray-200 text-[11px] font-semibold text-[#7f91a4]"
+                class="flex items-center justify-between gap-1.5 pb-1 mb-1 border-b border-gray-200 dark:border-[#202b36] text-[11px] font-semibold text-[#7f91a4]"
               >
                 <div class="flex items-center gap-1.5">
                   <span class="text-sm leading-none">{{ r.emoji }}</span>
@@ -628,7 +628,7 @@ function handleSenderClick() {
                   />
                   <span
                     class="truncate text-[11px] font-medium"
-                    :class="u.isMe ? 'text-[#3390ec] font-semibold' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
+                    :class="u.isMe ? 'text-[#3390ec] font-semibold' : 'text-[#111827] dark:text-[#f5f5f5]'"
                   >
                     {{ u.isMe ? 'You' : usersStore.getUserDisplayName(u.id) }}
                   </span>
@@ -651,7 +651,7 @@ function handleSenderClick() {
         <button
           @click.stop="showReactionPicker = !showReactionPicker"
           title="Add reaction"
-          class="px-2 py-0.5 rounded-full text-xs flex items-center justify-center bg-[#182533] dark:bg-[#182533] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] text-[#7f91a4] hover:text-[#3390ec] hover:border-[#3390ec]/50 transition-colors select-none cursor-pointer"
+          class="px-2 py-0.5 rounded-full text-xs flex items-center justify-center bg-white dark:bg-[#182533] border border-[#dfe1e5] dark:border-[#202b36] text-[#7f91a4] hover:text-[#3390ec] hover:border-[#3390ec]/50 transition-colors select-none cursor-pointer"
         >
           <SmilePlus class="w-3.5 h-3.5" />
         </button>

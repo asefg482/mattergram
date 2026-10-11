@@ -105,23 +105,23 @@ async function handleCreateChannel() {
     <div @click="emit('close')" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
 
     <!-- Modal Content -->
-    <div class="relative w-full max-w-md bg-[#17212b] dark:bg-[#17212b] bg-white rounded-2xl shadow-2xl border border-[#202b36] overflow-hidden flex flex-col max-h-[85vh]">
+    <div class="relative w-full max-w-md bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[85vh]">
       <!-- Header -->
-      <div class="px-5 py-4 border-b border-[#202b36] flex items-center justify-between">
-        <h2 class="text-base font-bold text-white dark:text-white text-gray-900">
+      <div class="px-5 py-4 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white">
           {{ activeTab === 'dm' ? 'New Message' : 'New Channel' }}
         </h2>
-        <button @click="emit('close')" class="p-1 text-[#7f91a4] hover:text-white rounded-lg transition-colors">
+        <button @click="emit('close')" class="p-1 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-lg transition-colors">
           <X class="w-5 h-5" />
         </button>
       </div>
 
       <!-- Tabs -->
-      <div class="flex border-b border-[#202b36] bg-[#0e1621]/40">
+      <div class="flex border-b border-[#dfe1e5] dark:border-[#202b36] bg-gray-50 dark:bg-[#0e1621]/40">
         <button
           @click="activeTab = 'dm'"
           class="flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all flex items-center justify-center gap-1.5"
-          :class="activeTab === 'dm' ? 'border-[#3390ec] text-[#3390ec]' : 'border-transparent text-[#7f91a4] hover:text-white'"
+          :class="activeTab === 'dm' ? 'border-[#3390ec] text-[#3390ec]' : 'border-transparent text-[#7f91a4] hover:text-[#111827] dark:hover:text-white'"
         >
           <UserPlus class="w-4 h-4" />
           <span>Direct Message</span>
@@ -129,7 +129,7 @@ async function handleCreateChannel() {
         <button
           @click="activeTab = 'channel'"
           class="flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all flex items-center justify-center gap-1.5"
-          :class="activeTab === 'channel' ? 'border-[#3390ec] text-[#3390ec]' : 'border-transparent text-[#7f91a4] hover:text-white'"
+          :class="activeTab === 'channel' ? 'border-[#3390ec] text-[#3390ec]' : 'border-transparent text-[#7f91a4] hover:text-[#111827] dark:hover:text-white'"
         >
           <Hash class="w-4 h-4" />
           <span>New Channel</span>
@@ -148,7 +148,7 @@ async function handleCreateChannel() {
             @keydown.esc="handleModalSearchEsc"
             type="text"
             placeholder="Search by username, name, or email..."
-            class="w-full bg-[#0e1621] border border-[#202b36] text-white text-sm rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-[#3390ec]"
+            class="w-full bg-[#f4f4f5] dark:bg-[#0e1621] border border-[#dfe1e5] dark:border-[#202b36] text-[#111827] dark:text-white text-sm rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-[#3390ec]"
           />
         </div>
 
@@ -167,7 +167,7 @@ async function handleCreateChannel() {
             v-for="user in searchResults"
             :key="user.id"
             @click="startDirectChat(user)"
-            class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#202b36] cursor-pointer transition-colors"
+            class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <!-- Avatar -->
             <TelegramAvatar
@@ -178,7 +178,7 @@ async function handleCreateChannel() {
             />
             <!-- Details -->
             <div class="flex-1 min-w-0">
-              <h4 class="text-sm font-semibold text-white truncate">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white truncate">
                 {{ usersStore.getUserDisplayName(user) }}
               </h4>
               <p class="text-xs text-[#7f91a4] truncate">@{{ user.username }} • {{ user.email }}</p>
@@ -201,7 +201,7 @@ async function handleCreateChannel() {
             type="text"
             required
             placeholder="e.g. Announcements, Project Delta"
-            class="w-full bg-[#0e1621] border border-[#202b36] text-white text-sm rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3390ec]"
+            class="w-full bg-[#f4f4f5] dark:bg-[#0e1621] border border-[#dfe1e5] dark:border-[#202b36] text-[#111827] dark:text-white text-sm rounded-xl px-3.5 py-2.5 outline-none focus:border-[#3390ec]"
           />
         </div>
 
@@ -213,11 +213,11 @@ async function handleCreateChannel() {
               type="button"
               @click="channelType = 'O'"
               class="p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all"
-              :class="channelType === 'O' ? 'border-[#3390ec] bg-[#3390ec]/10 text-white' : 'border-[#202b36] text-[#7f91a4] hover:border-gray-600'"
+              :class="channelType === 'O' ? 'border-[#3390ec] bg-[#3390ec]/10 text-[#3390ec]' : 'border-[#dfe1e5] dark:border-[#202b36] text-[#7f91a4] hover:border-gray-400'"
             >
               <Hash class="w-4 h-4 text-[#3390ec]" />
               <div>
-                <div class="text-xs font-semibold text-white">Public</div>
+                <div class="text-xs font-semibold text-gray-900 dark:text-white">Public</div>
                 <div class="text-[10px] text-[#7f91a4]">Anyone can join</div>
               </div>
             </button>
@@ -226,11 +226,11 @@ async function handleCreateChannel() {
               type="button"
               @click="channelType = 'P'"
               class="p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all"
-              :class="channelType === 'P' ? 'border-[#3390ec] bg-[#3390ec]/10 text-white' : 'border-[#202b36] text-[#7f91a4] hover:border-gray-600'"
+              :class="channelType === 'P' ? 'border-[#3390ec] bg-[#3390ec]/10 text-[#3390ec]' : 'border-[#dfe1e5] dark:border-[#202b36] text-[#7f91a4] hover:border-gray-400'"
             >
-              <Lock class="w-4 h-4 text-amber-400" />
+              <Lock class="w-4 h-4 text-amber-500" />
               <div>
-                <div class="text-xs font-semibold text-white">Private</div>
+                <div class="text-xs font-semibold text-gray-900 dark:text-white">Private</div>
                 <div class="text-[10px] text-[#7f91a4]">By invite only</div>
               </div>
             </button>
@@ -244,7 +244,7 @@ async function handleCreateChannel() {
             v-model="channelPurpose"
             rows="2"
             placeholder="What is this channel about?"
-            class="w-full bg-[#0e1621] border border-[#202b36] text-white text-sm rounded-xl px-3.5 py-2 outline-none focus:border-[#3390ec] resize-none"
+            class="w-full bg-[#f4f4f5] dark:bg-[#0e1621] border border-[#dfe1e5] dark:border-[#202b36] text-[#111827] dark:text-white text-sm rounded-xl px-3.5 py-2 outline-none focus:border-[#3390ec] resize-none"
           ></textarea>
         </div>
 

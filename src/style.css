@@ -9,7 +9,22 @@
   --tg-green: #4fae60;
   --tg-online: #4fae60;
   
-  /* Dark theme defaults */
+  /* Defaults (light theme) */
+  --tg-bg: #e4ecf2;
+  --tg-sidebar: #ffffff;
+  --tg-card: #f4f4f5;
+  --tg-hover: #f1f1f1;
+  --tg-active: #3390ec;
+  --tg-bubble-in: #ffffff;
+  --tg-bubble-out: #eeffde;
+  --tg-text: #111827;
+  --tg-muted: #707579;
+  --tg-border: #dfe1e5;
+  --tg-input: #ffffff;
+  --tg-pattern-opacity: 0.15;
+}
+
+.dark {
   --tg-bg: #0e1621;
   --tg-sidebar: #17212b;
   --tg-card: #242f3d;
@@ -40,6 +55,8 @@
 }
 
 body {
+  color: var(--tg-text);
+  background-color: var(--tg-bg);
   font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   user-select: none;
   overflow: hidden;

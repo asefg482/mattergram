@@ -76,12 +76,12 @@ async function startChat() {
     @click.self="close"
   >
     <div
-      class="w-full max-w-sm bg-[#17212b] dark:bg-[#17212b] bg-white text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] rounded-3xl p-6 shadow-2xl border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] relative animate-in zoom-in-95 duration-150"
+      class="w-full max-w-sm bg-white dark:bg-[#17212b] text-[#111827] dark:text-[#f5f5f5] rounded-3xl p-6 shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] relative animate-in zoom-in-95 duration-150"
     >
       <!-- Close Button -->
       <button
         @click="close"
-        class="absolute top-4 right-4 p-1.5 text-[#7f91a4] hover:text-white rounded-full hover:bg-[#202b36] transition-colors"
+        class="absolute top-4 right-4 p-1.5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#202b36] transition-colors"
       >
         <X class="w-5 h-5" />
       </button>
@@ -109,7 +109,7 @@ async function startChat() {
 
         <button
           @click="close"
-          class="w-full mt-2 py-2.5 px-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] hover:bg-[#202b36] text-white dark:text-white text-[#111827] font-medium text-xs rounded-2xl transition-all"
+          class="w-full mt-2 py-2.5 px-4 bg-[#f4f4f5] dark:bg-[#242f3d] hover:bg-[#202b36] text-[#111827] dark:text-white font-medium text-xs rounded-2xl transition-all"
         >
           Got it
         </button>
@@ -131,7 +131,7 @@ async function startChat() {
 
         <button
           @click="close"
-          class="w-full mt-2 py-2.5 px-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] hover:bg-[#202b36] text-white dark:text-white text-[#111827] font-medium text-xs rounded-2xl transition-all"
+          class="w-full mt-2 py-2.5 px-4 bg-[#f4f4f5] dark:bg-[#242f3d] hover:bg-[#202b36] text-[#111827] dark:text-white font-medium text-xs rounded-2xl transition-all"
         >
           Close
         </button>
@@ -177,7 +177,7 @@ async function startChat() {
         </span>
 
         <!-- Profile Details List -->
-        <div class="w-full mt-4 space-y-2.5 bg-[#0e1621]/40 rounded-2xl p-3 border border-[#202b36]">
+        <div class="w-full mt-4 space-y-2.5 bg-gray-50 dark:bg-[#0e1621]/40 rounded-2xl p-3 border border-[#dfe1e5] dark:border-[#202b36]">
           <!-- Username Row -->
           <div class="flex items-center justify-between text-xs">
             <span class="text-[#7f91a4]">Username</span>
@@ -185,7 +185,7 @@ async function startChat() {
               <span class="text-[#3390ec] font-semibold">@{{ user.username }}</span>
               <button
                 @click="copyToClipboard(user.username, 'username')"
-                class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
+                class="p-1 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded transition-colors"
                 title="Copy username"
               >
                 <Check v-if="copiedField === 'username'" class="w-3.5 h-3.5 text-emerald-400" />
@@ -197,17 +197,17 @@ async function startChat() {
           <!-- Position / Bio (if available) -->
           <div v-if="user.position" class="flex items-center justify-between text-xs">
             <span class="text-[#7f91a4]">Position / Bio</span>
-            <span class="text-white font-medium truncate max-w-[180px]">{{ user.position }}</span>
+            <span class="text-gray-800 dark:text-white font-medium truncate max-w-[180px]">{{ user.position }}</span>
           </div>
 
           <!-- Email (if available) -->
           <div v-if="user.email" class="flex items-center justify-between text-xs">
             <span class="text-[#7f91a4]">Email</span>
             <div class="flex items-center gap-1.5">
-              <span class="text-white/90 truncate max-w-[150px]">{{ user.email }}</span>
+              <span class="text-gray-700 dark:text-white/90 truncate max-w-[150px]">{{ user.email }}</span>
               <button
                 @click="copyToClipboard(user.email, 'email')"
-                class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
+                class="p-1 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded transition-colors"
                 title="Copy email"
               >
                 <Check v-if="copiedField === 'email'" class="w-3.5 h-3.5 text-emerald-400" />
@@ -219,7 +219,7 @@ async function startChat() {
           <!-- Nickname (if available) -->
           <div v-if="user.nickname" class="flex items-center justify-between text-xs">
             <span class="text-[#7f91a4]">Nickname</span>
-            <span class="text-white font-medium">{{ user.nickname }}</span>
+            <span class="text-gray-800 dark:text-white font-medium">{{ user.nickname }}</span>
           </div>
         </div>
 
@@ -228,7 +228,7 @@ async function startChat() {
           <!-- Enlarge Photo Button -->
           <button
             @click="enlargeAvatar"
-            class="py-2.5 px-3 rounded-2xl border border-[#202b36] hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-white transition-all flex items-center justify-center gap-1.5 shrink-0"
+            class="py-2.5 px-3 rounded-2xl border border-[#dfe1e5] dark:border-[#202b36] hover:bg-gray-100 dark:hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-[#111827] dark:hover:text-white transition-all flex items-center justify-center gap-1.5 shrink-0"
             title="Enlarge profile photo"
           >
             <ZoomIn class="w-3.5 h-3.5" />

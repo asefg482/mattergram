@@ -346,11 +346,11 @@ const backdropStyle = computed(() => {
     >
       <div
         v-if="isOpen || isDragging || isSnapping"
-        class="fixed top-0 bottom-0 left-0 w-72 bg-[#17212b] dark:bg-[#17212b] bg-white z-50 shadow-2xl flex flex-col border-r border-[#101921] dark:border-[#101921] border-[#dfe1e5]"
+        class="fixed top-0 bottom-0 left-0 w-72 bg-white dark:bg-[#17212b] z-50 shadow-2xl flex flex-col border-r border-[#dfe1e5] dark:border-[#101921]"
         :style="isDragging || isSnapping ? drawerStyle : {}"
       >
         <!-- User Profile Header -->
-        <div class="p-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#3390ec] text-white">
+        <div class="p-4 bg-[#3390ec] dark:bg-[#242f3d] text-white">
           <div class="flex items-center justify-between mb-3">
             <!-- User Avatar -->
             <div
@@ -386,7 +386,7 @@ const backdropStyle = computed(() => {
           <!-- Saved Messages -->
           <button
             @click="openSavedMessages"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
           >
             <Bookmark class="w-5 h-5 text-[#2481cc]" />
             <span class="flex-1 text-left">Saved Messages</span>
@@ -404,7 +404,7 @@ const backdropStyle = computed(() => {
                 :key="team.id"
                 @click="authStore.selectTeam(team); chatStore.loadChannels()"
                 class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between"
-                :class="authStore.currentTeam?.id === team.id ? 'bg-[#2b5278] text-white' : 'text-[#7f91a4] hover:bg-[#202b36]'"
+                :class="authStore.currentTeam?.id === team.id ? 'bg-[#3390ec] dark:bg-[#2b5278] text-white' : 'text-[#7f91a4] hover:bg-gray-100 dark:hover:bg-[#202b36]'"
               >
                 <span>{{ team.display_name }}</span>
                 <span v-if="authStore.currentTeam?.id === team.id" class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">Active</span>
@@ -415,7 +415,7 @@ const backdropStyle = computed(() => {
           <!-- Themes & Appearance -->
           <button
             @click="openSettings"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
           >
             <Palette class="w-5 h-5 text-[#3390ec]" />
             <span class="flex-1 text-left">Themes</span>
@@ -425,7 +425,7 @@ const backdropStyle = computed(() => {
           <!-- Settings -->
           <button
             @click="openSettings"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
           >
             <Settings class="w-5 h-5 text-[#7f91a4]" />
             <span class="flex-1 text-left">Settings</span>
@@ -434,7 +434,7 @@ const backdropStyle = computed(() => {
           <!-- Night Mode Toggle Switch -->
           <div
             @click="uiStore.toggleTheme"
-            class="w-full flex items-center justify-between px-4 py-3 text-sm text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] cursor-pointer transition-colors"
+            class="w-full flex items-center justify-between px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <div class="flex items-center gap-4">
               <Moon v-if="uiStore.theme === 'dark'" class="w-5 h-5 text-[#2481cc]" />
@@ -459,9 +459,9 @@ const backdropStyle = computed(() => {
             href="https://github.com/asefg482/mattergram"
             target="_blank"
             rel="noopener noreferrer"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors group cursor-pointer"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors group cursor-pointer"
           >
-            <svg class="w-5 h-5 text-[#7f91a4] group-hover:text-white dark:group-hover:text-white group-hover:text-[#111827] transition-colors fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <svg class="w-5 h-5 text-[#7f91a4] group-hover:text-[#111827] dark:group-hover:text-white transition-colors fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
             </svg>
             <span class="flex-1 text-left">GitHub</span>
@@ -470,12 +470,12 @@ const backdropStyle = computed(() => {
             </span>
           </a>
 
-          <div class="my-2 border-t border-[#101921] dark:border-[#101921] border-[#dfe1e5]"></div>
+          <div class="my-2 border-t border-[#dfe1e5] dark:border-[#101921]"></div>
 
           <!-- Logout -->
           <button
             @click="handleLogout"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-red-400 hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] transition-colors"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-red-400 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
           >
             <LogOut class="w-5 h-5" />
             <span class="flex-1 text-left">Log Out</span>
@@ -483,8 +483,8 @@ const backdropStyle = computed(() => {
         </div>
 
         <!-- Footer Info -->
-        <div class="p-3 border-t border-[#101921] dark:border-[#101921] border-[#dfe1e5] text-[11px] text-[#7f91a4] text-center space-y-1">
-          <p class="font-medium text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]">Mattergram for Mattermost</p>
+        <div class="p-3 border-t border-[#dfe1e5] dark:border-[#101921] text-[11px] text-[#7f91a4] text-center space-y-1">
+          <p class="font-medium text-[#111827] dark:text-[#f5f5f5]">Mattergram for Mattermost</p>
           <p class="text-[10px] text-[#7f91a4] flex items-center justify-center gap-1">
             <span>Developed By Asef Ghorbani for Dornica</span>
             <span class="inline-block text-xs">💜</span>

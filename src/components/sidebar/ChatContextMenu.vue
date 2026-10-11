@@ -145,14 +145,14 @@ onUnmounted(() => {
     <!-- Telegram Chat Context Menu -->
     <div
       ref="menuRef"
-      class="fixed pointer-events-auto w-52 bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
+      class="fixed pointer-events-auto w-52 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
       :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin }"
     >
       <div class="py-1 text-xs">
         <!-- Pin / Unpin -->
         <button
           @click="handleTogglePin"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <Pin class="w-4 h-4 text-[#3390ec]" />
           <span>{{ channel.is_pinned ? 'Unpin from Top' : 'Pin to Top' }}</span>
@@ -161,7 +161,7 @@ onUnmounted(() => {
         <!-- Mute / Unmute -->
         <button
           @click="handleToggleMute"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <VolumeX v-if="channel.is_muted" class="w-4 h-4 text-[#7f91a4]" />
           <Volume2 v-else class="w-4 h-4 text-[#7f91a4]" />
@@ -171,19 +171,19 @@ onUnmounted(() => {
         <!-- Mark as Read / Unread -->
         <button
           @click="handleToggleMarkAsUnread"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <CheckCheck v-if="chatStore.unreadCounts[channel.id]" class="w-4 h-4 text-emerald-400" />
           <Check v-else class="w-4 h-4 text-[#7f91a4]" />
           <span>{{ chatStore.unreadCounts[channel.id] ? 'Mark as Read' : 'Mark as Unread' }}</span>
         </button>
 
-        <div class="my-1 border-t border-[#202b36] dark:border-[#202b36] border-[#dfe1e5]"></div>
+        <div class="my-1 border-t border-[#dfe1e5] dark:border-[#202b36]"></div>
 
         <!-- View Info -->
         <button
           @click="handleViewInfo"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
         >
           <PanelRight class="w-4 h-4 text-[#7f91a4]" />
           <span>View Info</span>

@@ -137,7 +137,7 @@ const bgGradient = computed(() => getAvatarGradient(props.userId || props.name |
     <!-- Telegram Online Green Badge -->
     <div
       v-if="showOnlineDot && isOnline && !isSavedMessages"
-      class="absolute bottom-0 right-0 rounded-full bg-[#4fae60] border-[#17212b] dark:border-[#17212b] border-white z-20"
+      class="absolute bottom-0 right-0 rounded-full bg-[#4fae60] border-white dark:border-[#17212b] z-20"
       :class="dotSizeClasses"
     ></div>
   </div>

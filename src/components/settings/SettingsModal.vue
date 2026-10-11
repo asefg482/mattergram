@@ -118,11 +118,11 @@ function selectAnimation(id: string) {
     <div @click="uiStore.showSettingsModal = false" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
 
     <!-- Modal Box -->
-    <div class="relative w-full max-w-md bg-[#17212b] dark:bg-[#17212b] bg-white rounded-2xl shadow-2xl border border-[#202b36] overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="relative w-full max-w-md bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
-      <div class="px-5 py-4 border-b border-[#202b36] flex items-center justify-between">
-        <h2 class="text-base font-bold text-white dark:text-white text-gray-900">Settings</h2>
-        <button @click="uiStore.showSettingsModal = false" class="p-1 text-[#7f91a4] hover:text-white rounded-lg transition-colors">
+      <div class="px-5 py-4 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white">Settings</h2>
+        <button @click="uiStore.showSettingsModal = false" class="p-1 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-lg transition-colors">
           <X class="w-5 h-5" />
         </button>
       </div>
@@ -130,7 +130,7 @@ function selectAnimation(id: string) {
       <!-- Content -->
       <div class="p-5 overflow-y-auto space-y-6 flex-1">
         <!-- Account Card -->
-        <div class="flex items-center gap-4 p-4 rounded-xl bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5]">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-[#f4f4f5] dark:bg-[#242f3d]">
           <div
             @click="enlargeMyAvatar"
             class="cursor-pointer hover:opacity-85 transition-opacity"
@@ -144,7 +144,7 @@ function selectAnimation(id: string) {
             />
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-bold text-white dark:text-white text-gray-900 truncate">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
               {{ authStore.currentUser?.first_name || authStore.currentUser?.username }}
             </h3>
             <p class="text-xs text-[#7f91a4] truncate">@{{ authStore.currentUser?.username }}</p>
@@ -160,7 +160,7 @@ function selectAnimation(id: string) {
               Mattermost Base URL
             </span>
             <div class="flex items-center gap-2">
-              <span class="text-[10px] text-[#7f91a4] font-medium bg-black/20 dark:bg-black/20 bg-gray-200 px-2 py-0.5 rounded-md border border-[#202b36] dark:border-[#202b36] border-gray-300">
+              <span class="text-[10px] text-[#7f91a4] font-medium bg-gray-200 dark:bg-black/20 px-2 py-0.5 rounded-md border border-gray-300 dark:border-[#202b36]">
                 Read-only (.env)
               </span>
               <button
@@ -180,7 +180,7 @@ function selectAnimation(id: string) {
               :value="authStore.baseUrl"
               type="text"
               readonly
-              class="w-full bg-[#0e1621]/60 dark:bg-[#0e1621]/60 bg-gray-100 border border-[#202b36] dark:border-[#202b36] border-gray-300 text-[#a0abb8] dark:text-[#a0abb8] text-gray-600 text-xs rounded-xl px-3.5 py-2.5 outline-none cursor-default select-all pr-8 font-mono"
+              class="w-full bg-gray-100 dark:bg-[#0e1621]/60 border border-gray-300 dark:border-[#202b36] text-gray-600 dark:text-[#a0abb8] text-xs rounded-xl px-3.5 py-2.5 outline-none cursor-default select-all pr-8 font-mono"
             />
             <Lock class="w-3.5 h-3.5 text-[#7f91a4] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
@@ -200,12 +200,12 @@ function selectAnimation(id: string) {
           <!-- Night Mode -->
           <div
             @click="uiStore.toggleTheme"
-            class="flex items-center justify-between p-3 rounded-xl hover:bg-[#202b36] cursor-pointer transition-colors"
+            class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <div class="flex items-center gap-3">
               <Moon v-if="uiStore.theme === 'dark'" class="w-5 h-5 text-[#3390ec]" />
               <Sun v-else class="w-5 h-5 text-amber-500" />
-              <span class="text-xs font-medium text-white dark:text-white text-gray-800">Night Mode</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-white">Night Mode</span>
             </div>
             <div
               class="w-9 h-5 rounded-full p-0.5 transition-colors"
@@ -221,12 +221,12 @@ function selectAnimation(id: string) {
           <!-- Sound Effects -->
           <div
             @click="soundEnabled = !soundEnabled"
-            class="flex items-center justify-between p-3 rounded-xl hover:bg-[#202b36] cursor-pointer transition-colors"
+            class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <div class="flex items-center gap-3">
               <Volume2 v-if="soundEnabled" class="w-5 h-5 text-emerald-400" />
               <VolumeX v-else class="w-5 h-5 text-[#7f91a4]" />
-              <span class="text-xs font-medium text-white dark:text-white text-gray-800">Sound Effects</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-white">Sound Effects</span>
             </div>
             <div
               class="w-9 h-5 rounded-full p-0.5 transition-colors"
@@ -242,13 +242,13 @@ function selectAnimation(id: string) {
           <!-- Web Notifications -->
           <div
             @click="toggleNotifications"
-            class="flex items-center justify-between p-3 rounded-xl hover:bg-[#202b36] cursor-pointer transition-colors"
+            class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#202b36] cursor-pointer transition-colors"
           >
             <div class="flex items-center gap-3">
               <Bell v-if="notifEnabled && notifPermission === 'granted'" class="w-5 h-5 text-[#3390ec]" />
               <BellOff v-else class="w-5 h-5 text-[#7f91a4]" />
               <div>
-                <span class="text-xs font-medium text-white dark:text-white text-gray-800 block">Web Notifications</span>
+                <span class="text-xs font-medium text-gray-800 dark:text-white block">Web Notifications</span>
                 <span class="text-[10px] text-[#7f91a4] block">
                   {{ notifPermission === 'granted' ? (notifEnabled ? 'Enabled' : 'Disabled') : 'Click to enable desktop alerts' }}
                 </span>
@@ -267,7 +267,7 @@ function selectAnimation(id: string) {
         </div>
 
         <!-- Section 3: Themes & Custom Animations -->
-        <div class="space-y-4 pt-3 border-t border-[#202b36] dark:border-[#202b36] border-gray-200">
+        <div class="space-y-4 pt-3 border-t border-gray-200 dark:border-[#202b36]">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <Palette class="w-4 h-4 text-[#3390ec]" />
@@ -288,8 +288,8 @@ function selectAnimation(id: string) {
               class="relative flex flex-col p-2.5 rounded-xl border text-left transition-all group overflow-hidden cursor-pointer"
               :class="[
                 uiStore.themeId === t.id
-                  ? 'border-[#3390ec] ring-2 ring-[#3390ec]/30 shadow-lg bg-[#202b36]/40'
-                  : 'border-[#202b36] dark:border-[#202b36] border-gray-200 hover:border-gray-500 bg-black/15'
+                  ? 'border-[#3390ec] ring-2 ring-[#3390ec]/30 shadow-lg bg-[#3390ec]/10 dark:bg-[#202b36]/40'
+                  : 'border-gray-200 dark:border-[#202b36] hover:border-gray-500 bg-gray-50 dark:bg-black/15'
               ]"
             >
               <!-- Color Palette Miniature Preview -->
@@ -332,7 +332,7 @@ function selectAnimation(id: string) {
 
               <!-- Theme Title & Description in English -->
               <div class="min-w-0">
-                <div class="text-xs font-semibold text-white dark:text-white text-gray-800 truncate">
+                <div class="text-xs font-semibold text-gray-800 dark:text-white truncate">
                   {{ t.name }}
                 </div>
                 <div class="text-[10px] text-[#7f91a4] truncate mt-0.5 font-sans" :title="t.description">
@@ -359,7 +359,7 @@ function selectAnimation(id: string) {
                 :class="[
                   uiStore.animPreset === anim.id
                     ? 'border-[#3390ec] bg-[#3390ec]/15 shadow-sm'
-                    : 'border-[#202b36] dark:border-[#202b36] border-gray-200 hover:border-gray-500 bg-black/15'
+                    : 'border-gray-200 dark:border-[#202b36] hover:border-gray-500 bg-gray-50 dark:bg-black/15'
                 ]"
               >
                 <!-- Radio Dot -->
@@ -375,7 +375,7 @@ function selectAnimation(id: string) {
                 </div>
 
                 <div class="min-w-0">
-                  <div class="text-xs font-semibold text-white dark:text-white text-gray-800 flex items-center gap-1.5">
+                  <div class="text-xs font-semibold text-gray-800 dark:text-white flex items-center gap-1.5">
                     <span>{{ anim.name }}</span>
                   </div>
                   <p class="text-[10px] text-[#7f91a4] mt-0.5 leading-relaxed line-clamp-2">
@@ -389,10 +389,10 @@ function selectAnimation(id: string) {
       </div>
 
       <!-- Footer Buttons -->
-      <div class="p-4 border-t border-[#202b36] flex items-center justify-end gap-3 bg-[#0e1621]/30">
+      <div class="p-4 border-t border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-end gap-3 bg-gray-50 dark:bg-[#0e1621]/30">
         <button
           @click="uiStore.showSettingsModal = false"
-          class="px-4 py-2 text-xs text-[#7f91a4] hover:text-white transition-colors"
+          class="px-4 py-2 text-xs text-[#7f91a4] hover:text-[#111827] dark:hover:text-white transition-colors"
         >
           Cancel
         </button>
