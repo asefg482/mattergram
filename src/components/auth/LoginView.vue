@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { mmApi } from '../../services/mattermostApi'
 import { notificationService } from '../../services/notifications'
-import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-vue-next'
+import { Lock, Mail, AlertCircle, Loader2, Github, Star } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -204,10 +204,27 @@ async function handleLogin() {
         </div>
       </div>
 
-      <!-- Footer Info -->
-      <p class="text-center text-xs text-[#7f91a4]/60 mt-6">
-        Connected to Mattermost v4 REST &amp; WebSocket APIs
-      </p>
+      <!-- Minimal Open Source & GitHub Star Badge -->
+      <div class="mt-5 flex flex-col items-center gap-2">
+        <a
+          href="https://github.com/asefg482/mattergram"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#17212b]/80 hover:bg-[#202b36] border border-[#202b36] hover:border-[#3390ec]/40 text-[#7f91a4] hover:text-white text-xs transition-all duration-200 shadow-sm"
+        >
+          <Github class="w-3.5 h-3.5 text-[#7f91a4] group-hover:text-white transition-colors" />
+          <span class="text-[11px] font-medium">Open Source</span>
+          <span class="w-1 h-1 rounded-full bg-[#7f91a4]/40"></span>
+          <span class="inline-flex items-center gap-1 text-[#3390ec] group-hover:text-[#52a6f5] text-[11px] font-medium">
+            <Star class="w-3 h-3 text-amber-400 fill-amber-400/20 group-hover:fill-amber-400 transition-colors" />
+            Star on GitHub
+          </span>
+        </a>
+
+        <p class="text-center text-[11px] text-[#7f91a4]/50">
+          Connected to Mattermost v4 REST &amp; WebSocket APIs
+        </p>
+      </div>
     </div>
   </div>
 </template>
