@@ -23,7 +23,7 @@ const isLoadingBrand = ref(true)
 
 const serverHostName = computed(() => {
   const current = authStore.baseUrl || mmApi.getBaseUrl()
-  if (!current) return 'سرور در .env تنظیم نشده است'
+  if (!current) return 'Server not configured in .env'
   try {
     const u = new URL(current)
     return u.host
@@ -77,7 +77,7 @@ onMounted(() => {
 async function handleLogin() {
   const currentBase = authStore.baseUrl || mmApi.getBaseUrl()
   if (!currentBase) {
-    errorMsg.value = 'آدرس سرور مترموست تنظیم نشده است. لطفاً MATTERMOST_BASE_URL را در فایل .env تنظیم کنید.'
+    errorMsg.value = 'Mattermost server URL is not configured. Please set MATTERMOST_BASE_URL in your .env file.'
     return
   }
 

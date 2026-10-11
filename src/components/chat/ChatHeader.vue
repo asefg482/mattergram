@@ -114,7 +114,7 @@ function toggleMute() {
       <div
         @click="handleAvatarClick"
         class="cursor-pointer hover:opacity-90 transition-opacity shrink-0"
-        :title="isDirect ? 'مشاهده پروفایل و بزرگ‌نمایی عکس' : 'اطلاعات کانال'"
+        :title="isDirect ? 'View profile and enlarge photo' : 'Channel info'"
       >
         <TelegramAvatar
           :userId="channel.dm_user?.id"

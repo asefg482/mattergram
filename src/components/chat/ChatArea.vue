@@ -406,13 +406,13 @@ onUnmounted(() => {
               <div class="flex-1 h-px bg-gradient-to-r from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-left"></div>
               <div
                 class="mx-2.5 sm:mx-4 px-3.5 py-0.5 rounded-full text-[11px] font-medium bg-[#3390ec]/15 dark:bg-[#3390ec]/20 text-[#3390ec] dark:text-[#52a5f5] border border-[#3390ec]/25 backdrop-blur-xs flex items-center gap-1.5 shadow-xs transition-all hover:bg-[#3390ec]/25 tg-unread-pill"
-                title="پیام‌های بعد از این خط جدید هستند"
+                title="Messages below are new"
               >
                 <span class="relative flex h-2 w-2">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3390ec] dark:bg-[#52a5f5] opacity-75 tg-unread-dot"></span>
                   <span class="relative inline-flex rounded-full h-2 w-2 bg-[#3390ec] dark:bg-[#52a5f5] tg-unread-dot-solid"></span>
                 </span>
-                <span>پیام‌های جدید</span>
+                <span>New Messages</span>
               </div>
               <div class="flex-1 h-px bg-gradient-to-l from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-right"></div>
             </div>

@@ -480,7 +480,7 @@ function finishSearch() {
             <div
               @click.stop="handleUserAvatarClick(u)"
               class="shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
-              title="مشاهده پروفایل کاربر"
+              title="View user profile"
             >
               <TelegramAvatar
                 :name="usersStore.getUserDisplayName(u)"

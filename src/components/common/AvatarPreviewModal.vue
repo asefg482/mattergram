@@ -168,7 +168,7 @@ onUnmounted(() => {
     <div class="w-full max-w-5xl flex items-center justify-between text-white z-30 pointer-events-none px-2 py-1">
       <div class="flex items-center gap-2 pointer-events-auto bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs">
         <span class="font-semibold text-sm">{{ preview.name }}</span>
-        <span class="text-xs text-white/60">عکس پروفایل</span>
+        <span class="text-xs text-white/60">Profile photo</span>
       </div>
 
       <div class="flex items-center gap-1 sm:gap-2 pointer-events-auto bg-black/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 text-xs">
@@ -177,7 +177,7 @@ onUnmounted(() => {
           @click="zoomOut"
           :disabled="scale <= MIN_SCALE"
           class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="کوچک‌نمایی (-)"
+          title="Zoom out (-)"
         >
           <ZoomOut class="w-4 h-4" />
         </button>
@@ -185,7 +185,7 @@ onUnmounted(() => {
         <button
           @click="resetZoom"
           class="px-2 py-0.5 min-w-[50px] text-center font-mono text-[11px] font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-          title="ریست زوم به ۱۰۰٪"
+          title="Reset zoom to 100%"
         >
           {{ Math.round(scale * 100) }}%
         </button>
@@ -194,7 +194,7 @@ onUnmounted(() => {
           @click="zoomIn"
           :disabled="scale >= MAX_SCALE"
           class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="بزرگ‌نمایی (+)"
+          title="Zoom in (+)"
         >
           <ZoomIn class="w-4 h-4" />
         </button>
@@ -203,7 +203,7 @@ onUnmounted(() => {
           v-if="scale > 1"
           @click="resetZoom"
           class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          title="ریست اندازه"
+          title="Reset size"
         >
           <RotateCcw class="w-4 h-4" />
         </button>
@@ -215,10 +215,10 @@ onUnmounted(() => {
           v-if="user"
           @click="handleViewProfile"
           class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-          title="مشاهده پروفایل کاربر"
+          title="View user profile"
         >
           <User class="w-4 h-4" />
-          <span class="hidden sm:inline">مشاهده پروفایل</span>
+          <span class="hidden sm:inline">View Profile</span>
         </button>
 
         <!-- Download Button -->
@@ -227,7 +227,7 @@ onUnmounted(() => {
           :download="`${preview.name}-avatar.png`"
           target="_blank"
           class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          title="دانلود عکس"
+          title="Download photo"
         >
           <Download class="w-4 h-4" />
         </a>
@@ -236,7 +236,7 @@ onUnmounted(() => {
         <button
           @click="handleClose"
           class="p-1.5 text-white/80 hover:text-white hover:bg-red-500/20 hover:text-red-400 rounded-full transition-colors"
-          title="بستن (Esc)"
+          title="Close (Esc)"
         >
           <X class="w-4 h-4" />
         </button>
@@ -271,7 +271,7 @@ onUnmounted(() => {
     <!-- Bottom Hint bar -->
     <div class="z-20 text-center pointer-events-none pb-1">
       <span class="text-[11px] text-white/50 bg-black/40 backdrop-blur-xs px-3 py-1 rounded-full border border-white/5">
-        اسکرول ماوس برای زوم • کشیدن برای جابه‌جایی • دابل کلیک برای زوم سریع
+        Scroll to zoom • Drag to pan • Double click to reset
       </span>
     </div>
   </div>

@@ -89,7 +89,7 @@ async function startChat() {
       <!-- 1. LOADING STATE -->
       <div v-if="modal.type === 'loading'" class="flex flex-col items-center justify-center py-8 text-center">
         <Loader2 class="w-10 h-10 animate-spin text-[#3390ec] mb-4" />
-        <h3 class="text-sm font-semibold mb-1">در حال جستجوی کاربر...</h3>
+        <h3 class="text-sm font-semibold mb-1">Searching for user...</h3>
         <p class="text-xs text-[#7f91a4]">@{{ modal.username }}</p>
       </div>
 
@@ -100,18 +100,18 @@ async function startChat() {
         </div>
 
         <h3 class="text-base font-bold mb-1">
-          تگ اعلان همگانی (@{{ modal.username }})
+          Broadcast Mention (@{{ modal.username }})
         </h3>
 
         <p class="text-xs text-[#7f91a4] leading-relaxed my-3 px-2">
-          این شناسه برای ارسال نوتیفیکیشن همگانی به تمام اعضای کانال استفاده می‌شود و مربوط به حساب کاربری شخصی نیست.
+          This handle broadcasts notifications to all channel members and is not a personal user account.
         </p>
 
         <button
           @click="close"
           class="w-full mt-2 py-2.5 px-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] hover:bg-[#202b36] text-white dark:text-white text-[#111827] font-medium text-xs rounded-2xl transition-all"
         >
-          متوجه شدم
+          Got it
         </button>
       </div>
 
@@ -122,18 +122,18 @@ async function startChat() {
         </div>
 
         <h3 class="text-base font-bold mb-1">
-          کاربر یافت نشد
+          User Not Found
         </h3>
 
         <p class="text-xs text-[#7f91a4] leading-relaxed my-3 px-2">
-          کاربری با نام کاربری <span class="text-[#3390ec] font-semibold">@{{ modal.username }}</span> در سرور وجود ندارد.
+          No user found with username <span class="text-[#3390ec] font-semibold">@{{ modal.username }}</span> on this server.
         </p>
 
         <button
           @click="close"
           class="w-full mt-2 py-2.5 px-4 bg-[#242f3d] dark:bg-[#242f3d] bg-[#f4f4f5] hover:bg-[#202b36] text-white dark:text-white text-[#111827] font-medium text-xs rounded-2xl transition-all"
         >
-          بستن
+          Close
         </button>
       </div>
 
@@ -143,7 +143,7 @@ async function startChat() {
         <div
           @click="enlargeAvatar"
           class="relative group cursor-pointer mb-3 rounded-full"
-          title="برای بزرگ‌نمایی عکس کلیک کنید"
+          title="Click to enlarge photo"
         >
           <TelegramAvatar
             :userId="user.id"
@@ -163,8 +163,8 @@ async function startChat() {
           {{ displayName }}
         </h3>
         <p class="text-xs mt-0.5 text-center">
-          <span v-if="isOnline" class="text-emerald-400 font-semibold">آنلاین</span>
-          <span v-else class="text-[#7f91a4]">آخرین بازدید به تازگی</span>
+          <span v-if="isOnline" class="text-emerald-400 font-semibold">Online</span>
+          <span v-else class="text-[#7f91a4]">Last seen recently</span>
         </p>
 
         <!-- Role Badge -->
@@ -173,20 +173,20 @@ async function startChat() {
           class="mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-[#3390ec]/20 text-[#3390ec] font-semibold flex items-center gap-1"
         >
           <Shield class="w-3 h-3" />
-          <span>ادمین سیستم</span>
+          <span>System Admin</span>
         </span>
 
         <!-- Profile Details List -->
         <div class="w-full mt-4 space-y-2.5 bg-[#0e1621]/40 rounded-2xl p-3 border border-[#202b36]">
           <!-- Username Row -->
           <div class="flex items-center justify-between text-xs">
-            <span class="text-[#7f91a4]">نام کاربری</span>
+            <span class="text-[#7f91a4]">Username</span>
             <div class="flex items-center gap-1.5">
               <span class="text-[#3390ec] font-semibold">@{{ user.username }}</span>
               <button
                 @click="copyToClipboard(user.username, 'username')"
                 class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
-                title="کپی نام کاربری"
+                title="Copy username"
               >
                 <Check v-if="copiedField === 'username'" class="w-3.5 h-3.5 text-emerald-400" />
                 <Copy v-else class="w-3.5 h-3.5" />
@@ -196,19 +196,19 @@ async function startChat() {
 
           <!-- Position / Bio (if available) -->
           <div v-if="user.position" class="flex items-center justify-between text-xs">
-            <span class="text-[#7f91a4]">سمت / بیو</span>
+            <span class="text-[#7f91a4]">Position / Bio</span>
             <span class="text-white font-medium truncate max-w-[180px]">{{ user.position }}</span>
           </div>
 
           <!-- Email (if available) -->
           <div v-if="user.email" class="flex items-center justify-between text-xs">
-            <span class="text-[#7f91a4]">ایمیل</span>
+            <span class="text-[#7f91a4]">Email</span>
             <div class="flex items-center gap-1.5">
               <span class="text-white/90 truncate max-w-[150px]">{{ user.email }}</span>
               <button
                 @click="copyToClipboard(user.email, 'email')"
                 class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
-                title="کپی ایمیل"
+                title="Copy email"
               >
                 <Check v-if="copiedField === 'email'" class="w-3.5 h-3.5 text-emerald-400" />
                 <Copy v-else class="w-3.5 h-3.5" />
@@ -218,7 +218,7 @@ async function startChat() {
 
           <!-- Nickname (if available) -->
           <div v-if="user.nickname" class="flex items-center justify-between text-xs">
-            <span class="text-[#7f91a4]">نام مستعار</span>
+            <span class="text-[#7f91a4]">Nickname</span>
             <span class="text-white font-medium">{{ user.nickname }}</span>
           </div>
         </div>
@@ -229,10 +229,10 @@ async function startChat() {
           <button
             @click="enlargeAvatar"
             class="py-2.5 px-3 rounded-2xl border border-[#202b36] hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-white transition-all flex items-center justify-center gap-1.5 shrink-0"
-            title="بزرگ کردن عکس پروفایل"
+            title="Enlarge profile photo"
           >
             <ZoomIn class="w-3.5 h-3.5" />
-            <span>بزرگ‌نمایی عکس</span>
+            <span>Enlarge photo</span>
           </button>
 
           <!-- Start Chat Button -->
@@ -241,7 +241,7 @@ async function startChat() {
             class="flex-1 py-2.5 px-4 rounded-2xl bg-[#3390ec] hover:bg-[#2481cc] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-[#3390ec]/30 transition-all active:scale-95"
           >
             <Send class="w-3.5 h-3.5" />
-            <span>ارسال پیام</span>
+            <span>Send Message</span>
           </button>
         </div>
       </div>

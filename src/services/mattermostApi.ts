@@ -92,7 +92,7 @@ class MattermostApiService {
 
   public async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
     if (!this.baseUrl) {
-      throw new Error('آدرس سرور مترموست تنظیم نشده است. لطفاً MATTERMOST_BASE_URL را در فایل .env تنظیم کنید.')
+      throw new Error('Mattermost server URL is not configured. Please set MATTERMOST_BASE_URL in your .env file.')
     }
     const url = this.resolveEndpoint(endpoint)
     const headers = this.getHeaders(options.headers as Record<string, string> || {})
@@ -123,7 +123,7 @@ class MattermostApiService {
   // --- Auth ---
   public async login(loginId: string, password: string): Promise<{ user: MattermostUser; token: string }> {
     if (!this.baseUrl) {
-      throw new Error('آدرس سرور مترموست تنظیم نشده است. لطفاً MATTERMOST_BASE_URL را در فایل .env تنظیم کنید.')
+      throw new Error('Mattermost server URL is not configured. Please set MATTERMOST_BASE_URL in your .env file.')
     }
     const url = this.resolveEndpoint('/api/v4/users/login')
     const headers: Record<string, string> = {

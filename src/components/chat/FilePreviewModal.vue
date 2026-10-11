@@ -243,7 +243,7 @@ onUnmounted(() => {
             @click="zoomOut"
             :disabled="scale <= MIN_SCALE"
             class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="کوچک‌نمایی (-)"
+            title="Zoom out (-)"
           >
             <ZoomOut class="w-4 h-4" />
           </button>
@@ -252,7 +252,7 @@ onUnmounted(() => {
           <button
             @click="resetZoom"
             class="px-2 py-0.5 min-w-[52px] text-center font-mono text-[11px] font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-            title="ریست زوم به ۱۰۰٪ (۰)"
+            title="Reset zoom to 100% (0)"
           >
             {{ Math.round(scale * 100) }}%
           </button>
@@ -261,7 +261,7 @@ onUnmounted(() => {
             @click="zoomIn"
             :disabled="scale >= MAX_SCALE"
             class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="بزرگ‌نمایی (+)"
+            title="Zoom in (+)"
           >
             <ZoomIn class="w-4 h-4" />
           </button>
@@ -270,7 +270,7 @@ onUnmounted(() => {
             v-if="scale > 1"
             @click="resetZoom"
             class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-            title="ریست اندازه"
+            title="Reset size"
           >
             <RotateCcw class="w-4 h-4" />
           </button>
@@ -284,7 +284,7 @@ onUnmounted(() => {
           :download="file.name"
           target="_blank"
           class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          title="دانلود فایل"
+          title="Download file"
         >
           <Download class="w-4 h-4" />
         </a>
@@ -293,7 +293,7 @@ onUnmounted(() => {
         <button
           @click="uiStore.closeFilePreview"
           class="p-1.5 text-white/80 hover:text-white hover:bg-red-500/20 hover:text-red-400 rounded-full transition-colors"
-          title="بستن (Esc)"
+          title="Close (Esc)"
         >
           <X class="w-4 h-4" />
         </button>
@@ -359,7 +359,7 @@ onUnmounted(() => {
           class="px-4 py-2 bg-[#2481cc] hover:bg-[#1d73b8] rounded-xl text-white text-xs font-medium flex items-center gap-1.5 transition-colors"
         >
           <Download class="w-4 h-4" />
-          <span>دانلود فایل</span>
+          <span>Download file</span>
         </a>
       </div>
     </div>
@@ -367,7 +367,7 @@ onUnmounted(() => {
     <!-- Bottom Hint bar -->
     <div class="z-20 text-center pointer-events-none pb-1">
       <span v-if="isImage" class="text-[11px] text-white/50 bg-black/40 backdrop-blur-xs px-3 py-1 rounded-full border border-white/5">
-        اسکرول ماوس برای زوم • کشیدن برای جابه‌جایی • دابل کلیک برای زوم سریع
+        Scroll to zoom • Drag to pan • Double click to reset
       </span>
     </div>
   </div>

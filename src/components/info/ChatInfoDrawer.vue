@@ -127,7 +127,7 @@ function handleMemberClick(user: MattermostUser) {
           v-if="isDirect && channel.dm_user"
           @click="enlargeAvatar"
           class="relative group cursor-pointer mb-3 rounded-full"
-          title="برای بزرگ‌نمایی عکس کلیک کنید"
+          title="Click to enlarge photo"
         >
           <TelegramAvatar
             :userId="channel.dm_user.id"
@@ -169,14 +169,14 @@ function handleMemberClick(user: MattermostUser) {
         <div class="flex items-center justify-between text-xs">
           <div class="flex items-center gap-2 text-[#7f91a4]">
             <AtSign class="w-4 h-4" />
-            <span>نام کاربری</span>
+            <span>Username</span>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="text-[#3390ec] font-semibold">@{{ channel.dm_user.username }}</span>
             <button
               @click="copyText(channel.dm_user.username, 'username')"
               class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
-              title="کپی نام کاربری"
+              title="Copy username"
             >
               <Check v-if="copiedField === 'username'" class="w-3.5 h-3.5 text-emerald-400" />
               <Copy v-else class="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ function handleMemberClick(user: MattermostUser) {
         <div v-if="channel.dm_user.position" class="flex items-center justify-between text-xs">
           <div class="flex items-center gap-2 text-[#7f91a4]">
             <Briefcase class="w-4 h-4" />
-            <span>سمت / بیو</span>
+            <span>Position / Bio</span>
           </div>
           <span class="text-white dark:text-white text-gray-800 font-medium truncate max-w-[170px]">{{ channel.dm_user.position }}</span>
         </div>
@@ -197,14 +197,14 @@ function handleMemberClick(user: MattermostUser) {
         <div v-if="channel.dm_user.email" class="flex items-center justify-between text-xs">
           <div class="flex items-center gap-2 text-[#7f91a4]">
             <Mail class="w-4 h-4" />
-            <span>ایمیل</span>
+            <span>Email</span>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="text-white/90 dark:text-white/90 text-gray-700 truncate max-w-[150px]">{{ channel.dm_user.email }}</span>
             <button
               @click="copyText(channel.dm_user.email, 'email')"
               class="p-1 text-[#7f91a4] hover:text-white rounded transition-colors"
-              title="کپی ایمیل"
+              title="Copy email"
             >
               <Check v-if="copiedField === 'email'" class="w-3.5 h-3.5 text-emerald-400" />
               <Copy v-else class="w-3.5 h-3.5" />
@@ -218,7 +218,7 @@ function handleMemberClick(user: MattermostUser) {
           class="w-full mt-2 py-2 px-3 rounded-xl border border-[#202b36] hover:bg-[#202b36] text-xs font-medium text-[#7f91a4] hover:text-white transition-all flex items-center justify-center gap-2"
         >
           <ZoomIn class="w-3.5 h-3.5" />
-          <span>بزرگ‌نمایی عکس</span>
+          <span>Enlarge photo</span>
         </button>
       </div>
 

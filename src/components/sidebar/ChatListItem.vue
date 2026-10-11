@@ -132,7 +132,7 @@ const avatarBg = computed(() => {
       v-if="isDirect && channel.dm_user"
       @click.stop="handleAvatarClick"
       class="shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
-      title="مشاهده پروفایل کاربر"
+      title="View user profile"
     >
       <TelegramAvatar
         :userId="channel.dm_user.id"
