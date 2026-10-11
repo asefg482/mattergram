@@ -92,12 +92,17 @@ export const useChatStore = defineStore('chat', () => {
     if (!authStore.currentTeam) return
     loadingChannels.value = true
     try {
-      const rawChannels = await mmApi.getMyChannels(authStore.currentTeam.id)
       const myId = authStore.currentUser?.id || ''
+      const teamId = authStore.currentTeam.id
 
-      // Process direct messages and user associations
+      // 1. Fetch raw channels and channel members concurrently
+      const [rawChannels, members] = await Promise.all([
+        mmApi.getMyChannels(teamId),
+        mmApi.getMyChannelMembers(teamId).catch(() => [])
+      ])
+
+      // 2. Identify direct message user IDs to fetch
       const dmUserIdsToFetch: string[] = []
-
       for (const ch of rawChannels) {
         if (ch.type === 'D') {
           const parts = ch.name.split('__')
@@ -108,13 +113,60 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
-      // Fetch users for DMs
-      if (dmUserIdsToFetch.length > 0) {
-        await usersStore.fetchUsers(dmUserIdsToFetch)
+      // 3. Concurrently fetch DM user info and the latest post for all channels
+      const authorIdsToFetch = new Set<string>()
+      const postPromises = rawChannels.map(async (ch) => {
+        try {
+          const pRes = await mmApi.getPosts(ch.id, 0, 1)
+          if (pRes.order && pRes.order.length > 0) {
+            const lastId = pRes.order[0]
+            const lastPost = pRes.posts[lastId]
+            if (lastPost && lastPost.delete_at === 0) {
+              ch.last_post = lastPost
+              if (lastPost.create_at) {
+                ch.last_post_at = Math.max(ch.last_post_at || 0, lastPost.create_at)
+              }
+              if (lastPost.user_id) {
+                authorIdsToFetch.add(lastPost.user_id)
+              }
+            }
+          }
+        } catch {
+          // Channel may have no posts or restricted access
+        }
+      })
+
+      const dmUsersPromise = dmUserIdsToFetch.length > 0 ? usersStore.fetchUsers(dmUserIdsToFetch) : Promise.resolve()
+
+      await Promise.allSettled([...postPromises, dmUsersPromise])
+
+      // 4. Fetch authors of latest posts if any
+      if (authorIdsToFetch.size > 0) {
+        await usersStore.fetchUsers(Array.from(authorIdsToFetch))
       }
 
-      // Enrich channels
-      channels.value = rawChannels.map((ch) => {
+      // 5. Populate channelLastViewedAt and unreadCounts
+      if (Array.isArray(members)) {
+        for (const m of members) {
+          if (m.channel_id) {
+            channelLastViewedAt.value[m.channel_id] = m.last_viewed_at || 0
+            if (typeof m.msg_count === 'number') {
+              const rawCh = rawChannels.find((c) => c.id === m.channel_id)
+              if (rawCh && typeof rawCh.total_msg_count === 'number') {
+                const unread = Math.max(0, rawCh.total_msg_count - m.msg_count)
+                if (unread > 0) {
+                  unreadCounts.value[m.channel_id] = unread
+                }
+              }
+            }
+          }
+        }
+        const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+        notificationService.updateDocumentTitle(totalUnread)
+      }
+
+      // 6. Enrich channels with DM users and formatted names
+      const enrichedChannels = rawChannels.map((ch) => {
         if (ch.type === 'D') {
           const parts = ch.name.split('__')
           const isSavedMessages = parts[0] === myId && parts[1] === myId
@@ -136,62 +188,15 @@ export const useChatStore = defineStore('chat', () => {
         return ch
       })
 
-      // Fetch last post for each channel to display preview in sidebar
-      const authorIdsToFetch = new Set<string>()
-      await Promise.allSettled(
-        channels.value.map(async (ch) => {
-          try {
-            const pRes = await mmApi.getPosts(ch.id, 0, 1)
-            if (pRes.order && pRes.order.length > 0) {
-              const lastId = pRes.order[0]
-              const lastPost = pRes.posts[lastId]
-              if (lastPost && lastPost.delete_at === 0) {
-                ch.last_post = lastPost
-                if (lastPost.create_at) {
-                  ch.last_post_at = Math.max(ch.last_post_at || 0, lastPost.create_at)
-                }
-                if (lastPost.user_id) {
-                  authorIdsToFetch.add(lastPost.user_id)
-                }
-              }
-            }
-          } catch (e) {
-            // Channel may have no posts or restricted
-          }
-        })
-      )
+      // 7. Sort channels by pinned status and latest post timestamp
+      enrichedChannels.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1
+        if (!a.is_pinned && b.is_pinned) return 1
+        return (b.last_post_at || b.create_at || 0) - (a.last_post_at || a.create_at || 0)
+      })
 
-      if (authorIdsToFetch.size > 0) {
-        await usersStore.fetchUsers(Array.from(authorIdsToFetch))
-      }
-
-      // Fetch channel members to populate last_viewed_at and unread counts
-      try {
-        const members = await mmApi.getMyChannelMembers(authStore.currentTeam.id)
-        if (Array.isArray(members)) {
-          for (const m of members) {
-            if (m.channel_id) {
-              channelLastViewedAt.value[m.channel_id] = m.last_viewed_at || 0
-              if (typeof m.msg_count === 'number') {
-                const ch = channels.value.find((c) => c.id === m.channel_id)
-                if (ch && typeof ch.total_msg_count === 'number') {
-                  const unread = Math.max(0, ch.total_msg_count - m.msg_count)
-                  if (unread > 0) {
-                    unreadCounts.value[m.channel_id] = unread
-                  }
-                }
-              }
-            }
-          }
-          const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
-          notificationService.updateDocumentTitle(totalUnread)
-        }
-      } catch (e) {
-        // Silently catch if not supported
-      }
-
-      // Sort by last_post_at descending
-      sortChannels()
+      // 8. Atomically update channels so UI receives the ready, sorted list
+      channels.value = enrichedChannels
     } catch (err) {
       console.error('Failed to load channels:', err)
     } finally {

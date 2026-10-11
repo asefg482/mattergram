@@ -386,10 +386,40 @@ function finishSearch() {
 
     <!-- Chat List / Search Results -->
     <div class="flex-1 overflow-y-auto tg-scroll-container divide-y divide-[#101921]/50 dark:divide-[#101921]/50 divide-[#dfe1e5]/50 relative">
-      <!-- Loading indicator when initial channels load -->
-      <div v-if="chatStore.loadingChannels && chatStore.channels.length === 0" class="flex flex-col items-center justify-center h-48 text-[#7f91a4] gap-2">
-        <Loader2 class="w-6 h-6 animate-spin text-[#3390ec]" />
-        <span class="text-xs">Loading chats...</span>
+      <!-- Telegram Skeleton Loader when initial channels load -->
+      <div v-if="chatStore.loadingChannels && chatStore.channels.length === 0" class="divide-y divide-[#101921]/30 dark:divide-[#101921]/30 divide-gray-100">
+        <div
+          v-for="i in 8"
+          :key="i"
+          class="flex items-center gap-3 px-3 py-2.5 animate-pulse select-none"
+        >
+          <!-- Skeleton Avatar -->
+          <div class="w-12 h-12 rounded-full bg-[#242f3d]/60 dark:bg-[#242f3d]/60 bg-gray-200 shrink-0"></div>
+
+          <!-- Skeleton Details -->
+          <div class="flex-1 min-w-0 space-y-2">
+            <!-- Title & Time Row -->
+            <div class="flex items-center justify-between">
+              <div
+                class="h-3.5 bg-[#242f3d]/80 dark:bg-[#242f3d]/80 bg-gray-200 rounded-md"
+                :style="{ width: [100, 130, 85, 115, 140, 95, 125, 110][(i - 1) % 8] + 'px' }"
+              ></div>
+              <div class="h-2.5 w-9 bg-[#242f3d]/50 dark:bg-[#242f3d]/50 bg-gray-200 rounded-md"></div>
+            </div>
+
+            <!-- Message Snippet Row -->
+            <div class="flex items-center justify-between">
+              <div
+                class="h-3 bg-[#242f3d]/50 dark:bg-[#242f3d]/50 bg-gray-200/80 rounded-md"
+                :style="{ width: [180, 220, 150, 190, 230, 160, 200, 175][(i - 1) % 8] + 'px' }"
+              ></div>
+              <div
+                v-if="i % 3 === 0"
+                class="w-4 h-4 rounded-full bg-[#3390ec]/25 shrink-0"
+              ></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Normal Mode (No search query active) -->
