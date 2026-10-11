@@ -22,7 +22,8 @@ import {
   Pin,
   FileText,
   Download,
-  SmilePlus
+  SmilePlus,
+  Eye
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import ReactionPicker from './ReactionPicker.vue'
@@ -75,6 +76,7 @@ const senderName = computed(() => usersStore.getUserDisplayName(props.post.user_
 // Cached rendered markdown and formatted time
 const renderedMessage = computed(() => renderTelegramMarkdown(props.post.message))
 const formattedTime = computed(() => formatMessageTime(props.post.create_at))
+const viewersCount = computed(() => chatStore.getPostViewersCount(props.post))
 
 // Parent post if this is a reply
 const parentPost = computed(() => {
@@ -534,6 +536,16 @@ function handleSenderClick() {
 
           <!-- Pinned Icon -->
           <Pin v-if="post.is_pinned" class="w-2.5 h-2.5 opacity-60" />
+
+          <!-- Telegram-style Eye View Count -->
+          <span
+            v-if="viewersCount > 0"
+            class="flex items-center gap-0.5 text-[9px] opacity-75 mr-0.5 hover:text-[#3390ec] transition-colors"
+            title="Views"
+          >
+            <Eye class="w-2.5 h-2.5" />
+            <span>{{ viewersCount }}</span>
+          </span>
 
           <!-- Time -->
           <span>{{ formattedTime }}</span>

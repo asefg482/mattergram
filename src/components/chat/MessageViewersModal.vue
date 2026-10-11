@@ -121,7 +121,24 @@ async function loadData() {
   // Map: userId -> viewedAt timestamp
   const viewersMap = new Map<string, number>()
 
-  // 1. Reactions on this post (cached first)
+  // 1. Fetch channel members & immediately load their status/presence
+  let members: MattermostChannelMember[] = []
+  try {
+    members = await mmApi.getChannelMembers(channelId, 0, 100)
+    if (Array.isArray(members)) {
+      const allMemberIds = members.map((m) => m.user_id).filter(Boolean)
+      if (allMemberIds.length > 0) {
+        await Promise.all([
+          usersStore.fetchUsers(allMemberIds),
+          usersStore.fetchStatuses(allMemberIds)
+        ])
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load channel members:', err)
+  }
+
+  // 2. Reactions on this post (cached first)
   const cachedReactions = props.post.metadata?.reactions || []
   reactionsList.value = dedupeReactions(cachedReactions)
   for (const r of reactionsList.value) {
@@ -131,7 +148,7 @@ async function loadData() {
     }
   }
 
-  // 2. Fetch fresh reactions asynchronously
+  // 3. Fetch fresh reactions asynchronously
   const reactionsPromise = mmApi
     .getPostReactions(props.post.id)
     .then(async (fresh) => {
@@ -160,32 +177,30 @@ async function loadData() {
       isLoadingReactions.value = false
     })
 
-  // 3. Channel members with explicit last_viewed_at
-  try {
-    const members = await mmApi.getChannelMembers(channelId, 0, 100)
-    if (Array.isArray(members)) {
-      for (const m of members) {
-        if (m.user_id && m.user_id !== postAuthorId && (m.last_viewed_at || 0) >= postCreateAt) {
-          viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, m.last_viewed_at))
-        }
+  // 4. Channel members with explicit view / update timestamps
+  for (const m of members) {
+    if (m.user_id && m.user_id !== postAuthorId) {
+      const viewedAt = m.last_viewed_at || (m as any).last_update_at || 0
+      if (viewedAt >= postCreateAt - 5000) {
+        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, viewedAt))
       }
     }
-  } catch {}
+  }
 
-  // 4. WebSocket channel_viewed events recorded in chatStore
+  // 5. WebSocket channel_viewed events recorded in chatStore
   const wsViews = chatStore.channelViewedByUser[channelId]
   if (wsViews) {
     for (const [uid, time] of Object.entries(wsViews)) {
-      if (uid && uid !== postAuthorId && time >= postCreateAt) {
+      if (uid && uid !== postAuthorId && time >= postCreateAt - 5000) {
         viewersMap.set(uid, Math.max(viewersMap.get(uid) || 0, time))
       }
     }
   }
 
-  // 5. Subsequent posts & reactions in this channel
+  // 6. Subsequent posts & reactions in this channel
   const channelPosts = chatStore.posts[channelId] || []
   for (const p of channelPosts) {
-    if (p.create_at >= postCreateAt) {
+    if (p.create_at > postCreateAt) {
       if (p.user_id && p.user_id !== postAuthorId && !p.id.startsWith('temp_')) {
         viewersMap.set(p.user_id, Math.max(viewersMap.get(p.user_id) || 0, p.create_at))
       }
@@ -199,23 +214,29 @@ async function loadData() {
     }
   }
 
-  // 6. Direct Messages: recipient's status & activity
+  // 7. Presence and recent activity of channel members
   const currentChannel = chatStore.channels.find((c) => c.id === channelId)
-  if (currentChannel && currentChannel.type === 'D') {
-    const parts = currentChannel.name.split('__')
-    const otherUserId = (currentChannel as any).dm_user?.id || (parts[0] === myId ? parts[1] : parts[0])
-    if (otherUserId && otherUserId !== postAuthorId) {
-      const lastAct = usersStore.lastActivityAt[otherUserId] || 0
-      const isOnline = usersStore.getStatus(otherUserId) === 'online'
-      if (lastAct >= postCreateAt) {
-        viewersMap.set(otherUserId, Math.max(viewersMap.get(otherUserId) || 0, lastAct))
+  const isDm = currentChannel?.type === 'D'
+
+  for (const m of members) {
+    if (!m.user_id || m.user_id === postAuthorId) continue
+    const lastAct = usersStore.lastActivityAt[m.user_id] || 0
+    const isOnline = usersStore.getStatus(m.user_id) === 'online'
+
+    if (isDm) {
+      if (lastAct >= postCreateAt - 5000) {
+        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, lastAct))
       } else if (isOnline && Date.now() - postCreateAt > 3000) {
-        viewersMap.set(otherUserId, Math.max(viewersMap.get(otherUserId) || 0, Date.now()))
+        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, Date.now()))
+      }
+    } else {
+      if (lastAct >= postCreateAt - 5000) {
+        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, lastAct))
       }
     }
   }
 
-  // 7. If the viewing user is not the message author, they are seeing it now
+  // 8. If viewing user is not author, they are seeing it right now
   if (myId && myId !== postAuthorId) {
     viewersMap.set(myId, Math.max(viewersMap.get(myId) || 0, Date.now()))
   }
@@ -428,7 +449,7 @@ onUnmounted(() => {
                   </div>
                   <p class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
                     <CheckCheck class="w-3 h-3 text-emerald-400" />
-                    <span>Seen {{ formatViewedAtTime(item.viewedAt) }}</span>
+                    <span>Seen {{ formatViewedAtTime(item.viewedAt) || 'recently' }}</span>
                   </p>
                 </div>
               </div>

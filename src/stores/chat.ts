@@ -8,7 +8,7 @@ import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
 import { toEmojiName, toEmojiChar } from '../utils/formatters'
 import { recordReactionUsage } from '../utils/reactions'
-import type { MattermostChannel, MattermostPost, MattermostReaction } from '../types/mattermost'
+import type { MattermostChannel, MattermostPost, MattermostReaction, MattermostChannelMember } from '../types/mattermost'
 
 export const useChatStore = defineStore('chat', () => {
   const authStore = useAuthStore()
@@ -18,6 +18,7 @@ export const useChatStore = defineStore('chat', () => {
   const activeChannelId = ref<string | null>(null)
   const scrollToBottomTrigger = ref(0)
   const posts = ref<Record<string, MattermostPost[]>>({})
+  const channelMembers = ref<Record<string, MattermostChannelMember[]>>({})
   const loadingChannels = ref(false)
   const loadingPosts = ref(false)
   const unreadCounts = ref<Record<string, number>>({})
@@ -279,6 +280,7 @@ export const useChatStore = defineStore('chat', () => {
 
     activeChannelId.value = targetId
     scrollToBottomTrigger.value++
+    fetchChannelMembers(targetId)
 
     // Capture unread metrics prior to resetting
     const unreadCount = unreadCounts.value[targetId] || 0
@@ -321,6 +323,7 @@ export const useChatStore = defineStore('chat', () => {
       postList.sort((a, b) => a.create_at - b.create_at)
       posts.value[channelId] = postList
       animatedPostIds.value.clear()
+      fetchChannelMembers(channelId)
 
       // Keep channel's last_post updated
       const ch = channels.value.find((c) => c.id === channelId)
@@ -596,6 +599,15 @@ export const useChatStore = defineStore('chat', () => {
         sortChannels()
       }
 
+      // Record author's activity and channel view
+      if (channelId && post.user_id) {
+        if (!channelViewedByUser.value[channelId]) {
+          channelViewedByUser.value[channelId] = {}
+        }
+        channelViewedByUser.value[channelId][post.user_id] = post.create_at || Date.now()
+        usersStore.lastActivityAt[post.user_id] = post.create_at || Date.now()
+      }
+
       // Notifications, sound & unread tracking
       const isMe = post.user_id === myId
       const isMuted = ch?.is_muted || false
@@ -651,6 +663,12 @@ export const useChatStore = defineStore('chat', () => {
     const userId = event.data?.user_id
     if (!channelId || !userId || userId === authStore.currentUser?.id) return
 
+    if (!channelViewedByUser.value[channelId]) {
+      channelViewedByUser.value[channelId] = {}
+    }
+    channelViewedByUser.value[channelId][userId] = Date.now()
+    usersStore.lastActivityAt[userId] = Date.now()
+
     if (!typingUsers.value[channelId]) {
       typingUsers.value[channelId] = {}
     }
@@ -689,6 +707,15 @@ export const useChatStore = defineStore('chat', () => {
           if (!alreadyExists) {
             post.metadata.reactions.push(reaction)
             usersStore.fetchUsers([reaction.user_id])
+          }
+          if (reaction.user_id) {
+            usersStore.lastActivityAt[reaction.user_id] = Date.now()
+            if (channelId) {
+              if (!channelViewedByUser.value[channelId]) {
+                channelViewedByUser.value[channelId] = {}
+              }
+              channelViewedByUser.value[channelId][reaction.user_id] = Date.now()
+            }
           }
         }
       }
@@ -771,44 +798,113 @@ export const useChatStore = defineStore('chat', () => {
     } catch {}
   }
 
-  function isPostSeen(post: MattermostPost): boolean {
-    if (!post) return false
+  async function fetchChannelMembers(channelId: string): Promise<MattermostChannelMember[]> {
+    if (!channelId) return []
+    try {
+      const members = await mmApi.getChannelMembers(channelId, 0, 100)
+      if (Array.isArray(members)) {
+        channelMembers.value[channelId] = members
+        const uids = members.map((m) => m.user_id).filter(Boolean)
+        if (uids.length > 0) {
+          usersStore.fetchUsers(uids)
+          usersStore.fetchStatuses(uids)
+        }
+        return members
+      }
+    } catch (err) {
+      console.error('Failed to fetch channel members:', err)
+    }
+    return []
+  }
+
+  function getPostViewers(post: MattermostPost): string[] {
+    if (!post) return []
     const myId = authStore.currentUser?.id
-    if (post.user_id !== myId) return true
+    const postAuthorId = post.user_id
+    const channelId = post.channel_id
+    const postCreateAt = post.create_at
+
+    const viewers = new Set<string>()
 
     // 1. Reactions from other users
     const reactions = post.metadata?.reactions || []
-    if (reactions.some((r) => r.user_id && r.user_id !== myId)) return true
-
-    // 2. Subsequent posts in this channel from other users
-    const channelPosts = posts.value[post.channel_id] || []
-    if (channelPosts.some((p) => p.create_at > post.create_at && p.user_id && p.user_id !== myId && !p.id.startsWith('temp_'))) {
-      return true
-    }
-
-    // 3. Channel viewed events via WS
-    const views = channelViewedByUser.value[post.channel_id]
-    if (views) {
-      for (const [uid, time] of Object.entries(views)) {
-        if (uid !== myId && time >= post.create_at) return true
+    for (const r of reactions) {
+      if (r.user_id && r.user_id !== postAuthorId) {
+        viewers.add(r.user_id)
       }
     }
 
-    // 4. In 1-on-1 Direct Messages
-    const ch = channels.value.find((c) => c.id === post.channel_id)
-    if (ch && ch.type === 'D') {
-      const parts = ch.name.split('__')
-      const otherUserId = (ch as any).dm_user?.id || (parts[0] === myId ? parts[1] : parts[0])
-      if (otherUserId && otherUserId !== myId) {
-        const lastAct = usersStore.lastActivityAt[otherUserId] || 0
-        const isOnline = usersStore.getStatus(otherUserId) === 'online'
-        if (lastAct >= post.create_at || (isOnline && Date.now() - post.create_at > 3000)) {
-          return true
+    // 2. Subsequent posts & reactions in this channel
+    const channelPosts = posts.value[channelId] || []
+    for (const p of channelPosts) {
+      if (p.create_at > postCreateAt) {
+        if (p.user_id && p.user_id !== postAuthorId && !p.id.startsWith('temp_')) {
+          viewers.add(p.user_id)
+        }
+        const pReactions = p.metadata?.reactions || []
+        for (const pr of pReactions) {
+          if (pr.user_id && pr.user_id !== postAuthorId) {
+            viewers.add(pr.user_id)
+          }
         }
       }
     }
 
-    return false
+    // 3. WS views & typing events
+    const views = channelViewedByUser.value[channelId]
+    if (views) {
+      for (const [uid, time] of Object.entries(views)) {
+        if (uid && uid !== postAuthorId && time >= postCreateAt - 5000) {
+          viewers.add(uid)
+        }
+      }
+    }
+
+    // 4. Channel members view timestamp & activity
+    const members = channelMembers.value[channelId] || []
+    const ch = channels.value.find((c) => c.id === channelId)
+    const isDm = ch?.type === 'D'
+
+    for (const m of members) {
+      if (!m.user_id || m.user_id === postAuthorId) continue
+
+      const viewedAt = m.last_viewed_at || (m as any).last_update_at || 0
+      if (viewedAt >= postCreateAt - 5000) {
+        viewers.add(m.user_id)
+        continue
+      }
+
+      const lastAct = usersStore.lastActivityAt[m.user_id] || 0
+      const isOnline = usersStore.getStatus(m.user_id) === 'online'
+
+      if (isDm) {
+        if (lastAct >= postCreateAt - 5000 || (isOnline && Date.now() - postCreateAt > 3000)) {
+          viewers.add(m.user_id)
+        }
+      } else {
+        if (lastAct >= postCreateAt - 5000) {
+          viewers.add(m.user_id)
+        }
+      }
+    }
+
+    // 5. Viewing user (if not author and currently in channel)
+    if (myId && myId !== postAuthorId && activeChannelId.value === channelId) {
+      viewers.add(myId)
+    }
+
+    return Array.from(viewers)
+  }
+
+  function getPostViewersCount(post: MattermostPost): number {
+    return getPostViewers(post).length
+  }
+
+  function isPostSeen(post: MattermostPost): boolean {
+    if (!post) return false
+    const myId = authStore.currentUser?.id
+    if (post.user_id !== myId) return true
+    return getPostViewers(post).length > 0
   }
 
   return {
@@ -817,6 +913,7 @@ export const useChatStore = defineStore('chat', () => {
     scrollToBottomTrigger,
     activeChannel,
     posts,
+    channelMembers,
     currentPosts,
     activePostsWithSeparators,
     loadingChannels,
@@ -832,6 +929,9 @@ export const useChatStore = defineStore('chat', () => {
     loadChannels,
     selectChannel,
     loadPosts,
+    fetchChannelMembers,
+    getPostViewers,
+    getPostViewersCount,
     sendMessage,
     editMessage,
     deleteMessage,

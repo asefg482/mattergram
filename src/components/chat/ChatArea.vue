@@ -382,6 +382,8 @@ watch(
   }
 )
 
+let viewersRefreshInterval: any = null
+
 onMounted(() => {
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(() => {
@@ -401,6 +403,13 @@ onMounted(() => {
 
   onChannelSwitch()
 
+  // Periodically refresh channel viewers and presence while chat is open
+  viewersRefreshInterval = setInterval(() => {
+    if (chatStore.activeChannelId && !document.hidden) {
+      chatStore.fetchChannelMembers(chatStore.activeChannelId)
+    }
+  }, 6000)
+
   window.addEventListener('focus', onWindowFocus)
   window.addEventListener('dragend', onWindowDragEnd)
   window.addEventListener('dragleave', onWindowDragLeave)
@@ -411,11 +420,16 @@ onMounted(() => {
 function onWindowFocus() {
   if (chatStore.activeChannelId && !document.hidden) {
     chatStore.markActiveChannelViewed()
+    chatStore.fetchChannelMembers(chatStore.activeChannelId)
   }
 }
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  if (viewersRefreshInterval) {
+    clearInterval(viewersRefreshInterval)
+    viewersRefreshInterval = null
+  }
   if (messagesContainer.value) {
     messagesContainer.value.removeEventListener('load', onMediaLoad, true)
   }
