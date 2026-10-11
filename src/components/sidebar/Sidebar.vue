@@ -7,6 +7,7 @@ import { useUiStore } from '../../stores/ui'
 import { useUsersStore } from '../../stores/users'
 import { mmApi } from '../../services/mattermostApi'
 import FolderTabs from './FolderTabs.vue'
+import TodoSidebarPanel from '../todo/TodoSidebarPanel.vue'
 import ChatListItem from './ChatListItem.vue'
 import DrawerMenu from './DrawerMenu.vue'
 import NewChatModal from './NewChatModal.vue'
@@ -384,8 +385,11 @@ function finishSearch() {
     <!-- Folder Tabs (visible only when not searching) -->
     <FolderTabs v-if="!uiStore.searchQuery.trim()" />
 
+    <!-- TODO List Sidebar Panel -->
+    <TodoSidebarPanel v-if="uiStore.activeTab === 'todo' && !uiStore.searchQuery.trim()" />
+
     <!-- Chat List / Search Results -->
-    <div class="flex-1 overflow-y-auto tg-scroll-container divide-y divide-[#dfe1e5]/50 dark:divide-[#101921]/50 relative">
+    <div v-else class="flex-1 overflow-y-auto tg-scroll-container divide-y divide-[#dfe1e5]/50 dark:divide-[#101921]/50 relative">
       <!-- Telegram Skeleton Loader when initial channels load -->
       <div v-if="chatStore.loadingChannels && chatStore.channels.length === 0" class="divide-y divide-gray-100 dark:divide-[#101921]/30">
         <div

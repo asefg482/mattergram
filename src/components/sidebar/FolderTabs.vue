@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useUiStore } from '../../stores/ui'
 import { useChatStore } from '../../stores/chat'
+import { useTodoStore } from '../../stores/todo'
 import { computed } from 'vue'
 
 const uiStore = useUiStore()
 const chatStore = useChatStore()
+const todoStore = useTodoStore()
 
 const unreadChannelsCount = computed(() => {
   return chatStore.channels.filter(
@@ -22,12 +24,14 @@ const tabs = computed(() => {
   const totalCount = chatStore.unreadChatsCount
   const channelsCount = unreadChannelsCount.value
   const directCount = unreadDirectCount.value
+  const todoCount = todoStore.pendingCount
 
   return [
     { id: 'all', label: 'All Chats', count: totalCount > 0 ? totalCount : undefined },
     { id: 'channels', label: 'Channels', count: channelsCount > 0 ? channelsCount : undefined },
     { id: 'direct', label: 'Direct Messages', count: directCount > 0 ? directCount : undefined },
-    { id: 'unread', label: 'Unread', count: totalCount > 0 ? totalCount : undefined }
+    { id: 'unread', label: 'Unread', count: totalCount > 0 ? totalCount : undefined },
+    { id: 'todo', label: 'TODO list', count: todoCount > 0 ? todoCount : undefined }
   ]
 })
 

@@ -83,13 +83,14 @@ export const useUiStore = defineStore('ui', () => {
   // Initial DOM apply
   applyThemeToDom()
 
-  const activeTab = ref<'all' | 'channels' | 'direct' | 'unread'>('all')
+  const activeTab = ref<'all' | 'channels' | 'direct' | 'unread' | 'todo'>('all')
   const searchQuery = ref('')
   const replyingTo = ref<MattermostPost | null>(null)
   const editingPost = ref<MattermostPost | null>(null)
   const showRightSidebar = ref(false)
   const showSettingsModal = ref(false)
   const showNewChatModal = ref(false)
+  const showTodoModal = ref(false)
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
 
@@ -182,6 +183,7 @@ export const useUiStore = defineStore('ui', () => {
     showRightSidebar,
     showSettingsModal,
     showNewChatModal,
+    showTodoModal,
     previewFile,
     isMobileSidebarOpen,
     mentionModal,

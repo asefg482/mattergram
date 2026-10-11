@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
+import { useTodoStore } from '../../stores/todo'
 import type { MattermostPost } from '../../types/mattermost'
 import {
   Reply,
@@ -12,7 +13,8 @@ import {
   Trash2,
   SmilePlus,
   Eye,
-  MessageSquareText
+  MessageSquareText,
+  CheckSquare
 } from 'lucide-vue-next'
 import ReactionPicker from './ReactionPicker.vue'
 import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
@@ -32,6 +34,14 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const uiStore = useUiStore()
+const todoStore = useTodoStore()
+
+function handleAddToTodo() {
+  if (props.post) {
+    todoStore.addPostToTodo(props.post)
+  }
+  emit('close')
+}
 
 const menuRef = ref<HTMLDivElement | null>(null)
 const adjustedX = ref(props.position.x)
@@ -271,6 +281,15 @@ onUnmounted(() => {
           >
             {{ threadRepliesCount }}
           </span>
+        </button>
+
+        <!-- Add to TODO -->
+        <button
+          @click="handleAddToTodo"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+        >
+          <CheckSquare class="w-4 h-4 text-[#3390ec]" />
+          <span>Add to TODO</span>
         </button>
 
         <!-- Viewers -->

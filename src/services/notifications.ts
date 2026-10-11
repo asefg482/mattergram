@@ -175,6 +175,36 @@ class NotificationService {
     }
   }
 
+  public showToast(options: {
+    title?: string
+    message: string
+    channelId?: string
+    userId?: string
+    authorName?: string
+    channelTitle?: string
+    type?: string
+  }) {
+    const toastId = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`
+    const toast: InAppToast = {
+      id: toastId,
+      channelId: options.channelId || '',
+      userId: options.userId || '',
+      authorName: options.authorName || options.title || 'Notification',
+      channelTitle: options.channelTitle || 'Mattergram',
+      message: options.message,
+      timestamp: Date.now()
+    }
+
+    this.toasts.value.unshift(toast)
+    if (this.toasts.value.length > 3) {
+      this.toasts.value.pop()
+    }
+
+    setTimeout(() => {
+      this.dismissToast(toastId)
+    }, 4000)
+  }
+
   public dismissToast(toastId: string) {
     this.toasts.value = this.toasts.value.filter((t) => t.id !== toastId)
   }
