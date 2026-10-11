@@ -23,6 +23,7 @@ export const useChatStore = defineStore('chat', () => {
   const unreadCounts = ref<Record<string, number>>({})
   const firstUnreadPostIds = ref<Record<string, string | null>>({})
   const channelLastViewedAt = ref<Record<string, number>>({})
+  const channelViewedByUser = ref<Record<string, Record<string, number>>>({})
   const isScrolledUp = ref(false)
   const animatedPostIds = ref<Set<string>>(new Set())
   const typingUsers = ref<Record<string, Record<string, string>>>({})
@@ -630,10 +631,12 @@ export const useChatStore = defineStore('chat', () => {
       } else if (!isCurrentChat) {
         unreadCounts.value[channelId] = (unreadCounts.value[channelId] || 0) + 1
       } else {
-        // Message arrived in the active chat while user is scrolled up or window is inactive
+        // Message arrived in the active chat
         const isUserAway = isScrolledUp.value || (typeof document !== 'undefined' && document.hidden)
         if (isUserAway && !firstUnreadPostIds.value[channelId]) {
           firstUnreadPostIds.value[channelId] = post.id
+        } else if (!isUserAway) {
+          markActiveChannelViewed()
         }
       }
       const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
@@ -743,11 +746,69 @@ export const useChatStore = defineStore('chat', () => {
   function handleWsChannelViewed(event: any) {
     const channelId = event.broadcast?.channel_id || event.data?.channel_id
     const userId = event.broadcast?.user_id || event.data?.user_id
-    if (channelId && userId === authStore.currentUser?.id) {
+    if (!channelId || !userId) return
+
+    if (!channelViewedByUser.value[channelId]) {
+      channelViewedByUser.value[channelId] = {}
+    }
+    channelViewedByUser.value[channelId][userId] = Date.now()
+
+    if (userId === authStore.currentUser?.id) {
       unreadCounts.value[channelId] = 0
       const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
       notificationService.updateDocumentTitle(totalUnread)
     }
+  }
+
+  async function markActiveChannelViewed() {
+    if (!activeChannelId.value) return
+    const channelId = activeChannelId.value
+    unreadCounts.value[channelId] = 0
+    const totalUnread = Object.values(unreadCounts.value).reduce((a, b) => a + b, 0)
+    notificationService.updateDocumentTitle(totalUnread)
+    try {
+      await mmApi.viewChannel(channelId)
+    } catch {}
+  }
+
+  function isPostSeen(post: MattermostPost): boolean {
+    if (!post) return false
+    const myId = authStore.currentUser?.id
+    if (post.user_id !== myId) return true
+
+    // 1. Reactions from other users
+    const reactions = post.metadata?.reactions || []
+    if (reactions.some((r) => r.user_id && r.user_id !== myId)) return true
+
+    // 2. Subsequent posts in this channel from other users
+    const channelPosts = posts.value[post.channel_id] || []
+    if (channelPosts.some((p) => p.create_at > post.create_at && p.user_id && p.user_id !== myId && !p.id.startsWith('temp_'))) {
+      return true
+    }
+
+    // 3. Channel viewed events via WS
+    const views = channelViewedByUser.value[post.channel_id]
+    if (views) {
+      for (const [uid, time] of Object.entries(views)) {
+        if (uid !== myId && time >= post.create_at) return true
+      }
+    }
+
+    // 4. In 1-on-1 Direct Messages
+    const ch = channels.value.find((c) => c.id === post.channel_id)
+    if (ch && ch.type === 'D') {
+      const parts = ch.name.split('__')
+      const otherUserId = (ch as any).dm_user?.id || (parts[0] === myId ? parts[1] : parts[0])
+      if (otherUserId && otherUserId !== myId) {
+        const lastAct = usersStore.lastActivityAt[otherUserId] || 0
+        const isOnline = usersStore.getStatus(otherUserId) === 'online'
+        if (lastAct >= post.create_at || (isOnline && Date.now() - post.create_at > 3000)) {
+          return true
+        }
+      }
+    }
+
+    return false
   }
 
   return {
@@ -763,6 +824,7 @@ export const useChatStore = defineStore('chat', () => {
     unreadCounts,
     firstUnreadPostIds,
     channelLastViewedAt,
+    channelViewedByUser,
     isScrolledUp,
     animatedPostIds,
     typingUsers,
@@ -781,6 +843,8 @@ export const useChatStore = defineStore('chat', () => {
     togglePinChannel,
     toggleMuteChannel,
     toggleMarkAsUnread,
-    togglePinPost
+    togglePinPost,
+    markActiveChannelViewed,
+    isPostSeen
   }
 })

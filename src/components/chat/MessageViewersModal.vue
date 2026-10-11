@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { mmApi } from '../../services/mattermostApi'
 import { useAuthStore } from '../../stores/auth'
+import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
 import type { MattermostPost, MattermostChannelMember, MattermostReaction, MattermostUser } from '../../types/mattermost'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
@@ -32,6 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const chatStore = useChatStore()
 const usersStore = useUsersStore()
 
 const activeTab = ref<'viewers' | 'reactions'>('viewers')
@@ -39,9 +41,11 @@ const isLoadingViewers = ref(false)
 const isLoadingReactions = ref(false)
 
 interface ViewerItem {
-  member: MattermostChannelMember
+  userId: string
+  member?: MattermostChannelMember
   user?: MattermostUser
   isMe: boolean
+  viewedAt: number
 }
 
 const viewersList = ref<ViewerItem[]>([])
@@ -93,77 +97,153 @@ async function loadData() {
   activeTab.value = props.initialTab || 'viewers'
   selectedEmojiFilter.value = 'all'
 
-  // Fetch viewers
   isLoadingViewers.value = true
+  isLoadingReactions.value = true
   viewersList.value = []
-  try {
-    const members = await mmApi.getChannelMembers(props.post.channel_id, 0, 100)
-    if (Array.isArray(members)) {
-      // Members who viewed the channel after post was created, excluding author
-      const postCreateAt = props.post.create_at
-      const postAuthorId = props.post.user_id
+  reactionsList.value = []
 
-      const validViewers = members.filter(
-        (m) => (m.last_viewed_at || 0) >= postCreateAt && m.user_id !== postAuthorId
-      )
+  const postCreateAt = props.post.create_at
+  const postAuthorId = props.post.user_id
+  const channelId = props.post.channel_id
+  const myId = authStore.currentUser?.id
 
-      // Sort newest viewer first
-      validViewers.sort((a, b) => (b.last_viewed_at || 0) - (a.last_viewed_at || 0))
-
-      const ids = validViewers.map((m) => m.user_id)
-      if (ids.length > 0) {
-        await usersStore.fetchUsers(ids)
+  function dedupeReactions(list: MattermostReaction[]): MattermostReaction[] {
+    const map = new Map<string, MattermostReaction>()
+    for (const r of list) {
+      const key = `${r.user_id}_${toEmojiChar(r.emoji_name)}`
+      if (!map.has(key)) {
+        map.set(key, r)
       }
-
-      viewersList.value = validViewers.map((m) => ({
-        member: m,
-        user: usersStore.getUser(m.user_id),
-        isMe: m.user_id === authStore.currentUser?.id
-      }))
     }
-  } catch (err) {
-    console.error('Failed to load message viewers:', err)
-  } finally {
-    isLoadingViewers.value = false
+    return Array.from(map.values())
   }
 
-  // Fetch reactions
-  isLoadingReactions.value = true
-  reactionsList.value = []
-  try {
-    function dedupeReactions(list: MattermostReaction[]): MattermostReaction[] {
-      const map = new Map<string, MattermostReaction>()
-      for (const r of list) {
-        const key = `${r.user_id}_${toEmojiChar(r.emoji_name)}`
-        if (!map.has(key)) {
-          map.set(key, r)
+  // Map: userId -> viewedAt timestamp
+  const viewersMap = new Map<string, number>()
+
+  // 1. Reactions on this post (cached first)
+  const cachedReactions = props.post.metadata?.reactions || []
+  reactionsList.value = dedupeReactions(cachedReactions)
+  for (const r of reactionsList.value) {
+    if (r.user_id && r.user_id !== postAuthorId) {
+      const time = (r as any).create_at || postCreateAt
+      viewersMap.set(r.user_id, Math.max(viewersMap.get(r.user_id) || 0, time))
+    }
+  }
+
+  // 2. Fetch fresh reactions asynchronously
+  const reactionsPromise = mmApi
+    .getPostReactions(props.post.id)
+    .then(async (fresh) => {
+      if (Array.isArray(fresh)) {
+        const deduped = dedupeReactions(fresh)
+        reactionsList.value = deduped
+        if (props.post?.metadata) {
+          props.post.metadata.reactions = deduped
+        }
+        for (const r of deduped) {
+          if (r.user_id && r.user_id !== postAuthorId) {
+            const time = (r as any).create_at || postCreateAt
+            viewersMap.set(r.user_id, Math.max(viewersMap.get(r.user_id) || 0, time))
+          }
+        }
+        const reactUserIds = deduped.map((r) => r.user_id).filter(Boolean)
+        if (reactUserIds.length > 0) {
+          await usersStore.fetchUsers(reactUserIds)
         }
       }
-      return Array.from(map.values())
-    }
+    })
+    .catch((err) => {
+      console.error('Failed to load post reactions:', err)
+    })
+    .finally(() => {
+      isLoadingReactions.value = false
+    })
 
-    // Start with cached reactions
-    const cached = props.post.metadata?.reactions || []
-    reactionsList.value = dedupeReactions(cached)
-
-    // Fetch fresh reactions from Mattermost API
-    const fresh = await mmApi.getPostReactions(props.post.id)
-    if (Array.isArray(fresh)) {
-      const deduped = dedupeReactions(fresh)
-      reactionsList.value = deduped
-      if (props.post.metadata) {
-        props.post.metadata.reactions = deduped
+  // 3. Channel members with explicit last_viewed_at
+  try {
+    const members = await mmApi.getChannelMembers(channelId, 0, 100)
+    if (Array.isArray(members)) {
+      for (const m of members) {
+        if (m.user_id && m.user_id !== postAuthorId && (m.last_viewed_at || 0) >= postCreateAt) {
+          viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, m.last_viewed_at))
+        }
       }
     }
+  } catch {}
 
-    const reactUserIds = reactionsList.value.map((r) => r.user_id).filter(Boolean)
-    if (reactUserIds.length > 0) {
-      await usersStore.fetchUsers(reactUserIds)
+  // 4. WebSocket channel_viewed events recorded in chatStore
+  const wsViews = chatStore.channelViewedByUser[channelId]
+  if (wsViews) {
+    for (const [uid, time] of Object.entries(wsViews)) {
+      if (uid && uid !== postAuthorId && time >= postCreateAt) {
+        viewersMap.set(uid, Math.max(viewersMap.get(uid) || 0, time))
+      }
     }
+  }
+
+  // 5. Subsequent posts & reactions in this channel
+  const channelPosts = chatStore.posts[channelId] || []
+  for (const p of channelPosts) {
+    if (p.create_at >= postCreateAt) {
+      if (p.user_id && p.user_id !== postAuthorId && !p.id.startsWith('temp_')) {
+        viewersMap.set(p.user_id, Math.max(viewersMap.get(p.user_id) || 0, p.create_at))
+      }
+      const pReactions = p.metadata?.reactions || []
+      for (const pr of pReactions) {
+        if (pr.user_id && pr.user_id !== postAuthorId) {
+          const time = (pr as any).create_at || p.create_at
+          viewersMap.set(pr.user_id, Math.max(viewersMap.get(pr.user_id) || 0, time))
+        }
+      }
+    }
+  }
+
+  // 6. Direct Messages: recipient's status & activity
+  const currentChannel = chatStore.channels.find((c) => c.id === channelId)
+  if (currentChannel && currentChannel.type === 'D') {
+    const parts = currentChannel.name.split('__')
+    const otherUserId = (currentChannel as any).dm_user?.id || (parts[0] === myId ? parts[1] : parts[0])
+    if (otherUserId && otherUserId !== postAuthorId) {
+      const lastAct = usersStore.lastActivityAt[otherUserId] || 0
+      const isOnline = usersStore.getStatus(otherUserId) === 'online'
+      if (lastAct >= postCreateAt) {
+        viewersMap.set(otherUserId, Math.max(viewersMap.get(otherUserId) || 0, lastAct))
+      } else if (isOnline && Date.now() - postCreateAt > 3000) {
+        viewersMap.set(otherUserId, Math.max(viewersMap.get(otherUserId) || 0, Date.now()))
+      }
+    }
+  }
+
+  // 7. If the viewing user is not the message author, they are seeing it now
+  if (myId && myId !== postAuthorId) {
+    viewersMap.set(myId, Math.max(viewersMap.get(myId) || 0, Date.now()))
+  }
+
+  await reactionsPromise
+
+  try {
+    const userIds = Array.from(viewersMap.keys())
+    if (userIds.length > 0) {
+      await Promise.all([
+        usersStore.fetchUsers(userIds),
+        usersStore.fetchStatuses(userIds)
+      ])
+    }
+
+    const items: ViewerItem[] = userIds.map((uid) => ({
+      userId: uid,
+      user: usersStore.getUser(uid),
+      isMe: uid === myId,
+      viewedAt: viewersMap.get(uid) || postCreateAt
+    }))
+
+    items.sort((a, b) => b.viewedAt - a.viewedAt)
+    viewersList.value = items
   } catch (err) {
-    console.error('Failed to load post reactions:', err)
+    console.error('Failed to resolve viewers:', err)
   } finally {
-    isLoadingReactions.value = false
+    isLoadingViewers.value = false
   }
 }
 
@@ -322,17 +402,17 @@ onUnmounted(() => {
           <div v-else class="space-y-1">
             <div
               v-for="item in viewersList"
-              :key="item.member.user_id"
+              :key="item.userId"
               class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-[#202b36]/60 dark:hover:bg-[#202b36]/60 hover:bg-gray-100/80 transition-colors"
             >
               <!-- Avatar & Name -->
               <div class="flex items-center gap-2.5 min-w-0">
                 <TelegramAvatar
-                  :userId="item.member.user_id"
-                  :name="usersStore.getUserDisplayName(item.member.user_id)"
+                  :userId="item.userId"
+                  :name="usersStore.getUserDisplayName(item.userId)"
                   size="md"
                   showOnlineDot
-                  :isOnline="usersStore.getStatus(item.member.user_id) === 'online'"
+                  :isOnline="usersStore.getStatus(item.userId) === 'online'"
                 />
                 <div class="min-w-0">
                   <div class="flex items-center gap-1.5">
@@ -340,7 +420,7 @@ onUnmounted(() => {
                       class="text-xs font-semibold truncate"
                       :class="item.isMe ? 'text-[#3390ec]' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
                     >
-                      {{ item.isMe ? 'You' : usersStore.getUserDisplayName(item.member.user_id) }}
+                      {{ item.isMe ? 'You' : usersStore.getUserDisplayName(item.userId) }}
                     </span>
                     <span v-if="item.user?.username" class="text-[10px] text-[#7f91a4] truncate">
                       @{{ item.user.username }}
@@ -348,7 +428,7 @@ onUnmounted(() => {
                   </div>
                   <p class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
                     <CheckCheck class="w-3 h-3 text-emerald-400" />
-                    <span>Seen {{ formatViewedAtTime(item.member.last_viewed_at) }}</span>
+                    <span>Seen {{ formatViewedAtTime(item.viewedAt) }}</span>
                   </p>
                 </div>
               </div>

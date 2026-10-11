@@ -7,12 +7,14 @@ import type { MattermostUser, UserStatus } from '../types/mattermost'
 export const useUsersStore = defineStore('users', () => {
   const users = ref<Record<string, MattermostUser>>({})
   const statuses = ref<Record<string, UserStatus['status']>>({})
+  const lastActivityAt = ref<Record<string, number>>({})
 
   function initWs() {
     mmWs.on('status_change', (event) => {
       const { user_id, status } = event.data || {}
       if (user_id && status) {
         statuses.value[user_id] = status
+        lastActivityAt.value[user_id] = Date.now()
       }
     })
   }
@@ -40,8 +42,12 @@ export const useUsersStore = defineStore('users', () => {
       const res = await mmApi.getUsersStatuses(validIds)
       for (const s of res) {
         statuses.value[s.user_id] = s.status
+        if (s.last_activity_at) {
+          lastActivityAt.value[s.user_id] = s.last_activity_at
+        }
       }
       statuses.value = { ...statuses.value }
+      lastActivityAt.value = { ...lastActivityAt.value }
     } catch (err) {
       console.error('Failed to fetch user statuses:', err)
     }
@@ -112,6 +118,7 @@ export const useUsersStore = defineStore('users', () => {
   return {
     users,
     statuses,
+    lastActivityAt,
     initWs,
     fetchUsers,
     fetchStatuses,

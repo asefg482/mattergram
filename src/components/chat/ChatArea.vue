@@ -199,6 +199,7 @@ function performInstantScrollToBottom() {
 
 // Scheduled channel switch sequence that guarantees the chat opens already at the latest message
 function onChannelSwitch() {
+  chatStore.markActiveChannelViewed()
   isChannelSwitching.value = true
   if (currentScrollAnimation) {
     cancelAnimationFrame(currentScrollAnimation)
@@ -400,17 +401,25 @@ onMounted(() => {
 
   onChannelSwitch()
 
+  window.addEventListener('focus', onWindowFocus)
   window.addEventListener('dragend', onWindowDragEnd)
   window.addEventListener('dragleave', onWindowDragLeave)
   window.addEventListener('dragover', preventWindowDragOver)
   window.addEventListener('drop', preventWindowDrop)
 })
 
+function onWindowFocus() {
+  if (chatStore.activeChannelId && !document.hidden) {
+    chatStore.markActiveChannelViewed()
+  }
+}
+
 onUnmounted(() => {
   resizeObserver?.disconnect()
   if (messagesContainer.value) {
     messagesContainer.value.removeEventListener('load', onMediaLoad, true)
   }
+  window.removeEventListener('focus', onWindowFocus)
   window.removeEventListener('dragend', onWindowDragEnd)
   window.removeEventListener('dragleave', onWindowDragLeave)
   window.removeEventListener('dragover', preventWindowDragOver)

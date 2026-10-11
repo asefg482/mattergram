@@ -524,7 +524,11 @@ function handleSenderClick() {
         ></div>
 
         <!-- Bubble Footer: Timestamp & Read Status -->
-        <div class="flex items-center justify-end gap-1 mt-1 text-[10px] select-none float-right ml-2 opacity-75">
+        <div
+          class="flex items-center justify-end gap-1 mt-1 text-[10px] select-none float-right ml-2 opacity-75 cursor-pointer hover:opacity-100 transition-opacity"
+          @click.stop="openViewersModal('viewers')"
+          title="Message info and viewers"
+        >
           <!-- Edited indicator -->
           <span v-if="post.edit_at > 0" class="italic opacity-60">edited</span>
 
@@ -538,8 +542,10 @@ function handleSenderClick() {
           <div v-if="isOutgoing" class="flex items-center ml-0.5">
             <!-- Sending state: Clock icon -->
             <Clock v-if="isPending" class="w-3 h-3 opacity-60 animate-pulse text-[#7f91a4]" />
-            <!-- Double check for read/sent -->
-            <CheckCheck v-else class="w-3.5 h-3.5 text-emerald-400" />
+            <!-- Double check for read/seen -->
+            <CheckCheck v-else-if="chatStore.isPostSeen(post)" class="w-3.5 h-3.5 text-emerald-400" />
+            <!-- Single check for sent/delivered but unread -->
+            <Check v-else class="w-3.5 h-3.5 text-emerald-400/75" />
           </div>
         </div>
         <div class="clear-both"></div>
