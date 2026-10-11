@@ -78,16 +78,33 @@ const renderedMessage = computed(() => renderTelegramMarkdown(props.post.message
 const formattedTime = computed(() => formatMessageTime(props.post.create_at))
 const viewersCount = computed(() => chatStore.getPostViewersCount(props.post))
 
-// Parent post if this is a reply
+// The exact post that was replied to (supports nested tree replies via props.reply_to_id or thread root_id)
+const replyToId = computed(() => {
+  return (props.post.props as any)?.reply_to_id || props.post.root_id || null
+})
+
 const parentPost = computed(() => {
-  if (!props.post.root_id) return null
+  if (!replyToId.value) return null
   const channelPosts = chatStore.posts[props.post.channel_id] || []
-  return channelPosts.find((p) => p.id === props.post.root_id) || null
+  return channelPosts.find((p) => p.id === replyToId.value) || null
 })
 
 const parentSenderName = computed(() => {
-  if (!parentPost.value) return 'Message'
-  return usersStore.getUserDisplayName(parentPost.value.user_id)
+  if (parentPost.value) {
+    return usersStore.getUserDisplayName(parentPost.value.user_id)
+  }
+  const propUser = (props.post.props as any)?.reply_to_user
+  if (propUser) return propUser
+  return 'Message'
+})
+
+const parentSnippet = computed(() => {
+  if (parentPost.value) {
+    return parentPost.value.message || 'Attachment'
+  }
+  const propText = (props.post.props as any)?.reply_to_text
+  if (propText) return propText
+  return 'Attachment'
 })
 
 const showReactionPicker = ref(false)
@@ -273,8 +290,8 @@ function handleQuickReaction(emoji: string) {
 }
 
 function scrollToParent() {
-  if (!parentPost.value) return
-  const el = document.getElementById(`msg-${parentPost.value.id}`)
+  if (!replyToId.value) return
+  const el = document.getElementById(`msg-${replyToId.value}`)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('bg-blue-500/20')
@@ -414,7 +431,7 @@ function handleSenderClick() {
 
         <!-- Reply Quote Preview Box -->
         <div
-          v-if="parentPost"
+          v-if="replyToId"
           @click="scrollToParent"
           data-no-bubble-reply
           class="mb-1.5 pl-2 border-l-2 border-[#3390ec] bg-black/15 rounded-r py-1 pr-2 cursor-pointer text-xs"
@@ -423,7 +440,7 @@ function handleSenderClick() {
             {{ parentSenderName }}
           </div>
           <div class="text-[11px] opacity-75 truncate">
-            {{ parentPost.message || 'Attachment' }}
+            {{ parentSnippet }}
           </div>
         </div>
 

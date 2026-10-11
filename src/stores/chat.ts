@@ -349,13 +349,46 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // Resolve top-level thread root post ID for a channel to satisfy Mattermost's 1-level threading rule
+  function getThreadRootId(channelId: string, postId: string): string {
+    if (!postId) return ''
+    const channelPosts = posts.value[channelId] || []
+
+    let targetId = postId
+    if (targetId.startsWith('temp_')) {
+      const real = channelPosts.find((p) => p.pending_post_id === targetId || p.id === targetId)
+      if (real && !real.id.startsWith('temp_')) {
+        targetId = real.id
+      } else {
+        return ''
+      }
+    }
+
+    let current = channelPosts.find((p) => p.id === targetId)
+    if (!current) return targetId
+
+    // Traverse upwards to find the thread ancestor whose root_id is empty
+    const visited = new Set<string>()
+    while (current && current.root_id && !visited.has(current.id)) {
+      visited.add(current.id)
+      const parent = channelPosts.find((p) => p.id === current!.root_id)
+      if (!parent) {
+        return current.root_id
+      }
+      current = parent
+    }
+
+    return current ? (current.root_id ? current.root_id : current.id) : targetId
+  }
+
   // Send Message with Optimistic Transition & Animation
   async function sendMessage(
     channelId: string,
     message: string,
     rootId = '',
     fileIds: string[] = [],
-    attachedFilesList: any[] = []
+    attachedFilesList: any[] = [],
+    postProps: Record<string, any> = {}
   ) {
     if (!message.trim() && !fileIds.length) return
 
@@ -374,7 +407,7 @@ export const useChatStore = defineStore('chat', () => {
       original_id: '',
       message: message,
       type: '',
-      props: {},
+      props: { ...postProps },
       hashtags: '',
       file_ids: fileIds,
       pending_post_id: tempId,
@@ -398,36 +431,27 @@ export const useChatStore = defineStore('chat', () => {
       sortChannels()
     }
 
-    // Sanitize rootId: Mattermost does not allow nested replies or invalid IDs
-    let targetRootId = rootId
-    if (targetRootId) {
-      if (targetRootId.startsWith('temp_')) {
-        const realPost = (posts.value[channelId] || []).find(
-          (p) => p.pending_post_id === targetRootId || p.id === targetRootId
-        )
-        if (realPost && !realPost.id.startsWith('temp_')) {
-          targetRootId = realPost.root_id || realPost.id
-        } else {
-          targetRootId = ''
-        }
-      } else {
-        const parent = (posts.value[channelId] || []).find((p) => p.id === targetRootId)
-        if (parent && parent.root_id) {
-          targetRootId = parent.root_id
-        }
-      }
-    }
+    // Resolve safe root_id for Mattermost server
+    let targetRootId = rootId ? getThreadRootId(channelId, rootId) : ''
 
     try {
       let newPost: MattermostPost
       try {
-        newPost = await mmApi.createPost(channelId, message, targetRootId, fileIds)
+        newPost = await mmApi.createPost(channelId, message, targetRootId, fileIds, postProps)
       } catch (postErr: any) {
         const msg = String(postErr?.message || '').toLowerCase()
         const errId = String(postErr?.id || '').toLowerCase()
-        if (targetRootId && (msg.includes('root_id') || msg.includes('rootid') || errId.includes('root_id'))) {
-          console.warn('Root post was invalid or deleted on server, fallback to top-level post:', postErr)
-          newPost = await mmApi.createPost(channelId, message, '', fileIds)
+        const isRootError =
+          Boolean(targetRootId) &&
+          (msg.includes('root_id') ||
+            msg.includes('rootid') ||
+            errId.includes('root_id') ||
+            errId.includes('create_post.root_id') ||
+            postErr?.statusCode === 400)
+
+        if (isRootError) {
+          console.warn('Mattermost rejected root_id, falling back to top-level with reply props preserved:', postErr)
+          newPost = await mmApi.createPost(channelId, message, '', fileIds, postProps)
         } else {
           throw postErr
         }
@@ -964,6 +988,7 @@ export const useChatStore = defineStore('chat', () => {
     fetchChannelMembers,
     getPostViewers,
     getPostViewersCount,
+    getThreadRootId,
     sendMessage,
     editMessage,
     deleteMessage,

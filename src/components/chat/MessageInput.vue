@@ -322,18 +322,18 @@ async function handleSend() {
   const currentText = text
   const currentFileIds = fileIds
   let rootId = ''
+  let postProps: Record<string, any> = {}
+
   if (uiStore.replyingTo && uiStore.replyingTo.channel_id === props.channelId) {
-    // In Mattermost, replies cannot be nested: root_id MUST always be the root post of the thread
-    rootId = uiStore.replyingTo.root_id || uiStore.replyingTo.id || ''
-    if (rootId.startsWith('temp_')) {
-      const realPost = (chatStore.posts[props.channelId] || []).find(
-        (p) => p.pending_post_id === rootId || p.id === rootId
-      )
-      if (realPost && !realPost.id.startsWith('temp_')) {
-        rootId = realPost.root_id || realPost.id
-      } else {
-        rootId = ''
-      }
+    const replying = uiStore.replyingTo
+    // Find top-level thread root for Mattermost server
+    rootId = chatStore.getThreadRootId(props.channelId, replying.id)
+
+    // Preserve exact tree reply target in props
+    postProps = {
+      reply_to_id: replying.id.startsWith('temp_') ? '' : replying.id,
+      reply_to_user: usersStore.getUserDisplayName(replying.user_id),
+      reply_to_text: replying.message ? replying.message.slice(0, 120) : 'Attachment'
     }
   }
 
@@ -352,7 +352,7 @@ async function handleSend() {
 
   isSending.value = true
   try {
-    await chatStore.sendMessage(props.channelId, currentText, rootId, currentFileIds, filesCopy)
+    await chatStore.sendMessage(props.channelId, currentText, rootId, currentFileIds, filesCopy, postProps)
   } catch (err: any) {
     console.error('Failed to send:', err)
     // If failed, restore input so user's message is not lost

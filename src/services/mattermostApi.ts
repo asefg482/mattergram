@@ -104,13 +104,21 @@ class MattermostApiService {
 
     if (!res.ok) {
       let errorMsg = `API Error ${res.status}: ${res.statusText}`
+      let errId = ''
+      let detailedError = ''
       try {
         const errJson = await res.json()
         errorMsg = errJson.message || errJson.detailed_error || errorMsg
+        errId = errJson.id || ''
+        detailedError = errJson.detailed_error || ''
       } catch {
         // ignore json error
       }
-      throw new Error(errorMsg)
+      const err: any = new Error(errorMsg)
+      err.id = errId
+      err.statusCode = res.status
+      err.detailedError = detailedError
+      throw err
     }
 
     if (res.status === 204) {
@@ -298,15 +306,25 @@ class MattermostApiService {
     return this.request<MattermostPost>(`/api/v4/posts/${postId}`)
   }
 
-  public async createPost(channelId: string, message: string, rootId = '', fileIds: string[] = []): Promise<MattermostPost> {
+  public async createPost(
+    channelId: string,
+    message: string,
+    rootId = '',
+    fileIds: string[] = [],
+    props: Record<string, any> = {}
+  ): Promise<MattermostPost> {
+    const payload: Record<string, any> = {
+      channel_id: channelId,
+      message,
+      root_id: rootId || '',
+      file_ids: fileIds
+    }
+    if (props && Object.keys(props).length > 0) {
+      payload.props = props
+    }
     return this.request<MattermostPost>('/api/v4/posts', {
       method: 'POST',
-      body: JSON.stringify({
-        channel_id: channelId,
-        message,
-        root_id: rootId,
-        file_ids: fileIds
-      })
+      body: JSON.stringify(payload)
     })
   }
 
