@@ -23,7 +23,9 @@ import {
   FileText,
   Download,
   SmilePlus,
-  Eye
+  Eye,
+  MessageSquareText,
+  ChevronRight
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import TelegramVideoPlayer from './TelegramVideoPlayer.vue'
@@ -34,6 +36,7 @@ const props = defineProps<{
   post: MattermostPost
   showAvatar?: boolean
   showSenderName?: boolean
+  isThreadView?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -78,6 +81,14 @@ const senderName = computed(() => usersStore.getUserDisplayName(props.post.user_
 const renderedMessage = computed(() => renderTelegramMarkdown(props.post.message))
 const formattedTime = computed(() => formatMessageTime(props.post.create_at))
 const viewersCount = computed(() => chatStore.getPostViewersCount(props.post))
+
+const threadRepliesCount = computed(() => {
+  if (props.isThreadView) return 0
+  const serverCount = props.post.reply_count || 0
+  const channelPosts = chatStore.posts[props.post.channel_id] || []
+  const localCount = channelPosts.filter((p) => p.root_id === props.post.id && p.id !== props.post.id).length
+  return Math.max(serverCount, localCount)
+})
 
 // The exact post that was replied to (supports nested tree replies via props.reply_to_id or thread root_id)
 const replyToId = computed(() => {
@@ -554,6 +565,21 @@ function handleSenderClick() {
             <Check v-else class="w-3.5 h-3.5 text-emerald-400/75" />
           </div>
         </div>
+
+        <!-- Telegram Thread Replies / Comments Button -->
+        <button
+          v-if="!isThreadView && threadRepliesCount > 0"
+          @click.stop="chatStore.openThread(post)"
+          class="w-full mt-2 pt-1.5 pb-0.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs text-[#3390ec] dark:text-[#52a5f5] hover:opacity-85 transition-opacity select-none cursor-pointer group/thbtn"
+          title="View Thread"
+        >
+          <div class="flex items-center gap-1.5 font-semibold">
+            <MessageSquareText class="w-3.5 h-3.5 group-hover/thbtn:scale-110 transition-transform" />
+            <span>{{ threadRepliesCount }} {{ threadRepliesCount === 1 ? 'reply' : 'replies' }}</span>
+          </div>
+          <ChevronRight class="w-3.5 h-3.5 text-[#7f91a4] group-hover/thbtn:translate-x-0.5 transition-transform" />
+        </button>
+
         <div class="clear-both"></div>
       </div>
 

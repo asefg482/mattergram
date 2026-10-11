@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
 import ChatHeader from './ChatHeader.vue'
+import ThreadView from './ThreadView.vue'
 import MessageBubble from './MessageBubble.vue'
 import MessageInput from './MessageInput.vue'
 import FilePreviewModal from './FilePreviewModal.vue'
@@ -488,114 +489,125 @@ onUnmounted(() => {
 
     <!-- Active Chat View -->
     <template v-else>
-      <!-- Top Header -->
-      <ChatHeader />
+      <!-- Dedicated Thread View Page -->
+      <ThreadView
+        v-if="chatStore.activeThreadRootPost"
+        :key="chatStore.activeThreadRootPost.id"
+        :rootPost="chatStore.activeThreadRootPost"
+        @close="chatStore.closeThread()"
+      />
 
-      <!-- Messages Scroll Area -->
-      <div
-        ref="messagesContainer"
-        @scroll="handleScroll"
-        @click="handleChatAreaClick"
-        class="flex-1 overflow-y-auto overflow-x-hidden tg-chat-bg tg-scroll-container relative transition-opacity duration-75"
-        :class="{ 'opacity-0': isChannelSwitching }"
-      >
-        <!-- Loading spinner -->
-        <div v-if="chatStore.loadingPosts && posts.length === 0" class="flex items-center justify-center py-12">
-          <Loader2 class="w-6 h-6 animate-spin text-[#3390ec]" />
-        </div>
+      <!-- Main Channel View -->
+      <div v-else class="flex-1 h-full flex flex-col relative overflow-hidden">
+        <!-- Top Header -->
+        <ChatHeader />
 
-        <!-- No messages yet -->
-        <div v-else-if="posts.length === 0" class="flex flex-col items-center justify-center h-full text-center p-6 text-xs text-[#7f91a4]">
-          <div class="px-4 py-2 rounded-full bg-black/20 backdrop-blur-xs text-white/80">
-            No messages here yet. Send a message to start!
-          </div>
-        </div>
-
-        <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
-        <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-1 sm:px-2 pt-2 pb-6 flex flex-col">
-          <template v-for="(post, index) in posts" :key="post.pending_post_id || post.id">
-            <!-- Date Divider -->
-            <div
-              v-if="isDifferentDay(post.create_at, posts[index - 1]?.create_at)"
-              class="flex justify-center my-3 select-none"
-            >
-              <span class="px-3 py-1 rounded-full text-[11px] font-medium bg-black/30 text-white/90 backdrop-blur-xs shadow-xs">
-                {{ formatDateSeparator(post.create_at) }}
-              </span>
-            </div>
-
-            <!-- Telegram Unread / New Messages Divider Line -->
-            <div
-              v-if="isFirstUnread(post.id)"
-              class="flex items-center my-3 select-none px-1 sm:px-2 w-full tg-unread-separator group"
-              data-unread-separator="true"
-            >
-              <div class="flex-1 h-px bg-gradient-to-r from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-left"></div>
-              <div
-                class="mx-2.5 sm:mx-4 px-3.5 py-0.5 rounded-full text-[11px] font-medium bg-[#3390ec]/15 dark:bg-[#3390ec]/20 text-[#3390ec] dark:text-[#52a5f5] border border-[#3390ec]/25 backdrop-blur-xs flex items-center gap-1.5 shadow-xs transition-all hover:bg-[#3390ec]/25 tg-unread-pill"
-                title="Messages below are new"
-              >
-                <span class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3390ec] dark:bg-[#52a5f5] opacity-75 tg-unread-dot"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-[#3390ec] dark:bg-[#52a5f5] tg-unread-dot-solid"></span>
-                </span>
-                <span>New Messages</span>
-              </div>
-              <div class="flex-1 h-px bg-gradient-to-l from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-right"></div>
-            </div>
-
-            <!-- Message Bubble -->
-            <MessageBubble
-              :post="post"
-              :showSenderName="isGroup"
-              :showAvatar="isGroup"
-              @contextmenu="onMessageContextMenu($event, post)"
-              @open-viewers="onOpenViewers"
-            />
-          </template>
-
-          <!-- Bottom scroll anchor -->
-          <div ref="bottomAnchorRef" class="h-2 w-full pointer-events-none"></div>
-        </div>
-
-        <!-- Floating Scroll to Bottom Button -->
-        <button
-          v-if="showScrollBottom"
-          @click="scrollToBottom(true)"
-          class="sticky bottom-4 float-right mr-4 w-10 h-10 rounded-full bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] shadow-lg flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] transition-all z-20"
+        <!-- Messages Scroll Area -->
+        <div
+          ref="messagesContainer"
+          @scroll="handleScroll"
+          @click="handleChatAreaClick"
+          class="flex-1 overflow-y-auto overflow-x-hidden tg-chat-bg tg-scroll-container relative transition-opacity duration-75"
+          :class="{ 'opacity-0': isChannelSwitching }"
         >
-          <ArrowDown class="w-5 h-5" />
-          <span
-            v-if="unreadBelowCount > 0"
-            class="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#3390ec] text-white text-[10px] font-bold flex items-center justify-center shadow-md leading-none select-none"
+          <!-- Loading spinner -->
+          <div v-if="chatStore.loadingPosts && posts.length === 0" class="flex items-center justify-center py-12">
+            <Loader2 class="w-6 h-6 animate-spin text-[#3390ec]" />
+          </div>
+
+          <!-- No messages yet -->
+          <div v-else-if="posts.length === 0" class="flex flex-col items-center justify-center h-full text-center p-6 text-xs text-[#7f91a4]">
+            <div class="px-4 py-2 rounded-full bg-black/20 backdrop-blur-xs text-white/80">
+              No messages here yet. Send a message to start!
+            </div>
+          </div>
+
+          <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
+          <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-1 sm:px-2 pt-2 pb-6 flex flex-col">
+            <template v-for="(post, index) in posts" :key="post.pending_post_id || post.id">
+              <!-- Date Divider -->
+              <div
+                v-if="isDifferentDay(post.create_at, posts[index - 1]?.create_at)"
+                class="flex justify-center my-3 select-none"
+              >
+                <span class="px-3 py-1 rounded-full text-[11px] font-medium bg-black/30 text-white/90 backdrop-blur-xs shadow-xs">
+                  {{ formatDateSeparator(post.create_at) }}
+                </span>
+              </div>
+
+              <!-- Telegram Unread / New Messages Divider Line -->
+              <div
+                v-if="isFirstUnread(post.id)"
+                class="flex items-center my-3 select-none px-1 sm:px-2 w-full tg-unread-separator group"
+                data-unread-separator="true"
+              >
+                <div class="flex-1 h-px bg-gradient-to-r from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-left"></div>
+                <div
+                  class="mx-2.5 sm:mx-4 px-3.5 py-0.5 rounded-full text-[11px] font-medium bg-[#3390ec]/15 dark:bg-[#3390ec]/20 text-[#3390ec] dark:text-[#52a5f5] border border-[#3390ec]/25 backdrop-blur-xs flex items-center gap-1.5 shadow-xs transition-all hover:bg-[#3390ec]/25 tg-unread-pill"
+                  title="Messages below are new"
+                >
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3390ec] dark:bg-[#52a5f5] opacity-75 tg-unread-dot"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#3390ec] dark:bg-[#52a5f5] tg-unread-dot-solid"></span>
+                  </span>
+                  <span>New Messages</span>
+                </div>
+                <div class="flex-1 h-px bg-gradient-to-l from-transparent via-[#3390ec]/30 to-[#3390ec]/45 dark:via-[#3390ec]/35 dark:to-[#3390ec]/50 tg-unread-line-right"></div>
+              </div>
+
+              <!-- Message Bubble -->
+              <MessageBubble
+                :post="post"
+                :showSenderName="isGroup"
+                :showAvatar="isGroup"
+                @contextmenu="onMessageContextMenu($event, post)"
+                @open-viewers="onOpenViewers"
+              />
+            </template>
+
+            <!-- Bottom scroll anchor -->
+            <div ref="bottomAnchorRef" class="h-2 w-full pointer-events-none"></div>
+          </div>
+
+          <!-- Floating Scroll to Bottom Button -->
+          <button
+            v-if="showScrollBottom"
+            @click="scrollToBottom(true)"
+            class="sticky bottom-4 float-right mr-4 w-10 h-10 rounded-full bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] shadow-lg flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] transition-all z-20"
           >
-            {{ unreadBelowCount > 99 ? '99+' : unreadBelowCount }}
-          </span>
-        </button>
+            <ArrowDown class="w-5 h-5" />
+            <span
+              v-if="unreadBelowCount > 0"
+              class="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#3390ec] text-white text-[10px] font-bold flex items-center justify-center shadow-md leading-none select-none"
+            >
+              {{ unreadBelowCount > 99 ? '99+' : unreadBelowCount }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Bottom Input Bar -->
+        <MessageInput ref="messageInputRef" :channelId="channel.id" @sent="onMessageSent" />
+
+        <!-- Message Context Menu -->
+        <MessageContextMenu
+          :post="contextPost"
+          :position="contextPos"
+          :isOpen="showContextMenu"
+          @close="showContextMenu = false"
+          @viewers="(p) => onOpenViewers(p, 'viewers')"
+        />
+
+        <!-- Message Viewers & Reactions Modal -->
+        <MessageViewersModal
+          :post="viewersPost"
+          :isOpen="showViewersModal"
+          :initialTab="viewersInitialTab"
+          @close="showViewersModal = false"
+        />
       </div>
 
-      <!-- Bottom Input Bar -->
-      <MessageInput ref="messageInputRef" :channelId="channel.id" @sent="onMessageSent" />
-
-      <!-- File Preview Modal -->
+      <!-- File Preview Modal (Shared) -->
       <FilePreviewModal />
-
-      <!-- Message Context Menu -->
-      <MessageContextMenu
-        :post="contextPost"
-        :position="contextPos"
-        :isOpen="showContextMenu"
-        @close="showContextMenu = false"
-        @viewers="(p) => onOpenViewers(p, 'viewers')"
-      />
-
-      <!-- Message Viewers & Reactions Modal -->
-      <MessageViewersModal
-        :post="viewersPost"
-        :isOpen="showViewersModal"
-        :initialTab="viewersInitialTab"
-        @close="showViewersModal = false"
-      />
     </template>
   </div>
 </template>

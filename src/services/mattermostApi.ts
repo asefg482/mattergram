@@ -306,6 +306,10 @@ class MattermostApiService {
     return this.request<MattermostPost>(`/api/v4/posts/${postId}`)
   }
 
+  public async getPostThread(postId: string): Promise<ChannelPostsResponse> {
+    return this.request<ChannelPostsResponse>(`/api/v4/posts/${postId}/thread`)
+  }
+
   public async createPost(
     channelId: string,
     message: string,

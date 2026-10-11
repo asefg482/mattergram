@@ -30,6 +30,11 @@ export const useChatStore = defineStore('chat', () => {
   const typingUsers = ref<Record<string, Record<string, string>>>({})
   const typingTimeouts = new Map<string, any>()
 
+  // Active Thread / CRT View State
+  const activeThreadRootPost = ref<MattermostPost | null>(null)
+  const threadPosts = ref<MattermostPost[]>([])
+  const loadingThread = ref(false)
+
   const activeChannel = computed(() => {
     return channels.value.find((c) => c.id === activeChannelId.value) || null
   })
@@ -272,6 +277,9 @@ export const useChatStore = defineStore('chat', () => {
     const targetId = ch ? ch.id : channelId
 
     if (activeChannelId.value === targetId) {
+      if (activeThreadRootPost.value) {
+        closeThread()
+      }
       scrollToBottomTrigger.value++
       return
     }
@@ -281,6 +289,7 @@ export const useChatStore = defineStore('chat', () => {
       firstUnreadPostIds.value[prevChannelId] = null
     }
 
+    closeThread()
     activeChannelId.value = targetId
     scrollToBottomTrigger.value++
     fetchChannelMembers(targetId)
@@ -381,6 +390,66 @@ export const useChatStore = defineStore('chat', () => {
     return current ? (current.root_id ? current.root_id : current.id) : targetId
   }
 
+  // Open Thread / Comments for a post
+  async function openThread(post: MattermostPost) {
+    if (!post) return
+
+    // Resolve the true root post ID
+    const rootId = post.root_id ? getThreadRootId(post.channel_id, post.id) : post.id
+
+    // Check if we already have the root post in local cache
+    const channelPosts = posts.value[post.channel_id] || []
+    let rootPost = channelPosts.find((p) => p.id === rootId) || (post.id === rootId ? post : null)
+
+    if (!rootPost) {
+      try {
+        rootPost = await mmApi.getPost(rootId)
+      } catch (err) {
+        console.warn('Could not fetch root post from server:', err)
+        rootPost = post
+      }
+    }
+
+    activeThreadRootPost.value = rootPost
+    loadingThread.value = true
+
+    // Immediately pre-populate with known replies from local cache
+    const localReplies = channelPosts.filter((p) => p.root_id === rootId && p.id !== rootId)
+    localReplies.sort((a, b) => a.create_at - b.create_at)
+    threadPosts.value = [...localReplies]
+
+    // Fetch full thread from Mattermost API
+    try {
+      const threadRes = await mmApi.getPostThread(rootId)
+      if (threadRes && threadRes.posts) {
+        const allPosts = Object.values(threadRes.posts)
+        const updatedRoot = allPosts.find((p) => p.id === rootId)
+        if (updatedRoot) {
+          activeThreadRootPost.value = updatedRoot
+        }
+        const serverReplies = allPosts.filter((p) => p.id !== rootId)
+        serverReplies.sort((a, b) => a.create_at - b.create_at)
+        threadPosts.value = serverReplies
+
+        // Preload user profiles of thread participants
+        const userIds = Array.from(new Set(allPosts.map((p) => p.user_id).filter(Boolean)))
+        if (userIds.length > 0) {
+          usersStore.fetchUsers(userIds)
+        }
+      }
+    } catch (apiErr) {
+      console.warn('Failed to fetch thread from API, using local posts:', apiErr)
+    } finally {
+      loadingThread.value = false
+    }
+  }
+
+  function closeThread() {
+    activeThreadRootPost.value = null
+    threadPosts.value = []
+    loadingThread.value = false
+  }
+
   // Send Message with Optimistic Transition & Animation
   async function sendMessage(
     channelId: string,
@@ -423,6 +492,11 @@ export const useChatStore = defineStore('chat', () => {
 
     animatedPostIds.value.add(tempId)
     posts.value[channelId].push(tempPost)
+
+    // If active thread matches target root, optimistically add to thread posts
+    if (activeThreadRootPost.value && (rootId === activeThreadRootPost.value.id || rootId === activeThreadRootPost.value.root_id)) {
+      threadPosts.value.push(tempPost)
+    }
 
     const ch = channels.value.find((c) => c.id === channelId)
     if (ch) {
@@ -470,6 +544,19 @@ export const useChatStore = defineStore('chat', () => {
         posts.value[channelId].push(newPost)
       }
 
+      // Reconcile thread post if in active thread
+      if (activeThreadRootPost.value && (targetRootId === activeThreadRootPost.value.id || rootId === activeThreadRootPost.value.id)) {
+        const tIdx = threadPosts.value.findIndex((p) => p.id === tempId || p.pending_post_id === tempId)
+        if (tIdx !== -1) {
+          threadPosts.value[tIdx] = newPost
+        } else if (!threadPosts.value.some((p) => p.id === newPost.id)) {
+          threadPosts.value.push(newPost)
+        }
+        if (activeThreadRootPost.value.reply_count !== undefined) {
+          activeThreadRootPost.value.reply_count++
+        }
+      }
+
       if (ch) {
         ch.last_post_at = newPost.create_at
         ch.last_post = newPost
@@ -479,6 +566,9 @@ export const useChatStore = defineStore('chat', () => {
       return newPost
     } catch (err) {
       posts.value[channelId] = posts.value[channelId].filter((p) => p.id !== tempId)
+      if (activeThreadRootPost.value) {
+        threadPosts.value = threadPosts.value.filter((p) => p.id !== tempId)
+      }
       animatedPostIds.value.delete(tempId)
       console.error('Failed to send message:', err)
       throw err
@@ -495,6 +585,13 @@ export const useChatStore = defineStore('chat', () => {
           posts.value[activeChannelId.value][idx] = edited
         }
       }
+      if (activeThreadRootPost.value && activeThreadRootPost.value.id === postId) {
+        activeThreadRootPost.value = edited
+      }
+      const tIdx = threadPosts.value.findIndex((p) => p.id === postId)
+      if (tIdx !== -1) {
+        threadPosts.value[tIdx] = edited
+      }
       return edited
     } catch (err) {
       console.error('Failed to edit post:', err)
@@ -508,6 +605,12 @@ export const useChatStore = defineStore('chat', () => {
       await mmApi.deletePost(postId)
       if (activeChannelId.value && posts.value[activeChannelId.value]) {
         posts.value[activeChannelId.value] = posts.value[activeChannelId.value].filter((p) => p.id !== postId)
+      }
+      threadPosts.value = threadPosts.value.filter((p) => p.id !== postId)
+      if (activeThreadRootPost.value && activeThreadRootPost.value.id === postId) {
+        activeThreadRootPost.value.delete_at = Date.now()
+      } else if (activeThreadRootPost.value && activeThreadRootPost.value.reply_count) {
+        activeThreadRootPost.value.reply_count = Math.max(0, activeThreadRootPost.value.reply_count - 1)
       }
     } catch (err) {
       console.error('Failed to delete post:', err)
@@ -649,6 +752,22 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
+      // Add to active thread if message belongs to it
+      if (activeThreadRootPost.value && (post.root_id === activeThreadRootPost.value.id || (post.props as any)?.reply_to_id === activeThreadRootPost.value.id)) {
+        const tempIdx = threadPosts.value.findIndex(
+          (p) => p.id.startsWith('temp_') && p.user_id === post.user_id && p.message === post.message
+        )
+        if (tempIdx !== -1) {
+          post.pending_post_id = threadPosts.value[tempIdx].pending_post_id || threadPosts.value[tempIdx].id
+          threadPosts.value[tempIdx] = post
+        } else if (!threadPosts.value.some((p) => p.id === post.id)) {
+          threadPosts.value.push(post)
+        }
+        if (activeThreadRootPost.value.reply_count !== undefined) {
+          activeThreadRootPost.value.reply_count++
+        }
+      }
+
       // Update channel's last post
       const ch = channels.value.find((c) => c.id === channelId)
       if (ch) {
@@ -776,6 +895,26 @@ export const useChatStore = defineStore('chat', () => {
           }
         }
       }
+
+      // Sync with thread if present
+      if (activeThreadRootPost.value) {
+        let tPost = threadPosts.value.find((p) => p.id === reaction.post_id)
+        if (!tPost && activeThreadRootPost.value.id === reaction.post_id) {
+          tPost = activeThreadRootPost.value
+        }
+        if (tPost) {
+          if (!tPost.metadata) tPost.metadata = {}
+          if (!tPost.metadata.reactions) tPost.metadata.reactions = []
+          const reactChar = toEmojiChar(reaction.emoji_name)
+          const alreadyExists = tPost.metadata.reactions.some(
+            (r) => r.user_id === reaction.user_id && (toEmojiChar(r.emoji_name) === reactChar || r.emoji_name === reaction.emoji_name)
+          )
+          if (!alreadyExists) {
+            tPost.metadata.reactions.push(reaction)
+            usersStore.fetchUsers([reaction.user_id])
+          }
+        }
+      }
     } catch (err) {
       console.error('Error handling reaction added:', err)
     }
@@ -795,6 +934,20 @@ export const useChatStore = defineStore('chat', () => {
           )
         }
       }
+
+      // Sync with thread if present
+      if (activeThreadRootPost.value) {
+        let tPost = threadPosts.value.find((p) => p.id === reaction.post_id)
+        if (!tPost && activeThreadRootPost.value.id === reaction.post_id) {
+          tPost = activeThreadRootPost.value
+        }
+        if (tPost && tPost.metadata?.reactions) {
+          const reactChar = toEmojiChar(reaction.emoji_name)
+          tPost.metadata.reactions = tPost.metadata.reactions.filter(
+            (r) => !(r.user_id === reaction.user_id && (toEmojiChar(r.emoji_name) === reactChar || r.emoji_name === reaction.emoji_name))
+          )
+        }
+      }
     } catch (err) {
       console.error('Error handling reaction removed:', err)
     }
@@ -810,6 +963,13 @@ export const useChatStore = defineStore('chat', () => {
           postList[idx] = edited
         }
       }
+      if (activeThreadRootPost.value && activeThreadRootPost.value.id === edited.id) {
+        activeThreadRootPost.value = edited
+      }
+      const tIdx = threadPosts.value.findIndex((p) => p.id === edited.id)
+      if (tIdx !== -1) {
+        threadPosts.value[tIdx] = edited
+      }
     } catch (err) {
       console.error('Error handling post edited:', err)
     }
@@ -821,6 +981,12 @@ export const useChatStore = defineStore('chat', () => {
       const postList = posts.value[deleted.channel_id]
       if (postList) {
         posts.value[deleted.channel_id] = postList.filter((p) => p.id !== deleted.id)
+      }
+      threadPosts.value = threadPosts.value.filter((p) => p.id !== deleted.id)
+      if (activeThreadRootPost.value && activeThreadRootPost.value.id === deleted.id) {
+        closeThread()
+      } else if (activeThreadRootPost.value && activeThreadRootPost.value.reply_count) {
+        activeThreadRootPost.value.reply_count = Math.max(0, activeThreadRootPost.value.reply_count - 1)
       }
     } catch (err) {
       console.error('Error handling post deleted:', err)
@@ -1002,6 +1168,11 @@ export const useChatStore = defineStore('chat', () => {
     toggleMarkAsUnread,
     togglePinPost,
     markActiveChannelViewed,
-    isPostSeen
+    isPostSeen,
+    activeThreadRootPost,
+    threadPosts,
+    loadingThread,
+    openThread,
+    closeThread
   }
 })

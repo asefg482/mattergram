@@ -21,9 +21,17 @@ import {
   Video
 } from 'lucide-vue-next'
 
-const props = defineProps<{
-  channelId: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    channelId: string
+    rootId?: string
+    placeholder?: string
+  }>(),
+  {
+    rootId: '',
+    placeholder: 'Write a message...'
+  }
+)
 
 const emit = defineEmits<{
   (e: 'sent'): void
@@ -321,19 +329,28 @@ async function handleSend() {
   // Normal Send: Capture inputs then immediately clear for instant snappy response
   const currentText = text
   const currentFileIds = fileIds
-  let rootId = ''
+  let rootId = props.rootId || ''
   let postProps: Record<string, any> = {}
 
   if (uiStore.replyingTo && uiStore.replyingTo.channel_id === props.channelId) {
     const replying = uiStore.replyingTo
     // Find top-level thread root for Mattermost server
-    rootId = chatStore.getThreadRootId(props.channelId, replying.id)
+    rootId = props.rootId || chatStore.getThreadRootId(props.channelId, replying.id)
 
     // Preserve exact tree reply target in props
     postProps = {
       reply_to_id: replying.id.startsWith('temp_') ? '' : replying.id,
       reply_to_user: usersStore.getUserDisplayName(replying.user_id),
       reply_to_text: replying.message ? replying.message.slice(0, 120) : 'Attachment'
+    }
+  } else if (props.rootId) {
+    const rootPost = chatStore.activeThreadRootPost
+    if (rootPost) {
+      postProps = {
+        reply_to_id: rootPost.id,
+        reply_to_user: usersStore.getUserDisplayName(rootPost.user_id),
+        reply_to_text: rootPost.message ? rootPost.message.slice(0, 120) : 'Attachment'
+      }
     }
   }
 
@@ -688,7 +705,7 @@ defineExpose({
           @paste="handlePaste"
           rows="1"
           dir="auto"
-          placeholder="Write a message..."
+          :placeholder="placeholder"
           class="flex-1 bg-transparent text-[#111827] dark:text-[#f5f5f5] placeholder-[#7f91a4] text-sm outline-none resize-none max-h-36 py-1 leading-relaxed text-auto"
         ></textarea>
 

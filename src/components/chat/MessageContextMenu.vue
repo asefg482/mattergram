@@ -11,7 +11,8 @@ import {
   Pin,
   Trash2,
   SmilePlus,
-  Eye
+  Eye,
+  MessageSquareText
 } from 'lucide-vue-next'
 import ReactionPicker from './ReactionPicker.vue'
 import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
@@ -25,6 +26,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'viewers', post: MattermostPost): void
+  (e: 'thread', post: MattermostPost): void
 }>()
 
 const authStore = useAuthStore()
@@ -115,6 +117,22 @@ function handleReaction(emoji: string) {
   }
   showReactionPicker.value = false
   emit('close')
+}
+
+const threadRepliesCount = computed(() => {
+  if (!props.post) return 0
+  const serverCount = props.post.reply_count || 0
+  const channelPosts = chatStore.posts[props.post.channel_id] || []
+  const localCount = channelPosts.filter((p) => p.root_id === props.post?.id && p.id !== props.post?.id).length
+  return Math.max(serverCount, localCount)
+})
+
+function handleViewThread() {
+  if (props.post) {
+    emit('close')
+    emit('thread', props.post)
+    chatStore.openThread(props.post)
+  }
 }
 
 function handleReply() {
@@ -238,6 +256,21 @@ onUnmounted(() => {
         >
           <Reply class="w-4 h-4 text-[#3390ec]" />
           <span>Reply</span>
+        </button>
+
+        <!-- View Thread -->
+        <button
+          @click="handleViewThread"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer group/th"
+        >
+          <MessageSquareText class="w-4 h-4 text-[#3390ec]" />
+          <span class="flex-1">View Thread</span>
+          <span
+            v-if="threadRepliesCount > 0"
+            class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#3390ec]/15 text-[#3390ec] group-hover/th:bg-[#3390ec] group-hover/th:text-white transition-colors"
+          >
+            {{ threadRepliesCount }}
+          </span>
         </button>
 
         <!-- Viewers -->
