@@ -6,7 +6,8 @@ import { soundService } from '../services/sounds'
 import { notificationService } from '../services/notifications'
 import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
-import { toEmojiName } from '../utils/formatters'
+import { toEmojiName, toEmojiChar } from '../utils/formatters'
+import { recordReactionUsage } from '../utils/reactions'
 import type { MattermostChannel, MattermostPost, MattermostReaction } from '../types/mattermost'
 
 export const useChatStore = defineStore('chat', () => {
@@ -453,6 +454,9 @@ export const useChatStore = defineStore('chat', () => {
     if (!myId) return
 
     const normalizedName = toEmojiName(emojiName)
+    const emojiChar = toEmojiChar(emojiName)
+    recordReactionUsage(emojiChar)
+
     const existing = post.metadata?.reactions?.find(
       (r) => r.user_id === myId && (r.emoji_name === normalizedName || r.emoji_name === emojiName)
     )

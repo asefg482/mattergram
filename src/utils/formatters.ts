@@ -203,48 +203,9 @@ export function renderTelegramMarkdown(text: string): string {
   }
 }
 
-// Mattermost <-> Telegram Emoji Mappings
-export const EMOJI_TO_NAME: Record<string, string> = {
-  '👍': '+1',
-  '👎': '-1',
-  '❤️': 'heart',
-  '🔥': 'fire',
-  '😂': 'joy',
-  '👏': 'clap',
-  '😢': 'cry',
-  '🎉': 'tada',
-  '🚀': 'rocket',
-  '😍': 'heart_eyes',
-  '🤔': 'thinking',
-  '🙏': 'pray',
-  '🤩': 'star_struck',
-  '💯': '100'
-}
-
-export const NAME_TO_EMOJI: Record<string, string> = {
-  '+1': '👍',
-  'thumbsup': '👍',
-  '-1': '👎',
-  'thumbsdown': '👎',
-  'heart': '❤️',
-  'fire': '🔥',
-  'joy': '😂',
-  'clap': '👏',
-  'cry': '😢',
-  'sob': '😭',
-  'tada': '🎉',
-  'rocket': '🚀',
-  'heart_eyes': '😍',
-  'thinking': '🤔',
-  'pray': '🙏',
-  'star_struck': '🤩',
-  '100': '💯'
-}
-
-export function toEmojiName(emojiOrName: string): string {
-  return EMOJI_TO_NAME[emojiOrName] || emojiOrName
-}
-
-export function toEmojiChar(nameOrEmoji: string): string {
-  return NAME_TO_EMOJI[nameOrEmoji] || nameOrEmoji
-}
+export {
+  EMOJI_TO_NAME,
+  NAME_TO_EMOJI,
+  toEmojiName,
+  toEmojiChar
+} from './reactions'

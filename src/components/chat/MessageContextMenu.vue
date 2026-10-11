@@ -9,8 +9,11 @@ import {
   Edit2,
   Copy,
   Pin,
-  Trash2
+  Trash2,
+  SmilePlus
 } from 'lucide-vue-next'
+import ReactionPicker from './ReactionPicker.vue'
+import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
 
 const props = defineProps<{
   post: MattermostPost | null
@@ -42,7 +45,8 @@ const isAdmin = computed(() => {
 const canDelete = computed(() => isOutgoing.value || isAdmin.value)
 const canEdit = computed(() => isOutgoing.value)
 
-const quickEmojis = ['👍', '❤️', '🔥', '😂', '👏', '😢', '🎉', '🚀']
+const quickEmojis = computed(() => frequentReactions.value.slice(0, 6))
+const showReactionPicker = ref(false)
 
 function adjustPosition() {
   const el = menuRef.value
@@ -80,6 +84,17 @@ function adjustPosition() {
   adjustedY.value = Math.round(y)
 }
 
+const pickerStyle = computed(() => {
+  const winW = typeof window !== 'undefined' ? window.innerWidth : 1000
+  const winH = typeof window !== 'undefined' ? window.innerHeight : 800
+  const left = adjustedX.value + 215 + 320 > winW ? Math.max(8, adjustedX.value - 325) : adjustedX.value + 215
+  const top = Math.min(adjustedY.value, Math.max(10, winH - 350))
+  return {
+    left: `${left}px`,
+    top: `${top}px`
+  }
+})
+
 watch(
   () => [props.isOpen, props.position.x, props.position.y],
   ([isOpen]) => {
@@ -93,8 +108,10 @@ watch(
 
 function handleReaction(emoji: string) {
   if (props.post) {
+    recordReactionUsage(emoji)
     chatStore.toggleReaction(props.post, emoji)
   }
+  showReactionPicker.value = false
   emit('close')
 }
 
@@ -174,19 +191,37 @@ onUnmounted(() => {
       :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin }"
     >
       <!-- Quick Reactions Row -->
-      <div class="px-2.5 py-1.5 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+      <div class="px-2 py-1.5 border-b border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] flex items-center justify-between gap-0.5 overflow-x-auto no-scrollbar">
         <button
           v-for="emoji in quickEmojis"
           :key="emoji"
           @click="handleReaction(emoji)"
-          class="w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] hover:scale-125 transition-transform"
+          class="w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] hover:scale-125 transition-transform cursor-pointer"
+          :title="`React with ${emoji}`"
         >
           {{ emoji }}
+        </button>
+        <!-- More Reactions Button -->
+        <button
+          @click="showReactionPicker = !showReactionPicker"
+          class="w-7 h-7 flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] rounded-lg transition-colors cursor-pointer"
+          title="More reactions..."
+        >
+          <SmilePlus class="w-4 h-4" />
         </button>
       </div>
 
       <!-- Action Items -->
       <div class="py-1 text-xs">
+        <!-- Add Reaction Item -->
+        <button
+          @click="showReactionPicker = !showReactionPicker"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors cursor-pointer"
+        >
+          <SmilePlus class="w-4 h-4 text-[#3390ec]" />
+          <span>Add Reaction...</span>
+        </button>
+
         <!-- Reply -->
         <button
           @click="handleReply"
@@ -235,6 +270,18 @@ onUnmounted(() => {
           <span>Delete</span>
         </button>
       </div>
+    </div>
+
+    <!-- Reaction Picker Popover -->
+    <div
+      v-if="showReactionPicker"
+      class="fixed pointer-events-auto z-50"
+      :style="pickerStyle"
+    >
+      <ReactionPicker
+        @select="handleReaction"
+        @close="showReactionPicker = false; emit('close')"
+      />
     </div>
   </div>
 </template>

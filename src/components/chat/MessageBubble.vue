@@ -26,9 +26,12 @@ import {
   Copy,
   FileText,
   Download,
-  MoreHorizontal
+  MoreHorizontal,
+  SmilePlus
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import ReactionPicker from './ReactionPicker.vue'
+import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
 
 const props = defineProps<{
   post: MattermostPost
@@ -107,8 +110,9 @@ const parentSenderName = computed(() => {
   return usersStore.getUserDisplayName(parentPost.value.user_id)
 })
 
-// Quick reaction emojis
-const quickEmojis = ['👍', '❤️', '🔥', '😂', '👏', '😢']
+// Frequently used reaction emojis (top 6 from user's history)
+const quickEmojis = computed(() => frequentReactions.value.slice(0, 6))
+const showReactionPicker = ref(false)
 
 export interface ReactionGroup {
   emoji: string
@@ -295,8 +299,10 @@ function handleCopy() {
 }
 
 function handleQuickReaction(emoji: string) {
+  recordReactionUsage(emoji)
   chatStore.toggleReaction(props.post, emoji)
   showMenu.value = false
+  showReactionPicker.value = false
 }
 
 function scrollToParent() {
@@ -425,6 +431,15 @@ function handleSenderClick() {
           {{ emoji }}
         </button>
 
+        <!-- More Reactions / Choose from All Emojis -->
+        <button
+          @click.stop="showReactionPicker = !showReactionPicker"
+          class="p-0.5 text-[#7f91a4] hover:text-[#3390ec] hover:scale-115 transition-all rounded-full cursor-pointer"
+          title="Choose reaction..."
+        >
+          <SmilePlus class="w-3.5 h-3.5" />
+        </button>
+
         <div class="w-px h-3 bg-gray-600/40 mx-0.5"></div>
 
         <!-- Reply Button -->
@@ -464,6 +479,20 @@ function handleSenderClick() {
         >
           <Trash2 class="w-3.5 h-3.5" />
         </button>
+      </div>
+
+      <!-- Full Reaction Picker Popover -->
+      <div
+        v-if="showReactionPicker"
+        class="absolute z-50 bottom-full mb-2"
+        :class="isOutgoing ? 'right-0' : 'left-0'"
+        @click.stop
+      >
+        <ReactionPicker
+          :align-right="isOutgoing"
+          @select="handleQuickReaction"
+          @close="showReactionPicker = false"
+        />
       </div>
 
       <!-- Message Bubble -->
@@ -694,6 +723,15 @@ function handleSenderClick() {
             </div>
           </div>
         </div>
+
+        <!-- Add Reaction Button Pill (+) -->
+        <button
+          @click.stop="showReactionPicker = !showReactionPicker"
+          title="Add reaction"
+          class="px-2 py-0.5 rounded-full text-xs flex items-center justify-center bg-[#182533] dark:bg-[#182533] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] text-[#7f91a4] hover:text-[#3390ec] hover:border-[#3390ec]/50 transition-colors select-none cursor-pointer"
+        >
+          <SmilePlus class="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   </div>
