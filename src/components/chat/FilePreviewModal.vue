@@ -11,6 +11,7 @@ import {
   ZoomOut,
   RotateCcw
 } from 'lucide-vue-next'
+import TelegramVideoPlayer from './TelegramVideoPlayer.vue'
 
 const uiStore = useUiStore()
 
@@ -330,16 +331,16 @@ onUnmounted(() => {
       </div>
 
       <!-- Video Preview Player -->
-      <div v-else-if="isVideo" class="max-w-4xl w-full max-h-[80vh] flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-200">
-        <video
+      <div v-else-if="isVideo && file" class="max-w-4xl w-full max-h-[82vh] flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-200">
+        <TelegramVideoPlayer
           :src="fileUrl"
-          controls
-          autoplay
-          playsinline
-          class="max-w-full max-h-[78vh] rounded-2xl shadow-2xl bg-black"
-        >
-          Your browser does not support the video tag.
-        </video>
+          :name="file.name"
+          :size="file.size"
+          :downloadUrl="fileUrl"
+          maxHeight="max-h-[78vh]"
+          rounded="rounded-2xl shadow-2xl"
+          class="w-full"
+        />
       </div>
 
       <!-- Generic Document Preview Card -->

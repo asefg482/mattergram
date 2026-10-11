@@ -26,6 +26,7 @@ import {
   Eye
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import TelegramVideoPlayer from './TelegramVideoPlayer.vue'
 import ReactionPicker from './ReactionPicker.vue'
 import { recordReactionUsage } from '../../utils/reactions'
 
@@ -462,42 +463,18 @@ function handleSenderClick() {
           </div>
         </div>
 
-        <!-- Video Files (Playable directly inside chat) -->
+        <!-- Video Files (Playable directly inside chat with custom Telegram Video Player) -->
         <div v-if="videoFiles.length > 0" class="my-1.5 space-y-2 max-w-sm sm:max-w-md rounded-2xl overflow-hidden">
-          <div
+          <TelegramVideoPlayer
             v-for="vid in videoFiles"
             :key="vid.id"
-            class="rounded-xl overflow-hidden bg-black/40 border border-white/10 shadow-md relative group/vid"
-          >
-            <video
-              :src="mmApi.getFileDownloadUrl(vid.id)"
-              controls
-              preload="metadata"
-              playsinline
-              class="w-full max-h-72 object-contain bg-black rounded-t-xl"
-            >
-              Your browser does not support playing this video.
-            </video>
-            <!-- Video Meta Bar -->
-            <div class="px-3 py-1.5 flex items-center justify-between text-xs bg-black/30 backdrop-blur-xs">
-              <span class="truncate max-w-[200px] text-white/90 text-[11px] font-medium" :title="vid.name">
-                {{ vid.name }}
-              </span>
-              <div class="flex items-center gap-2 shrink-0">
-                <span class="text-[10px] text-white/60">{{ formatFileSize(vid.size) }}</span>
-                <a
-                  :href="mmApi.getFileDownloadUrl(vid.id)"
-                  :download="vid.name"
-                  target="_blank"
-                  @click.stop
-                  class="p-1 text-white/70 hover:text-white rounded-full transition-colors"
-                  title="Download"
-                >
-                  <Download class="w-3.5 h-3.5" />
-                </a>
-              </div>
-            </div>
-          </div>
+            :src="mmApi.getFileDownloadUrl(vid.id)"
+            :name="vid.name"
+            :size="vid.size"
+            :downloadUrl="mmApi.getFileDownloadUrl(vid.id)"
+            maxHeight="max-h-72 sm:max-h-80"
+            rounded="rounded-xl border border-white/10 shadow-md"
+          />
         </div>
 
         <!-- Document Files -->
