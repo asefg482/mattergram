@@ -65,16 +65,33 @@ async function fetchServerBrand() {
       if (cfg.CustomDescriptionText) customDescription.value = cfg.CustomDescriptionText
 
       // Check registration capability on Mattermost server
+      const isNoAccounts = cfg.NoAccounts === 'true'
       const isOpenServer = cfg.EnableOpenServer === 'true'
       const isSignUpWithEmail = cfg.EnableSignUpWithEmail === 'true'
-      const isUserCreation = cfg.EnableUserCreation === 'true'
-      canSignUp.value = (isOpenServer && isSignUpWithEmail) || isUserCreation
+      const isUserCreation = cfg.EnableUserCreation !== 'false'
+
+      // In Mattermost, public signup without an invite token is only available when:
+      // 1. User creation is not globally disabled (EnableUserCreation != false)
+      // 2. Open server signup is enabled (EnableOpenServer == true)
+      // 3. Email signup is enabled (EnableSignUpWithEmail == true)
+      // OR NoAccounts == true (initial administrator setup on a new server)
+      const isAllowed = isNoAccounts || (isOpenServer && isSignUpWithEmail && isUserCreation)
+      canSignUp.value = isAllowed
+      if (!isAllowed && authMode.value === 'register') {
+        authMode.value = 'login'
+      }
 
       if (cfg.PasswordMinimumLength) {
         passwordMinLength.value = parseInt(cfg.PasswordMinimumLength, 10) || 8
       }
+    } else {
+      canSignUp.value = false
+      authMode.value = 'login'
     }
-  } catch {}
+  } catch {
+    canSignUp.value = false
+    authMode.value = 'login'
+  }
 
   // 2. Fetch custom brand image from Mattermost server settings (/api/v4/brand/image)
   try {
@@ -124,6 +141,12 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
+  if (!canSignUp.value) {
+    errorMsg.value = 'User registration is not enabled on this server.'
+    authMode.value = 'login'
+    return
+  }
+
   const currentBase = authStore.baseUrl || mmApi.getBaseUrl()
   if (!currentBase) {
     errorMsg.value = 'Mattermost server URL is not configured. Please set MATTERMOST_BASE_URL in your .env file.'
@@ -262,7 +285,7 @@ async function handleRegister() {
         </div>
 
         <!-- FORM 1: LOG IN -->
-        <form v-if="authMode === 'login'" @submit.prevent="handleLogin" class="space-y-4">
+        <form v-if="authMode === 'login' || !canSignUp" @submit.prevent="handleLogin" class="space-y-4">
           <!-- Login ID (Username or Email) -->
           <div>
             <label class="block text-xs font-medium text-[#7f91a4] mb-1.5 flex items-center gap-1.5">
@@ -319,7 +342,7 @@ async function handleRegister() {
         </form>
 
         <!-- FORM 2: SIGN UP / REGISTRATION -->
-        <form v-else @submit.prevent="handleRegister" class="space-y-3.5">
+        <form v-else-if="canSignUp && authMode === 'register'" @submit.prevent="handleRegister" class="space-y-3.5">
           <!-- Email -->
           <div>
             <label class="block text-xs font-medium text-[#7f91a4] mb-1 flex items-center gap-1.5">
