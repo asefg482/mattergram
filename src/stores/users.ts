@@ -26,6 +26,7 @@ export const useUsersStore = defineStore('users', () => {
       for (const u of fetched) {
         users.value[u.id] = u
       }
+      users.value = { ...users.value }
       await fetchStatuses(missing)
     } catch (err) {
       console.error('Failed to fetch users:', err)
@@ -40,6 +41,7 @@ export const useUsersStore = defineStore('users', () => {
       for (const s of res) {
         statuses.value[s.user_id] = s.status
       }
+      statuses.value = { ...statuses.value }
     } catch (err) {
       console.error('Failed to fetch user statuses:', err)
     }

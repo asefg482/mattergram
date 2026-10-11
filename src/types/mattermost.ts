@@ -64,6 +64,21 @@ export interface MattermostChannel {
   last_post?: MattermostPost
 }
 
+export interface MattermostChannelMember {
+  channel_id: string
+  user_id: string
+  roles: string
+  last_viewed_at: number
+  msg_count: number
+  mention_count: number
+  notify_props: Record<string, any>
+  last_update_at: number
+  scheme_guest?: boolean
+  scheme_user?: boolean
+  scheme_admin?: boolean
+  explicit_roles?: string
+}
+
 export interface MattermostFileInfo {
   id: string
   user_id: string

@@ -41,6 +41,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'contextmenu', event: MouseEvent): void
+  (e: 'open-viewers', post: MattermostPost, tab?: 'viewers' | 'reactions'): void
 }>()
 
 const authStore = useAuthStore()
@@ -176,8 +177,12 @@ function onReactionHover(r: ReactionGroup) {
 }
 
 function getReactionTooltipTitle(r: ReactionGroup): string {
-  const names = r.users.map((u) => u.name)
+  const names = r.users.map((u) => u.isMe ? 'You' : usersStore.getUserDisplayName(u.id))
   return `${r.emoji} ${names.join(', ')}`
+}
+
+function openViewersModal(tab: 'viewers' | 'reactions' = 'reactions') {
+  emit('open-viewers', props.post, tab)
 }
 
 // File attachments
@@ -384,7 +389,7 @@ function handleSenderClick() {
 <template>
   <div
     :id="`msg-${post.id}`"
-    class="flex items-end gap-1.5 my-1 px-0.5 sm:px-1 group relative transition-colors duration-150 tg-message-row w-full rounded-lg"
+    class="flex items-end gap-1.5 my-1 px-0.5 sm:px-1 group relative transition-colors duration-150 tg-message-row w-full rounded-lg hover:z-20"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
@@ -662,7 +667,7 @@ function handleSenderClick() {
         <div
           v-for="r in groupedReactions"
           :key="r.emoji"
-          class="relative group/react"
+          class="relative group/react hover:z-30"
           @mouseenter="onReactionHover(r)"
         >
           <button
@@ -681,18 +686,27 @@ function handleSenderClick() {
 
           <!-- Telegram Reactions User List Tooltip / Popover on Hover -->
           <div
-            class="absolute bottom-full mb-1.5 z-50 pointer-events-none opacity-0 group-hover/react:opacity-100 transition-all duration-150 delay-75 translate-y-1 group-hover/react:translate-y-0"
+            class="absolute bottom-full mb-1.5 z-50 pointer-events-none group-hover/react:pointer-events-auto opacity-0 group-hover/react:opacity-100 transition-all duration-150 delay-75 translate-y-1 group-hover/react:translate-y-0 after:absolute after:inset-x-0 after:-bottom-2 after:h-2 after:content-['']"
             :class="isOutgoing ? 'right-0' : 'left-0'"
           >
             <div
-              class="bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] shadow-2xl rounded-xl py-1.5 px-2.5 text-xs min-w-[130px] max-w-[220px] whitespace-normal backdrop-blur-md"
+              class="bg-[#17212b] dark:bg-[#17212b] bg-white border border-[#202b36] dark:border-[#202b36] border-[#dfe1e5] shadow-2xl rounded-xl py-1.5 px-2.5 text-xs min-w-[140px] max-w-[240px] whitespace-normal backdrop-blur-md"
             >
               <!-- Tooltip Header -->
               <div
-                class="flex items-center gap-1.5 pb-1 mb-1 border-b border-[#202b36] dark:border-[#202b36] border-gray-200 text-[11px] font-semibold text-[#7f91a4]"
+                class="flex items-center justify-between gap-1.5 pb-1 mb-1 border-b border-[#202b36] dark:border-[#202b36] border-gray-200 text-[11px] font-semibold text-[#7f91a4]"
               >
-                <span class="text-sm leading-none">{{ r.emoji }}</span>
-                <span>{{ r.count }} {{ r.count === 1 ? 'reaction' : 'reactions' }}</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm leading-none">{{ r.emoji }}</span>
+                  <span>{{ r.count }} {{ r.count === 1 ? 'reaction' : 'reactions' }}</span>
+                </div>
+                <button
+                  @click.stop="openViewersModal('reactions')"
+                  class="text-[10px] text-[#3390ec] hover:underline cursor-pointer"
+                  title="View all reactions"
+                >
+                  All
+                </button>
               </div>
 
               <!-- Users who reacted -->
@@ -704,21 +718,25 @@ function handleSenderClick() {
                 >
                   <TelegramAvatar
                     :userId="u.id"
-                    :name="u.name"
+                    :name="usersStore.getUserDisplayName(u.id)"
                     size="micro"
                   />
                   <span
                     class="truncate text-[11px] font-medium"
                     :class="u.isMe ? 'text-[#3390ec] font-semibold' : 'text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827]'"
                   >
-                    {{ u.isMe ? 'You' : u.name }}
+                    {{ u.isMe ? 'You' : usersStore.getUserDisplayName(u.id) }}
                   </span>
                 </div>
 
                 <!-- More users overflow -->
-                <div v-if="r.users.length > 7" class="text-[10px] text-[#7f91a4] pt-0.5 font-medium">
+                <button
+                  v-if="r.users.length > 7"
+                  @click.stop="openViewersModal('reactions')"
+                  class="text-[10px] text-[#3390ec] hover:underline pt-0.5 font-medium cursor-pointer block text-left"
+                >
                   +{{ r.users.length - 7 }} more
-                </div>
+                </button>
               </div>
             </div>
           </div>

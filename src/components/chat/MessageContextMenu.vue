@@ -10,7 +10,8 @@ import {
   Copy,
   Pin,
   Trash2,
-  SmilePlus
+  SmilePlus,
+  Eye
 } from 'lucide-vue-next'
 import ReactionPicker from './ReactionPicker.vue'
 import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
@@ -23,6 +24,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'viewers', post: MattermostPost): void
 }>()
 
 const authStore = useAuthStore()
@@ -118,6 +120,13 @@ function handleReaction(emoji: string) {
 function handleReply() {
   if (props.post) {
     uiStore.setReplyingTo(props.post)
+  }
+  emit('close')
+}
+
+function handleViewers() {
+  if (props.post) {
+    emit('viewers', props.post)
   }
   emit('close')
 }
@@ -225,10 +234,19 @@ onUnmounted(() => {
         <!-- Reply -->
         <button
           @click="handleReply"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors cursor-pointer"
         >
           <Reply class="w-4 h-4 text-[#3390ec]" />
           <span>Reply</span>
+        </button>
+
+        <!-- Viewers -->
+        <button
+          @click="handleViewers"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#f5f5f5] dark:text-[#f5f5f5] text-[#111827] hover:bg-[#202b36] dark:hover:bg-[#202b36] hover:bg-[#f1f1f1] text-left transition-colors cursor-pointer"
+        >
+          <Eye class="w-4 h-4 text-[#3390ec]" />
+          <span>Viewers</span>
         </button>
 
         <!-- Edit (if outgoing) -->

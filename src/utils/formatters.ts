@@ -84,6 +84,21 @@ export function formatDateSeparator(timestamp: number): string {
   return format(date, 'MMMM d, yyyy')
 }
 
+export function formatViewedAtTime(timestamp: number): string {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  if (isToday(date)) {
+    return `Today at ${format(date, 'HH:mm')}`
+  }
+  if (isYesterday(date)) {
+    return `Yesterday at ${format(date, 'HH:mm')}`
+  }
+  if (isThisYear(date)) {
+    return format(date, 'MMM d, HH:mm')
+  }
+  return format(date, 'MMM d yyyy, HH:mm')
+}
+
 export function formatFileSize(bytes: number): string {
   if (!bytes) return '0 B'
   const k = 1024

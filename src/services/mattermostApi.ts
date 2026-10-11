@@ -5,7 +5,9 @@ import type {
   MattermostPost,
   ChannelPostsResponse,
   UserStatus,
-  MattermostFileInfo
+  MattermostFileInfo,
+  MattermostChannelMember,
+  MattermostReaction
 } from '../types/mattermost'
 
 const RUNTIME_ENV_URL =
@@ -220,12 +222,12 @@ class MattermostApiService {
     })
   }
 
-  public async getChannelMembers(channelId: string, page = 0, perPage = 100): Promise<any[]> {
-    return this.request<any[]>(`/api/v4/channels/${channelId}/members?page=${page}&per_page=${perPage}`)
+  public async getChannelMembers(channelId: string, page = 0, perPage = 100): Promise<MattermostChannelMember[]> {
+    return this.request<MattermostChannelMember[]>(`/api/v4/channels/${channelId}/members?page=${page}&per_page=${perPage}`)
   }
 
-  public async getMyChannelMembers(teamId: string): Promise<any[]> {
-    return this.request<any[]>(`/api/v4/users/me/teams/${teamId}/channels/members`)
+  public async getMyChannelMembers(teamId: string): Promise<MattermostChannelMember[]> {
+    return this.request<MattermostChannelMember[]>(`/api/v4/users/me/teams/${teamId}/channels/members`)
   }
 
   public async viewChannel(channelId: string, prevChannelId: string = ''): Promise<{ status: string }> {
@@ -300,6 +302,10 @@ class MattermostApiService {
     await this.request(`/api/v4/users/${userId}/posts/${postId}/reactions/${encodeURIComponent(emojiName)}`, {
       method: 'DELETE'
     })
+  }
+
+  public async getPostReactions(postId: string): Promise<MattermostReaction[]> {
+    return this.request<MattermostReaction[]>(`/api/v4/posts/${postId}/reactions`)
   }
 
   // --- Users & Statuses ---

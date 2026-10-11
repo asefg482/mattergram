@@ -8,6 +8,7 @@ import MessageBubble from './MessageBubble.vue'
 import MessageInput from './MessageInput.vue'
 import FilePreviewModal from './FilePreviewModal.vue'
 import MessageContextMenu from './MessageContextMenu.vue'
+import MessageViewersModal from './MessageViewersModal.vue'
 import { formatDateSeparator } from '../../utils/formatters'
 import type { MattermostPost } from '../../types/mattermost'
 import { MessageSquare, ArrowDown, Loader2 } from 'lucide-vue-next'
@@ -27,6 +28,17 @@ const isChannelSwitching = ref(false)
 const contextPost = ref<MattermostPost | null>(null)
 const contextPos = ref({ x: 0, y: 0 })
 const showContextMenu = ref(false)
+
+// Message Viewers & Reactions Modal State
+const showViewersModal = ref(false)
+const viewersPost = ref<MattermostPost | null>(null)
+const viewersInitialTab = ref<'viewers' | 'reactions'>('viewers')
+
+function onOpenViewers(post: MattermostPost, tab: 'viewers' | 'reactions' = 'viewers') {
+  viewersPost.value = post
+  viewersInitialTab.value = tab
+  showViewersModal.value = true
+}
 
 function onMessageContextMenu(e: MouseEvent, post: MattermostPost) {
   contextPost.value = post
@@ -411,6 +423,7 @@ onUnmounted(() => {
               :showSenderName="isGroup"
               :showAvatar="isGroup"
               @contextmenu="onMessageContextMenu($event, post)"
+              @open-viewers="onOpenViewers"
             />
           </template>
 
@@ -446,6 +459,15 @@ onUnmounted(() => {
         :position="contextPos"
         :isOpen="showContextMenu"
         @close="showContextMenu = false"
+        @viewers="(p) => onOpenViewers(p, 'viewers')"
+      />
+
+      <!-- Message Viewers & Reactions Modal -->
+      <MessageViewersModal
+        :post="viewersPost"
+        :isOpen="showViewersModal"
+        :initialTab="viewersInitialTab"
+        @close="showViewersModal = false"
       />
     </template>
   </div>
