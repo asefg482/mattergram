@@ -298,8 +298,15 @@ class MattermostApiService {
   }
 
   // --- Posts ---
-  public async getPosts(channelId: string, page = 0, perPage = 60): Promise<ChannelPostsResponse> {
-    return this.request<ChannelPostsResponse>(`/api/v4/channels/${channelId}/posts?page=${page}&per_page=${perPage}`)
+  public async getPosts(channelId: string, page = 0, perPage = 60, before = ''): Promise<ChannelPostsResponse> {
+    const params = new URLSearchParams()
+    if (before) {
+      params.set('before', before)
+    } else {
+      params.set('page', String(page))
+    }
+    params.set('per_page', String(perPage))
+    return this.request<ChannelPostsResponse>(`/api/v4/channels/${channelId}/posts?${params.toString()}`)
   }
 
   public async getPost(postId: string): Promise<MattermostPost> {

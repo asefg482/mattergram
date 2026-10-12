@@ -21,6 +21,8 @@ export const useChatStore = defineStore('chat', () => {
   const channelMembers = ref<Record<string, MattermostChannelMember[]>>({})
   const loadingChannels = ref(false)
   const loadingPosts = ref(false)
+  const loadingOlderPosts = ref(false)
+  const hasMoreOlderPosts = ref<Record<string, boolean>>({})
   const unreadCounts = ref<Record<string, number>>({})
   const firstUnreadPostIds = ref<Record<string, string | null>>({})
   const channelLastViewedAt = ref<Record<string, number>>({})
@@ -333,6 +335,8 @@ export const useChatStore = defineStore('chat', () => {
       // Sort chronologically (oldest first, newest at bottom)
       postList.sort((a, b) => a.create_at - b.create_at)
       posts.value[channelId] = postList
+      hasMoreOlderPosts.value[channelId] = res.order.length >= 60
+      loadingOlderPosts.value = false
       animatedPostIds.value.clear()
       fetchChannelMembers(channelId)
 
@@ -355,6 +359,66 @@ export const useChatStore = defineStore('chat', () => {
       console.error('Failed to load posts:', err)
     } finally {
       loadingPosts.value = false
+    }
+  }
+
+  // Load older posts when scrolling up to earlier history
+  async function loadOlderPosts(channelId: string): Promise<{ addedCount: number }> {
+    if (!channelId) return { addedCount: 0 }
+    if (loadingOlderPosts.value || loadingPosts.value) return { addedCount: 0 }
+    if (hasMoreOlderPosts.value[channelId] === false) return { addedCount: 0 }
+
+    const channelPosts = posts.value[channelId] || []
+    if (channelPosts.length === 0) return { addedCount: 0 }
+
+    // Find the oldest persisted message in the channel (ignoring optimistic temp posts)
+    const oldestPost = channelPosts.find((p) => p.id && !p.id.startsWith('temp_'))
+    if (!oldestPost) return { addedCount: 0 }
+
+    loadingOlderPosts.value = true
+    try {
+      const res = await mmApi.getPosts(channelId, 0, 60, oldestPost.id)
+      if (!res || !res.order || res.order.length === 0) {
+        hasMoreOlderPosts.value[channelId] = false
+        return { addedCount: 0 }
+      }
+
+      const existingIds = new Set(channelPosts.map((p) => p.id))
+      const olderPosts: MattermostPost[] = []
+      const userIdsToFetch = new Set<string>()
+
+      for (const id of res.order) {
+        const post = res.posts[id]
+        if (post && post.delete_at === 0 && !existingIds.has(post.id)) {
+          olderPosts.push(post)
+          if (post.user_id) userIdsToFetch.add(post.user_id)
+        }
+      }
+
+      if (res.order.length < 60) {
+        hasMoreOlderPosts.value[channelId] = false
+      }
+
+      if (userIdsToFetch.size > 0) {
+        usersStore.fetchUsers(Array.from(userIdsToFetch))
+      }
+
+      if (olderPosts.length > 0) {
+        // Sort chronologically (oldest first)
+        olderPosts.sort((a, b) => a.create_at - b.create_at)
+        posts.value[channelId] = [...olderPosts, ...channelPosts]
+        return { addedCount: olderPosts.length }
+      } else {
+        if (res.order.length < 60) {
+          hasMoreOlderPosts.value[channelId] = false
+        }
+        return { addedCount: 0 }
+      }
+    } catch (err) {
+      console.error('Failed to load older posts:', err)
+      return { addedCount: 0 }
+    } finally {
+      loadingOlderPosts.value = false
     }
   }
 
@@ -1139,6 +1203,9 @@ export const useChatStore = defineStore('chat', () => {
     activePostsWithSeparators,
     loadingChannels,
     loadingPosts,
+    loadingOlderPosts,
+    hasMoreOlderPosts,
+    loadOlderPosts,
     unreadCounts,
     unreadChatsCount,
     firstUnreadPostIds,

@@ -277,6 +277,44 @@ function onMessageSent() {
 
 // Track scroll position throttled with requestAnimationFrame
 let scrollRaf: number | null = null
+const isPrependingOlderPosts = ref(false)
+
+async function checkAndLoadOlderMessages() {
+  const channelId = chatStore.activeChannelId
+  if (!channelId) return
+  if (
+    isPrependingOlderPosts.value ||
+    chatStore.loadingOlderPosts ||
+    chatStore.loadingPosts ||
+    isChannelSwitching.value
+  ) {
+    return
+  }
+  if (chatStore.hasMoreOlderPosts[channelId] === false) return
+  if (!messagesContainer.value || posts.value.length === 0) return
+
+  const container = messagesContainer.value
+  const prevScrollHeight = container.scrollHeight
+  const prevScrollTop = container.scrollTop
+
+  isPrependingOlderPosts.value = true
+  try {
+    const res = await chatStore.loadOlderPosts(channelId)
+    if (res.addedCount > 0 && messagesContainer.value) {
+      await nextTick()
+      const newScrollHeight = messagesContainer.value.scrollHeight
+      const heightDiff = newScrollHeight - prevScrollHeight
+      messagesContainer.value.scrollTop = prevScrollTop + heightDiff
+    }
+  } catch (err) {
+    console.error('Failed to load older messages:', err)
+  } finally {
+    requestAnimationFrame(() => {
+      isPrependingOlderPosts.value = false
+    })
+  }
+}
+
 function handleScroll() {
   if (isChannelSwitching.value) {
     showScrollBottom.value = false
@@ -291,6 +329,11 @@ function handleScroll() {
       const isUp = distanceToBottom > 150
       showScrollBottom.value = isUp
       chatStore.isScrolledUp = isUp
+
+      // Check for loading older messages when near top
+      if (scrollTop <= 120) {
+        checkAndLoadOlderMessages()
+      }
     }
     scrollRaf = null
   })
@@ -346,6 +389,9 @@ watch(
 watch(
   () => [posts.value.length, posts.value[posts.value.length - 1]?.id],
   ([newLen, newLastId], [oldLen, oldLastId]) => {
+    if (isPrependingOlderPosts.value) {
+      return
+    }
     if (isChannelSwitching.value) {
       performInstantScrollToBottom()
       return
@@ -367,7 +413,7 @@ watch(
 let resizeObserver: ResizeObserver | null = null
 
 function onMediaLoad() {
-  if (currentScrollAnimation) return
+  if (currentScrollAnimation || isPrependingOlderPosts.value) return
   if (isChannelSwitching.value || !showScrollBottom.value) {
     performInstantScrollToBottom()
   }
@@ -382,7 +428,7 @@ watch(
     }
     if (newEl && resizeObserver) {
       resizeObserver.observe(newEl)
-      if (!currentScrollAnimation) {
+      if (!currentScrollAnimation && !isPrependingOlderPosts.value) {
         performInstantScrollToBottom()
       }
     }
@@ -394,7 +440,7 @@ let viewersRefreshInterval: any = null
 onMounted(() => {
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(() => {
-      if (currentScrollAnimation) return
+      if (currentScrollAnimation || isPrependingOlderPosts.value) return
       if (isChannelSwitching.value || !showScrollBottom.value) {
         performInstantScrollToBottom()
       }
@@ -530,6 +576,17 @@ onUnmounted(() => {
 
           <!-- Messages List with Date Separators (Full width stuck to left/right sides) -->
           <div ref="messagesInnerRef" v-else dir="ltr" class="w-full px-1 sm:px-2 pt-2 pb-6 flex flex-col">
+            <!-- Loading older messages spinner -->
+            <div
+              v-if="chatStore.loadingOlderPosts"
+              class="flex justify-center my-2 select-none animate-in fade-in duration-150"
+            >
+              <div class="px-3.5 py-1.5 rounded-full text-[11px] font-medium bg-black/35 text-white/90 backdrop-blur-xs shadow-xs flex items-center gap-2">
+                <Loader2 class="w-3.5 h-3.5 animate-spin text-white/90" />
+                <span>Loading older messages...</span>
+              </div>
+            </div>
+
             <template v-for="(post, index) in posts" :key="post.pending_post_id || post.id">
               <!-- Date Divider -->
               <div

@@ -228,6 +228,7 @@ input, textarea, button, select {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   will-change: scroll-position;
+  overflow-anchor: none;
 }
 
 /* Fast message bubble rendering */
