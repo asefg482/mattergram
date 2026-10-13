@@ -682,7 +682,6 @@ export const useChatStore = defineStore('chat', () => {
     uiStore.isMobileSidebarOpen = false
     uiStore.showRightSidebar = false
     uiStore.showHashtagDrawer = false
-    uiStore.showTodoModal = false
 
     // If channel is actively loading posts, wait for it to settle
     if (loadingPosts.value) {

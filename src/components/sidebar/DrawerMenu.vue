@@ -8,7 +8,6 @@ import { mmApi } from '../../services/mattermostApi'
 import { getAvatarGradient, getInitials } from '../../utils/formatters'
 import {
   Bookmark,
-  CheckSquare,
   Settings,
   Moon,
   Sun,
@@ -23,7 +22,6 @@ import {
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { pwaService } from '../../services/pwa'
-import { useTodoStore } from '../../stores/todo'
 
 const props = defineProps<{
   isOpen: boolean
@@ -40,12 +38,6 @@ const route = useRoute()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const uiStore = useUiStore()
-const todoStore = useTodoStore()
-
-function openTodoList() {
-  closeDrawer()
-  uiStore.showTodoModal = true
-}
 
 const user = computed(() => authStore.currentUser)
 
@@ -414,25 +406,6 @@ const backdropStyle = computed(() => {
           >
             <Bookmark class="w-5 h-5 text-[#2481cc]" />
             <span class="flex-1 text-left">Saved Messages</span>
-          </button>
-
-          <!-- TODO list -->
-          <button
-            @click="openTodoList"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors group cursor-pointer"
-          >
-            <CheckSquare class="w-5 h-5 text-[#3390ec] group-hover:scale-110 transition-transform shrink-0" />
-            <span class="flex-1 text-left">TODO list</span>
-            <span
-              v-if="todoStore.pendingCount > 0"
-              class="inline-flex items-center justify-center h-5 min-w-5 rounded-full text-[11px] font-bold leading-none select-none bg-[#3390ec] text-white shrink-0 shadow-xs"
-              :class="String(todoStore.pendingCount).length > 1 ? 'px-1.5' : 'w-5 p-0'"
-              style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;"
-            >
-              <span class="inline-block transform -translate-y-[0.5px]">
-                {{ todoStore.pendingCount > 99 ? '99+' : todoStore.pendingCount }}
-              </span>
-            </span>
           </button>
 
           <!-- Teams Selection -->

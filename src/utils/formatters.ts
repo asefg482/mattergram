@@ -240,13 +240,18 @@ export function formatViewedAtTime(timestamp: number | string | Date | null | un
   const nowYMD = getZonedYMD(now, tz)
   const dateYMD = getZonedYMD(d, tz)
   const timeStr = formatMessageTime(d)
+  if (!timeStr) return ''
 
   if (dateYMD === nowYMD) {
     return `Today at ${timeStr}`
   }
 
-  const yesterday = new Date(now.getTime() - 86400000)
-  if (dateYMD === getZonedYMD(yesterday, tz)) {
+  const [y, m, day] = nowYMD.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, day, 12, 0, 0))
+  dt.setUTCDate(dt.getUTCDate() - 1)
+  const yesterdayYMD = getZonedYMD(dt, 'UTC')
+
+  if (dateYMD === yesterdayYMD) {
     return `Yesterday at ${timeStr}`
   }
 
@@ -260,7 +265,7 @@ export function formatViewedAtTime(timestamp: number | string | Date | null | un
     ...(dYear !== nowYear ? { year: 'numeric' } : {})
   }).format(d)
 
-  return `${datePart}, ${timeStr}`
+  return `${datePart} at ${timeStr}`
 }
 
 export function formatFileSize(bytes: number): string {

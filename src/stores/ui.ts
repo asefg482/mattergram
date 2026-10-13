@@ -96,7 +96,6 @@ export const useUiStore = defineStore('ui', () => {
   const rightSidebarTab = ref<'info' | 'files'>('info')
   const showSettingsModal = ref(false)
   const showNewChatModal = ref(false)
-  const showTodoModal = ref(false)
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
 
@@ -322,7 +321,6 @@ export const useUiStore = defineStore('ui', () => {
     showRightSidebar,
     showSettingsModal,
     showNewChatModal,
-    showTodoModal,
     previewFile,
     isMobileSidebarOpen,
     sidebarWidth,

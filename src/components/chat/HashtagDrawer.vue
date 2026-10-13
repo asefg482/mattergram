@@ -4,7 +4,6 @@ import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
 import { useUiStore } from '../../stores/ui'
-import { useTodoStore } from '../../stores/todo'
 import { mmApi } from '../../services/mattermostApi'
 import {
   renderTelegramMarkdown,
@@ -23,7 +22,6 @@ import {
   MoreVertical,
   Copy,
   Check,
-  CheckSquare,
   Pin,
   Trash2,
   Loader2,
@@ -36,7 +34,6 @@ const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
 const uiStore = useUiStore()
-const todoStore = useTodoStore()
 
 const currentTag = ref(uiStore.activeHashtag || '')
 const scope = ref<'all' | 'chat'>('chat')
@@ -204,11 +201,6 @@ function copyPostText(post: MattermostPost) {
   setTimeout(() => {
     copiedPostId.value = null
   }, 2000)
-  activeMenuPostId.value = null
-}
-
-function handleAddToTodo(post: MattermostPost) {
-  todoStore.addPostToTodo(post)
   activeMenuPostId.value = null
 }
 
@@ -412,14 +404,6 @@ function canDelete(post: MattermostPost): boolean {
                     <Check v-if="copiedPostId === post.id" class="w-3.5 h-3.5 text-emerald-400" />
                     <Copy v-else class="w-3.5 h-3.5 text-[#7f91a4]" />
                     <span>{{ copiedPostId === post.id ? 'Copied!' : 'Copy text' }}</span>
-                  </button>
-
-                  <button
-                    @click="handleAddToTodo(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
-                  >
-                    <CheckSquare class="w-3.5 h-3.5 text-amber-500" />
-                    <span>Add to Todo</span>
                   </button>
 
                   <button

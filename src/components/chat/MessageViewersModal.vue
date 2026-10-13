@@ -118,14 +118,27 @@ async function loadData() {
     return Array.from(map.values())
   }
 
-  // Map: userId -> viewedAt timestamp
-  const viewersMap = new Map<string, number>()
+  // Store all candidate view/interaction timestamps for each user: userId -> number[]
+  const userEvidence = new Map<string, number[]>()
+
+  function addEvidence(uid: string | undefined | null, time: number | undefined | null) {
+    if (!uid || uid === postAuthorId || !time) return
+    // Allow small clock drift buffer (5000ms)
+    if (time >= postCreateAt - 5000) {
+      if (!userEvidence.has(uid)) {
+        userEvidence.set(uid, [])
+      }
+      // Clamped to at least postCreateAt, and not in future
+      const safeTime = Math.min(Math.max(time, postCreateAt), Date.now())
+      userEvidence.get(uid)!.push(safeTime)
+    }
+  }
 
   // 1. Fetch channel members & immediately load their status/presence
   let members: MattermostChannelMember[] = []
   try {
     members = await mmApi.getChannelMembers(channelId, 0, 100)
-    if (Array.isArray(members)) {
+    if (Array.isArray(members) && members.length > 0) {
       const allMemberIds = members.map((m) => m.user_id).filter(Boolean)
       if (allMemberIds.length > 0) {
         await Promise.all([
@@ -133,9 +146,12 @@ async function loadData() {
           usersStore.fetchStatuses(allMemberIds)
         ])
       }
+    } else {
+      members = chatStore.channelMembers[channelId] || []
     }
   } catch (err) {
     console.error('Failed to load channel members:', err)
+    members = chatStore.channelMembers[channelId] || []
   }
 
   // 2. Reactions on this post (cached first)
@@ -144,7 +160,7 @@ async function loadData() {
   for (const r of reactionsList.value) {
     if (r.user_id && r.user_id !== postAuthorId) {
       const time = (r as any).create_at || postCreateAt
-      viewersMap.set(r.user_id, Math.max(viewersMap.get(r.user_id) || 0, time))
+      addEvidence(r.user_id, time)
     }
   }
 
@@ -161,7 +177,7 @@ async function loadData() {
         for (const r of deduped) {
           if (r.user_id && r.user_id !== postAuthorId) {
             const time = (r as any).create_at || postCreateAt
-            viewersMap.set(r.user_id, Math.max(viewersMap.get(r.user_id) || 0, time))
+            addEvidence(r.user_id, time)
           }
         }
         const reactUserIds = deduped.map((r) => r.user_id).filter(Boolean)
@@ -177,13 +193,10 @@ async function loadData() {
       isLoadingReactions.value = false
     })
 
-  // 4. Channel members with explicit view / update timestamps
+  // 4. Channel members with explicit view timestamps
   for (const m of members) {
-    if (m.user_id && m.user_id !== postAuthorId) {
-      const viewedAt = m.last_viewed_at || (m as any).last_update_at || 0
-      if (viewedAt >= postCreateAt - 5000) {
-        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, viewedAt))
-      }
+    if (m.user_id && m.user_id !== postAuthorId && m.last_viewed_at) {
+      addEvidence(m.user_id, m.last_viewed_at)
     }
   }
 
@@ -191,8 +204,8 @@ async function loadData() {
   const wsViews = chatStore.channelViewedByUser[channelId]
   if (wsViews) {
     for (const [uid, time] of Object.entries(wsViews)) {
-      if (uid && uid !== postAuthorId && time >= postCreateAt - 5000) {
-        viewersMap.set(uid, Math.max(viewersMap.get(uid) || 0, time))
+      if (uid && uid !== postAuthorId) {
+        addEvidence(uid, time)
       }
     }
   }
@@ -200,15 +213,15 @@ async function loadData() {
   // 6. Subsequent posts & reactions in this channel
   const channelPosts = chatStore.posts[channelId] || []
   for (const p of channelPosts) {
-    if (p.create_at > postCreateAt) {
+    if (p.create_at >= postCreateAt - 5000) {
       if (p.user_id && p.user_id !== postAuthorId && !p.id.startsWith('temp_')) {
-        viewersMap.set(p.user_id, Math.max(viewersMap.get(p.user_id) || 0, p.create_at))
+        addEvidence(p.user_id, p.create_at)
       }
       const pReactions = p.metadata?.reactions || []
       for (const pr of pReactions) {
         if (pr.user_id && pr.user_id !== postAuthorId) {
           const time = (pr as any).create_at || p.create_at
-          viewersMap.set(pr.user_id, Math.max(viewersMap.get(pr.user_id) || 0, time))
+          addEvidence(pr.user_id, time)
         }
       }
     }
@@ -223,25 +236,49 @@ async function loadData() {
     const lastAct = usersStore.lastActivityAt[m.user_id] || 0
     const isOnline = usersStore.getStatus(m.user_id) === 'online'
 
-    if (isDm) {
-      if (lastAct >= postCreateAt - 5000) {
-        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, lastAct))
-      } else if (isOnline && Date.now() - postCreateAt > 3000) {
-        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, Date.now()))
-      }
-    } else {
-      if (lastAct >= postCreateAt - 5000) {
-        viewersMap.set(m.user_id, Math.max(viewersMap.get(m.user_id) || 0, lastAct))
+    // If we don't have direct channel evidence for this member:
+    if (!userEvidence.has(m.user_id) || userEvidence.get(m.user_id)!.length === 0) {
+      if (isDm) {
+        if (lastAct >= postCreateAt - 5000) {
+          addEvidence(m.user_id, lastAct)
+        } else if (isOnline) {
+          addEvidence(m.user_id, Math.max(postCreateAt, Date.now() - 30000))
+        }
+      } else {
+        // Group channel: if user was active around post creation time (e.g. within 15 mins)
+        if (lastAct >= postCreateAt - 5000 && lastAct <= postCreateAt + 900000) {
+          addEvidence(m.user_id, lastAct)
+        }
       }
     }
   }
 
-  // 8. If viewing user is not author, they are seeing it right now
+  // 8. If viewing user is not author, they are seeing it right now if not viewed previously
   if (myId && myId !== postAuthorId) {
-    viewersMap.set(myId, Math.max(viewersMap.get(myId) || 0, Date.now()))
+    if (!userEvidence.has(myId) || userEvidence.get(myId)!.length === 0) {
+      addEvidence(myId, Date.now())
+    }
+  }
+
+  // 9. Sync with chatStore.getPostViewers so viewers list stays consistent
+  const storeViewers = chatStore.getPostViewers(props.post)
+  for (const uid of storeViewers) {
+    if (uid && uid !== postAuthorId && (!userEvidence.has(uid) || userEvidence.get(uid)!.length === 0)) {
+      const act = usersStore.lastActivityAt[uid] || postCreateAt
+      addEvidence(uid, Math.max(act, postCreateAt))
+    }
   }
 
   await reactionsPromise
+
+  // 10. Map each viewer to their EARLIEST verified view time
+  const viewersMap = new Map<string, number>()
+  for (const [uid, times] of userEvidence.entries()) {
+    if (times.length > 0) {
+      const earliestTime = Math.min(...times)
+      viewersMap.set(uid, Math.min(Math.max(earliestTime, postCreateAt), Date.now()))
+    }
+  }
 
   try {
     const userIds = Array.from(viewersMap.keys())

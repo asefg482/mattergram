@@ -619,66 +619,6 @@ class MattermostApiService {
   public async getFlaggedPosts(userId: string, page = 0, perPage = 60): Promise<ChannelPostsResponse> {
     return this.request<ChannelPostsResponse>(`/api/v4/users/${userId}/posts/flagged?page=${page}&per_page=${perPage}`)
   }
-
-  // Mattermost Plugin Todo API (com.mattermost.plugin-todo)
-  public async getPluginTodoLists(): Promise<{ my?: any[]; in?: any[]; out?: any[] }> {
-    return this.request('/plugins/com.mattermost.plugin-todo/lists?reminder=false')
-  }
-
-  public async addPluginTodo(payload: {
-    message: string
-    description?: string
-    send_to?: string
-    post_id?: string
-    postPermalink?: string
-  }): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/add', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    })
-  }
-
-  public async completePluginTodo(id: string): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/complete', {
-      method: 'POST',
-      body: JSON.stringify({ id })
-    })
-  }
-
-  public async removePluginTodo(id: string): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/remove', {
-      method: 'POST',
-      body: JSON.stringify({ id })
-    })
-  }
-
-  public async editPluginTodo(id: string, message: string, description?: string): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/edit', {
-      method: 'PUT',
-      body: JSON.stringify({ id, message, description: description || '' })
-    })
-  }
-
-  public async acceptPluginTodo(id: string): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/accept', {
-      method: 'POST',
-      body: JSON.stringify({ id })
-    })
-  }
-
-  public async bumpPluginTodo(id: string): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/bump', {
-      method: 'POST',
-      body: JSON.stringify({ id })
-    })
-  }
-
-  public async changePluginTodoAssignment(id: string, sendToUsername: string): Promise<any> {
-    return this.request('/plugins/com.mattermost.plugin-todo/change_assignment', {
-      method: 'POST',
-      body: JSON.stringify({ id, send_to: sendToUsername })
-    })
-  }
 }
 
 export const mmApi = new MattermostApiService()
