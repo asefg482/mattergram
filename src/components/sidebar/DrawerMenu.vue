@@ -520,7 +520,16 @@ const backdropStyle = computed(() => {
         >
           <p class="font-medium text-[#111827] dark:text-[#f5f5f5]">Mattergram for Mattermost</p>
           <p class="text-[10px] text-[#7f91a4] flex items-center justify-center gap-1">
-            <span>Developed By Asef Ghorbani for Dornica</span>
+            <span>
+              Developed By
+              <a
+                href="https://asefg.ir"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-[#3390ec] hover:underline font-medium transition-colors"
+              >Asef Ghorbani</a>
+              for Dornica
+            </span>
             <span class="inline-block text-xs">💜</span>
           </p>
           <p class="text-[10px] text-[#7f91a4] opacity-80">نسخه 1.0.9</p>
