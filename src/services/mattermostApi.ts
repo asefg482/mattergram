@@ -404,6 +404,10 @@ class MattermostApiService {
     return this.request<MattermostPost>(`/api/v4/posts/${postId}`)
   }
 
+  public async getPostsAround(channelId: string, postId: string, perPage = 60): Promise<ChannelPostsResponse> {
+    return this.request<ChannelPostsResponse>(`/api/v4/channels/${channelId}/posts?around=${postId}&per_page=${perPage}`)
+  }
+
   public async getPostThread(postId: string): Promise<ChannelPostsResponse> {
     return this.request<ChannelPostsResponse>(`/api/v4/posts/${postId}/thread`)
   }

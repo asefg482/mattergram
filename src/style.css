@@ -28,6 +28,11 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+
+  /* Corner Radius Defaults */
+  --tg-corner-radius: 16px;
+  --tg-chat-radius: 16px;
+  --tg-menu-radius: 16px;
 }
 
 .dark {
@@ -221,6 +226,65 @@ input, textarea, button, select {
 .tg-context-menu {
   will-change: transform, opacity;
   animation: tgContextMenuPop 0.11s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-radius: var(--tg-menu-radius, 16px) !important;
+}
+
+.tg-chat-input-box {
+  border-radius: var(--tg-chat-radius, 16px) !important;
+}
+
+.tg-message-bubble {
+  border-radius: var(--tg-chat-radius, 16px) !important;
+}
+
+.tg-message-bubble.bubble-out-tail {
+  border-bottom-right-radius: 2px !important;
+}
+
+.tg-message-bubble.bubble-in-tail {
+  border-bottom-left-radius: 2px !important;
+}
+
+.tg-chat-banner {
+  border-radius: min(var(--tg-chat-radius, 16px), 14px) !important;
+}
+
+.tg-mention-popover {
+  border-radius: var(--tg-chat-radius, 16px) !important;
+}
+
+.tg-reaction-picker {
+  border-radius: var(--tg-menu-radius, 16px) !important;
+}
+
+/* Telegram Message Focus Glow Animation */
+@keyframes tgMessageFocusGlow {
+  0% {
+    box-shadow: 0 0 0 4px rgba(51, 144, 236, 0.75), 0 8px 24px rgba(51, 144, 236, 0.35);
+    transform: scale(1.025);
+    filter: brightness(1.15);
+  }
+  35% {
+    box-shadow: 0 0 0 3px rgba(51, 144, 236, 0.55), 0 6px 18px rgba(51, 144, 236, 0.25);
+    transform: scale(1.012);
+    filter: brightness(1.1);
+  }
+  70% {
+    box-shadow: 0 0 0 2px rgba(51, 144, 236, 0.3);
+    transform: scale(1);
+    filter: brightness(1.04);
+  }
+  100% {
+    box-shadow: none;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.tg-message-focused {
+  animation: tgMessageFocusGlow 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 30 !important;
+  position: relative;
 }
 
 /* GPU Accelerated Smooth Scrolling */

@@ -559,7 +559,8 @@ defineExpose({
     <!-- Telegram Mention Autocomplete Popover -->
     <div
       v-if="showMentions && mentionCandidates.length > 0"
-      class="absolute bottom-full mb-2 left-3 right-3 md:left-14 md:right-16 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-40 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150"
+      class="absolute bottom-full mb-2 left-3 right-3 md:left-14 md:right-16 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-40 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150 tg-mention-popover"
+      :style="{ borderRadius: `${uiStore.chatRadius}px` }"
     >
       <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#7f91a4] border-b border-[#dfe1e5] dark:border-[#202b36] bg-[#0e1621]/40 flex items-center justify-between">
         <span>Mention Members</span>
@@ -624,7 +625,8 @@ defineExpose({
     <!-- Reply Banner Preview -->
     <div
       v-if="uiStore.replyingTo"
-      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-[#3390ec] animate-in fade-in duration-150"
+      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-[#3390ec] animate-in fade-in duration-150 tg-chat-banner"
+      :style="{ borderRadius: `${Math.min(uiStore.chatRadius, 14)}px` }"
     >
       <div class="flex items-center gap-2 min-w-0 pr-2">
         <Reply class="w-4 h-4 text-[#3390ec] shrink-0" />
@@ -645,7 +647,8 @@ defineExpose({
     <!-- Edit Banner Preview -->
     <div
       v-if="uiStore.editingPost"
-      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-amber-400 animate-in fade-in duration-150"
+      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-amber-400 animate-in fade-in duration-150 tg-chat-banner"
+      :style="{ borderRadius: `${Math.min(uiStore.chatRadius, 14)}px` }"
     >
       <div class="flex items-center gap-2 min-w-0 pr-2">
         <Edit2 class="w-4 h-4 text-amber-400 shrink-0" />
@@ -721,7 +724,10 @@ defineExpose({
       />
 
       <!-- Textarea & Emoji Container -->
-      <div class="flex-1 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-2xl flex items-end px-3 py-1.5 border border-transparent focus-within:border-[#3390ec] transition-all">
+      <div
+        class="flex-1 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-2xl flex items-end px-3 py-1.5 border border-transparent focus-within:border-[#3390ec] transition-all tg-chat-input-box"
+        :style="{ borderRadius: `${uiStore.chatRadius}px` }"
+      >
         <!-- Textarea -->
         <textarea
           ref="textareaRef"

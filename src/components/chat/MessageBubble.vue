@@ -347,8 +347,7 @@ function scrollToParent() {
   const el = document.getElementById(`msg-${replyToId.value}`)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    el.classList.add('bg-blue-500/20')
-    setTimeout(() => el.classList.remove('bg-blue-500/20'), 1500)
+    uiStore.triggerPostFocus(replyToId.value)
   }
 }
 
@@ -447,7 +446,10 @@ function handleSenderClick() {
     :id="`msg-${post.id}`"
     :data-post-id="post.id"
     class="flex items-end gap-1.5 my-1 px-0.5 sm:px-1 group relative transition-colors duration-150 tg-message-row w-full rounded-lg hover:z-20"
-    :class="isOutgoing ? 'justify-end' : 'justify-start'"
+    :class="[
+      isOutgoing ? 'justify-end' : 'justify-start',
+      uiStore.focusedPostId === post.id ? 'z-30' : ''
+    ]"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Sender Avatar (Incoming only in groups) -->
@@ -467,7 +469,8 @@ function handleSenderClick() {
       :class="[
         isAnimated
           ? (isOutgoing ? 'tg-msg-send-glide' : 'tg-msg-receive-glide')
-          : ''
+          : '',
+        uiStore.focusedPostId === post.id ? 'z-30' : ''
       ]"
     >
       <!-- Full Reaction Picker Popover -->
@@ -491,11 +494,18 @@ function handleSenderClick() {
         @touchstart.passive="handleBubbleTouchStart"
         @touchmove.passive="handleBubbleTouchMove"
         @touchend="handleBubbleTouchEnd"
-        class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative cursor-pointer md:cursor-default"
+        class="rounded-2xl px-3.5 py-2 shadow-tg-bubble relative cursor-pointer md:cursor-default tg-message-bubble transition-all"
+        :style="{
+          borderTopLeftRadius: `${uiStore.chatRadius}px`,
+          borderTopRightRadius: `${uiStore.chatRadius}px`,
+          borderBottomLeftRadius: isOutgoing ? `${uiStore.chatRadius}px` : '2px',
+          borderBottomRightRadius: isOutgoing ? '2px' : `${uiStore.chatRadius}px`
+        }"
         :class="[
           isOutgoing
             ? 'bg-[#eeffde] dark:bg-[#2b5278] text-[#111827] dark:text-white rounded-br-none bubble-out-tail mr-1.5'
-            : 'bg-white dark:bg-[#182533] text-[#111827] dark:text-[#f5f5f5] rounded-bl-none bubble-in-tail ml-1.5'
+            : 'bg-white dark:bg-[#182533] text-[#111827] dark:text-[#f5f5f5] rounded-bl-none bubble-in-tail ml-1.5',
+          uiStore.focusedPostId === post.id ? 'tg-message-focused ring-2 ring-[#3390ec]' : ''
         ]"
       >
         <!-- Sender Name (Incoming Group Message) -->

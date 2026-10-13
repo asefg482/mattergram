@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
 import { useTodoStore } from '../../stores/todo'
-import { showConfirm } from '../../stores/alert'
+import { showConfirm, showAlert } from '../../stores/alert'
 import type { MattermostPost } from '../../types/mattermost'
 import {
   Reply,
@@ -15,7 +15,8 @@ import {
   SmilePlus,
   Eye,
   MessageSquareText,
-  CheckSquare
+  CheckSquare,
+  Link
 } from 'lucide-vue-next'
 import ReactionPicker from './ReactionPicker.vue'
 import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
@@ -251,6 +252,25 @@ function handleCopy() {
   emit('close')
 }
 
+async function handleCopyLink() {
+  if (!props.post) return
+  const channelId = props.post.channel_id || chatStore.activeChannelId
+  if (!channelId) return
+  const origin = window.location.origin
+  const url = `${origin}/c/${channelId}?post=${props.post.id}`
+  try {
+    if (navigator?.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(url)
+    } else {
+      fallbackCopy(url)
+    }
+    showAlert('Message link copied to clipboard', { type: 'success' })
+  } catch {
+    showAlert('Failed to copy link', { type: 'error' })
+  }
+  emit('close')
+}
+
 async function handleTogglePin() {
   if (props.post) {
     await chatStore.togglePinPost(props.post)
@@ -310,7 +330,7 @@ onUnmounted(() => {
     <div
       ref="menuRef"
       class="fixed pointer-events-auto w-52 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
-      :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin }"
+      :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin, borderRadius: `${uiStore.menuRadius}px` }"
     >
       <!-- Quick Reactions Row -->
       <div class="px-2 py-1.5 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between gap-0.5 overflow-x-auto no-scrollbar">
@@ -414,6 +434,15 @@ onUnmounted(() => {
         >
           <Copy class="w-4 h-4 text-[#7f91a4]" />
           <span>Copy Text</span>
+        </button>
+
+        <!-- Copy Link -->
+        <button
+          @click="handleCopyLink"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+        >
+          <Link class="w-4 h-4 text-[#3390ec]" />
+          <span>Copy Link</span>
         </button>
 
         <!-- Pin / Unpin -->

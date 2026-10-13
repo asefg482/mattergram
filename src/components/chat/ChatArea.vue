@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
+
+const route = useRoute()
 import ChatHeader from './ChatHeader.vue'
 import ThreadView from './ThreadView.vue'
 import MessageBubble from './MessageBubble.vue'
@@ -200,9 +203,16 @@ function performInstantScrollToBottom() {
   chatStore.isScrolledUp = false
 }
 
-// Scheduled channel switch sequence that guarantees the chat opens already at the latest message
+// Scheduled channel switch sequence that guarantees the chat opens already at the latest message or focuses target post
 function onChannelSwitch() {
   chatStore.markActiveChannelViewed()
+
+  const targetPostId = (route.query.post as string) || (route.hash ? route.hash.replace(/^#post-/, '') : '')
+  if (targetPostId && chatStore.activeChannelId) {
+    chatStore.jumpToPost(chatStore.activeChannelId, targetPostId)
+    return
+  }
+
   isChannelSwitching.value = true
   if (currentScrollAnimation) {
     cancelAnimationFrame(currentScrollAnimation)
@@ -373,6 +383,17 @@ watch(
       nextTick(() => {
         messageInputRef.value?.focus()
       })
+    }
+  }
+)
+
+// Watch query post changes (e.g. user opens shared link or navigates)
+watch(
+  () => [route.query.post, route.hash],
+  ([postId, hash]) => {
+    const target = (typeof postId === 'string' ? postId : '') || (typeof hash === 'string' ? hash.replace(/^#post-/, '') : '')
+    if (target && chatStore.activeChannelId) {
+      chatStore.jumpToPost(chatStore.activeChannelId, target)
     }
   }
 )

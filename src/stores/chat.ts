@@ -368,6 +368,50 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // Load posts around a target message to jump directly to it
+  async function loadPostsAround(channelId: string, postId: string) {
+    if (!channelId || !postId) return
+    try {
+      let res: any = null
+      try {
+        res = await mmApi.getPostsAround(channelId, postId, 60)
+      } catch {
+        // Fallback: fetch individual post if server version does not support ?around
+        const singlePost = await mmApi.getPost(postId)
+        if (singlePost && singlePost.delete_at === 0) {
+          res = { order: [singlePost.id], posts: { [singlePost.id]: singlePost } }
+        }
+      }
+
+      if (res && res.order) {
+        const userIdsToFetch = new Set<string>()
+        const existing = posts.value[channelId] || []
+        const existingMap = new Map<string, MattermostPost>()
+        for (const p of existing) {
+          existingMap.set(p.id, p)
+        }
+
+        for (const id of res.order) {
+          const p = res.posts[id]
+          if (p && p.delete_at === 0) {
+            existingMap.set(p.id, p)
+            if (p.user_id) userIdsToFetch.add(p.user_id)
+          }
+        }
+
+        if (userIdsToFetch.size > 0) {
+          usersStore.fetchUsers(Array.from(userIdsToFetch))
+        }
+
+        const merged = Array.from(existingMap.values())
+        merged.sort((a, b) => a.create_at - b.create_at)
+        posts.value[channelId] = merged
+      }
+    } catch (err) {
+      console.error('Failed to load posts around:', err)
+    }
+  }
+
   // Load older posts when scrolling up to earlier history
   async function loadOlderPosts(channelId: string): Promise<{ addedCount: number }> {
     if (!channelId) return { addedCount: 0 }
@@ -618,6 +662,8 @@ export const useChatStore = defineStore('chat', () => {
   async function jumpToPost(channelId: string, postId: string) {
     if (!channelId || !postId) return
 
+    const uiStore = useUiStore()
+
     // Switch to channel if not active
     if (activeChannelId.value !== channelId) {
       await selectChannel(channelId)
@@ -628,41 +674,32 @@ export const useChatStore = defineStore('chat', () => {
       closeThread()
     }
 
-    // On mobile screens, close drawer so main chat is visible
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      const uiStore = useUiStore()
-      uiStore.showRightSidebar = false
-      uiStore.showHashtagDrawer = false
-    }
+    // Ensure main chat is visible on mobile and close overlay drawers
+    uiStore.isMobileSidebarOpen = false
+    uiStore.showRightSidebar = false
+    uiStore.showHashtagDrawer = false
+    uiStore.showTodoModal = false
 
-    // If post is not yet loaded in local store, fetch it
+    // If post is not yet loaded in local store, fetch around it
     const inStore = posts.value[channelId]?.some((p) => p.id === postId)
     if (!inStore) {
-      try {
-        const postData = await mmApi.getPost(postId)
-        if (postData && postData.delete_at === 0) {
-          if (!posts.value[channelId]) posts.value[channelId] = []
-          if (!posts.value[channelId].some((p) => p.id === postId)) {
-            posts.value[channelId].push(postData)
-            posts.value[channelId].sort((a, b) => a.create_at - b.create_at)
-          }
-        }
-      } catch (err) {
-        console.warn('Could not fetch post details for jumpToPost:', err)
-      }
+      await loadPostsAround(channelId, postId)
     }
 
-    // Allow time for messages DOM to render
-    setTimeout(() => {
+    // Scroll to message and trigger focus glow
+    function doScroll(attempts = 0) {
       const el = document.getElementById(`msg-${postId}`) || document.querySelector(`[data-post-id="${postId}"]`)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        el.classList.add('animate-pulse', 'bg-[#3390ec]/20', 'ring-2', 'ring-[#3390ec]/60')
-        setTimeout(() => {
-          el.classList.remove('animate-pulse', 'bg-[#3390ec]/20', 'ring-2', 'ring-[#3390ec]/60')
-        }, 2500)
+        uiStore.triggerPostFocus(postId)
+      } else if (attempts < 5) {
+        setTimeout(() => doScroll(attempts + 1), 120)
       }
-    }, 350)
+    }
+
+    setTimeout(() => {
+      doScroll(0)
+    }, 150)
   }
 
   // Resolve top-level thread root post ID for a channel to satisfy Mattermost's 1-level threading rule
@@ -1617,6 +1654,7 @@ export const useChatStore = defineStore('chat', () => {
     loadChannels,
     selectChannel,
     loadPosts,
+    loadPostsAround,
     fetchChannelMembers,
     addMemberToChannel,
     removeMemberFromChannel,

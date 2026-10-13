@@ -21,6 +21,7 @@ const uiStore = useUiStore()
 
 async function syncRouteWithChat() {
   const channelParam = route.params.channelId as string | undefined
+  const postParam = (route.query.post as string) || (route.hash ? route.hash.replace(/^#post-/, '') : undefined)
 
   if (route.name === 'settings' || route.name === 'chat-settings') {
     uiStore.showSettingsModal = true
@@ -38,6 +39,10 @@ async function syncRouteWithChat() {
     if (window.innerWidth < 768) {
       uiStore.isMobileSidebarOpen = false
     }
+
+    if (postParam) {
+      await chatStore.jumpToPost(targetId, postParam)
+    }
   } else if (!route.path.includes('/settings')) {
     chatStore.activeChannelId = null
     if (window.innerWidth < 768) {
@@ -46,9 +51,9 @@ async function syncRouteWithChat() {
   }
 }
 
-// Watch route changes (e.g. browser back/forward or manual navigation)
+// Watch route changes (e.g. browser back/forward, manual navigation, or shared post links)
 watch(
-  () => [route.params.channelId, route.name],
+  () => [route.params.channelId, route.query.post, route.hash, route.name],
   () => {
     syncRouteWithChat()
   }

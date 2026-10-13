@@ -7,6 +7,9 @@ import {
   type EmojiItem
 } from '../../utils/reactions'
 import { Search, X, Clock } from 'lucide-vue-next'
+import { useUiStore } from '../../stores/ui'
+
+const uiStore = useUiStore()
 
 const props = withDefaults(
   defineProps<{
@@ -94,7 +97,8 @@ onUnmounted(() => {
 <template>
   <div
     ref="pickerRef"
-    class="w-72 sm:w-80 bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col overflow-hidden select-none z-50 animate-in fade-in zoom-in-95 duration-150"
+    class="w-72 sm:w-80 bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col overflow-hidden select-none z-50 animate-in fade-in zoom-in-95 duration-150 tg-reaction-picker"
+    :style="{ borderRadius: `${uiStore.menuRadius}px` }"
     :class="alignRight ? 'origin-top-right' : 'origin-top-left'"
     @click.stop
   >

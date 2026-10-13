@@ -21,7 +21,12 @@
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.setAttribute('data-anim', a);
           document.documentElement.classList.add(m);
-          if (m === 'light') document.documentElement.classList.remove('dark');
+          var r = localStorage.getItem('mattergram_border_radius') || '16';
+          var cr = localStorage.getItem('mattergram_chat_radius') || r;
+          var mr = localStorage.getItem('mattergram_menu_radius') || r;
+          document.documentElement.style.setProperty('--tg-corner-radius', r + 'px');
+          document.documentElement.style.setProperty('--tg-chat-radius', cr + 'px');
+          document.documentElement.style.setProperty('--tg-menu-radius', mr + 'px');
         } catch(e) {}
       })();
     </script>

@@ -125,6 +125,88 @@ export const useUiStore = defineStore('ui', () => {
     }
   }
 
+  // Corner Radius System (Chat box & Context Menus)
+  const DEFAULT_BORDER_RADIUS = 16
+  const MIN_BORDER_RADIUS = 0
+  const MAX_BORDER_RADIUS = 24
+
+  const savedBaseRadius = typeof window !== 'undefined' ? localStorage.getItem('mattergram_border_radius') : null
+  const defaultRadius = savedBaseRadius ? parseInt(savedBaseRadius, 10) : DEFAULT_BORDER_RADIUS
+
+  const savedChatRadius = typeof window !== 'undefined' ? localStorage.getItem('mattergram_chat_radius') : null
+  const savedMenuRadius = typeof window !== 'undefined' ? localStorage.getItem('mattergram_menu_radius') : null
+
+  const chatRadius = ref<number>(
+    savedChatRadius ? Math.max(MIN_BORDER_RADIUS, Math.min(MAX_BORDER_RADIUS, parseInt(savedChatRadius, 10))) : defaultRadius
+  )
+  const menuRadius = ref<number>(
+    savedMenuRadius ? Math.max(MIN_BORDER_RADIUS, Math.min(MAX_BORDER_RADIUS, parseInt(savedMenuRadius, 10))) : defaultRadius
+  )
+
+  function applyRadiusToDom() {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    root.style.setProperty('--tg-chat-radius', `${chatRadius.value}px`)
+    root.style.setProperty('--tg-menu-radius', `${menuRadius.value}px`)
+    root.style.setProperty('--tg-corner-radius', `${Math.round((chatRadius.value + menuRadius.value) / 2)}px`)
+  }
+
+  function setChatRadius(val: number) {
+    const clamped = Math.max(MIN_BORDER_RADIUS, Math.min(MAX_BORDER_RADIUS, Math.round(val)))
+    chatRadius.value = clamped
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mattergram_chat_radius', String(clamped))
+      localStorage.setItem('mattergram_border_radius', String(clamped))
+    }
+    applyRadiusToDom()
+  }
+
+  function setMenuRadius(val: number) {
+    const clamped = Math.max(MIN_BORDER_RADIUS, Math.min(MAX_BORDER_RADIUS, Math.round(val)))
+    menuRadius.value = clamped
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mattergram_menu_radius', String(clamped))
+      localStorage.setItem('mattergram_border_radius', String(clamped))
+    }
+    applyRadiusToDom()
+  }
+
+  function setBorderRadius(val: number) {
+    const clamped = Math.max(MIN_BORDER_RADIUS, Math.min(MAX_BORDER_RADIUS, Math.round(val)))
+    chatRadius.value = clamped
+    menuRadius.value = clamped
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mattergram_border_radius', String(clamped))
+      localStorage.setItem('mattergram_chat_radius', String(clamped))
+      localStorage.setItem('mattergram_menu_radius', String(clamped))
+    }
+    applyRadiusToDom()
+  }
+
+  function resetBorderRadius() {
+    setBorderRadius(DEFAULT_BORDER_RADIUS)
+  }
+
+  // Initial Radius apply to DOM
+  applyRadiusToDom()
+
+  // Message Focus Highlight State (Telegram Pulse Effect)
+  const focusedPostId = ref<string | null>(null)
+  let focusClearTimer: any = null
+
+  function triggerPostFocus(postId: string) {
+    if (focusClearTimer) {
+      clearTimeout(focusClearTimer)
+      focusClearTimer = null
+    }
+    focusedPostId.value = postId
+    focusClearTimer = setTimeout(() => {
+      if (focusedPostId.value === postId) {
+        focusedPostId.value = null
+      }
+    }, 2800)
+  }
+
   const avatarPreview = ref<AvatarPreviewState>({
     isOpen: false,
     url: '',
@@ -268,6 +350,18 @@ export const useUiStore = defineStore('ui', () => {
     showHashtagDrawer,
     activeHashtag,
     openHashtagSearch,
-    closeHashtagSearch
+    closeHashtagSearch,
+    chatRadius,
+    menuRadius,
+    setChatRadius,
+    setMenuRadius,
+    setBorderRadius,
+    resetBorderRadius,
+    applyRadiusToDom,
+    DEFAULT_BORDER_RADIUS,
+    MIN_BORDER_RADIUS,
+    MAX_BORDER_RADIUS,
+    focusedPostId,
+    triggerPostFocus
   }
 })
