@@ -50,15 +50,38 @@ const DEFAULT_MATTERMOST_SERVER = (
   ''
 ).trim().replace(/\/+$/, '')
 
+// Build strict allowlist of permitted origins to prevent SSRF (CWE-918)
+const ALLOWED_SERVERS = new Set(
+  [
+    DEFAULT_MATTERMOST_SERVER,
+    ...(process.env.ALLOWED_MATTERMOST_SERVERS || '').split(',').map(s => s.trim())
+  ]
+    .filter(Boolean)
+    .map(s => {
+      try {
+        return new URL(s).origin
+      } catch {
+        return ''
+      }
+    })
+    .filter(Boolean)
+)
+
+// Enforce strict TLS certificate checking by default (CWE-295)
+const SECURE_TLS = process.env.MATTERMOST_TLS_INSECURE !== 'true'
+if (!SECURE_TLS) {
+  console.warn('[Security Warning] MATTERMOST_TLS_INSECURE is enabled! Upstream TLS certificate verification is disabled.')
+}
+
 if (DEFAULT_MATTERMOST_SERVER) {
   console.log(`[Config] Loaded Mattermost Base URL from .env: ${DEFAULT_MATTERMOST_SERVER}`)
 } else {
-  console.warn('[Config Warning] MATTERMOST_BASE_URL is not defined in .env! Requests without explicit server header will fail.')
+  console.warn('[Config Warning] MATTERMOST_BASE_URL is not defined in .env!')
 }
 
 const proxy = httpProxy.createProxyServer({
   changeOrigin: true,
-  secure: false,
+  secure: SECURE_TLS,
 })
 
 proxy.on('error', (err, _req, res) => {
@@ -69,6 +92,14 @@ proxy.on('error', (err, _req, res) => {
   }
 })
 
+// Set secure session cookie when Mattermost returns auth token in login response
+proxy.on('proxyRes', (proxyRes, _req, res) => {
+  const token = proxyRes.headers['token'] || proxyRes.headers['Token']
+  if (token && !res.headersSent) {
+    res.setHeader('Set-Cookie', `mattergram_session=${token}; Path=/; SameSite=Lax`)
+  }
+})
+
 const MIME_TYPES = {
   '.html': 'text/html',
   '.js': 'application/javascript',
@@ -76,6 +107,7 @@ const MIME_TYPES = {
   '.json': 'application/json',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
@@ -84,13 +116,14 @@ const MIME_TYPES = {
 }
 
 const server = http.createServer((req, res) => {
+  // 1. API & Plugin Reverse Proxy
   if (req.url && (
     req.url.startsWith('/api/v4') ||
     req.url.startsWith('/mattermost-proxy/api/v4') ||
     req.url.startsWith('/plugins') ||
     req.url.startsWith('/mattermost-proxy/plugins')
   )) {
-    let targetServer = req.headers['x-mattermost-server'] || DEFAULT_MATTERMOST_SERVER
+    let targetServer = DEFAULT_MATTERMOST_SERVER
 
     if (req.url.startsWith('/mattermost-proxy/')) {
       req.url = req.url.replace('/mattermost-proxy', '')
@@ -101,22 +134,59 @@ const server = http.createServer((req, res) => {
       const queryToken = parsed.searchParams.get('mattergram_token')
       const queryServer = parsed.searchParams.get('mattergram_server')
 
+      // Authentication: Support Authorization header, session cookie, or legacy query token
+      let authToken = ''
+      if (req.headers['authorization']) {
+        const match = req.headers['authorization'].match(/^Bearer\s+(.+)$/i)
+        if (match) authToken = match[1]
+      } else if (req.headers.cookie) {
+        const match = req.headers.cookie.match(/(?:^|;\s*)mattergram_session=([^;]+)/)
+        if (match) authToken = match[1]
+      }
+
       if (queryToken) {
-        req.headers['authorization'] = `Bearer ${queryToken}`
+        authToken = queryToken
         parsed.searchParams.delete('mattergram_token')
       }
-      if (queryServer) {
-        targetServer = queryServer
+
+      if (authToken) {
+        req.headers['authorization'] = `Bearer ${authToken}`
+      }
+
+      // Target server validation against strict origin allowlist to prevent SSRF (CWE-918)
+      const requestedServer = queryServer || req.headers['x-mattermost-server']
+      if (requestedServer) {
+        try {
+          const reqOrigin = new URL(requestedServer).origin
+          if (ALLOWED_SERVERS.has(reqOrigin)) {
+            targetServer = requestedServer
+          } else {
+            console.warn(`[Security Warning] Blocked unauthorized proxy target: "${requestedServer}"`)
+            res.writeHead(403, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({
+              error: 'FORBIDDEN_PROXY_TARGET',
+              message: 'Target server is not in the allowed server list.'
+            }))
+            return
+          }
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({
+            error: 'INVALID_MATTERMOST_SERVER',
+            message: 'Invalid target server URL.'
+          }))
+          return
+        }
         parsed.searchParams.delete('mattergram_server')
       }
+
       req.url = parsed.pathname + (parsed.search ? parsed.search : '')
     } catch (e) {
-      // ignore
+      // ignore parsing error
     }
 
     targetServer = (targetServer || '').trim().replace(/\/+$/, '')
 
-    // If server is not set, throw an error instead of using any static fallback
     if (!targetServer) {
       res.writeHead(500, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({
@@ -146,14 +216,49 @@ const server = http.createServer((req, res) => {
     proxy.web(req, res, {
       target: targetUrl.origin,
       changeOrigin: true,
-      secure: false,
+      secure: SECURE_TLS,
     })
     return
   }
 
-  // 2. Static Files
-  let filePath = path.join(DIST_DIR, req.url === '/' ? 'index.html' : req.url.split('?')[0])
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+  // 2. Static Files Serving (Strict Path Traversal Protection - CWE-22)
+  let pathname = '/'
+  try {
+    pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname)
+  } catch {
+    res.writeHead(400)
+    res.end('Bad Request')
+    return
+  }
+
+  // Reject null bytes and path anomalies
+  if (pathname.includes('\0')) {
+    res.writeHead(400)
+    res.end('Bad Request')
+    return
+  }
+
+  // Normalize path and remove leading traversal markers
+  const safeRelativePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '')
+  const targetPath = path.resolve(DIST_DIR, '.' + (safeRelativePath.startsWith('/') ? safeRelativePath : '/' + safeRelativePath))
+
+  // Verify canonical path remains strictly contained within DIST_DIR
+  let isInsideDist = false
+  if (targetPath.startsWith(DIST_DIR + path.sep) || targetPath === path.join(DIST_DIR, 'index.html')) {
+    if (fs.existsSync(targetPath)) {
+      try {
+        const realTargetPath = fs.realpathSync(targetPath)
+        const realDistDir = fs.realpathSync(DIST_DIR)
+        isInsideDist = realTargetPath.startsWith(realDistDir + path.sep) || realTargetPath === path.join(realDistDir, 'index.html')
+      } catch {
+        isInsideDist = false
+      }
+    }
+  }
+
+  // SPA fallback: if file does not exist, is a directory, or attempts directory escape, serve index.html
+  let filePath = targetPath
+  if (!isInsideDist || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(DIST_DIR, 'index.html')
   }
 
@@ -178,12 +283,32 @@ const server = http.createServer((req, res) => {
   })
 })
 
-// WebSocket Bridge
+// 3. WebSocket Bridge (Strict Destination Validation and TLS Protection)
 const wss = new WebSocketServer({ noServer: true })
 server.on('upgrade', (req, socket, head) => {
   if (req.url && (req.url.startsWith('/api/v4/websocket') || req.url.startsWith('/ws'))) {
-    const parsed = new URL(req.url, 'http://localhost')
-    let targetServer = parsed.searchParams.get('server') || req.headers['x-mattermost-server'] || DEFAULT_MATTERMOST_SERVER
+    let targetServer = DEFAULT_MATTERMOST_SERVER
+
+    try {
+      const parsed = new URL(req.url, 'http://localhost')
+      const requestedServer = parsed.searchParams.get('server') || req.headers['x-mattermost-server']
+      if (requestedServer) {
+        const reqOrigin = new URL(requestedServer).origin
+        if (ALLOWED_SERVERS.has(reqOrigin)) {
+          targetServer = requestedServer
+        } else {
+          console.warn(`[Security Warning] Blocked unauthorized WebSocket target: "${requestedServer}"`)
+          socket.write('HTTP/1.1 403 Forbidden Target Server\r\n\r\n')
+          socket.destroy()
+          return
+        }
+      }
+    } catch {
+      socket.write('HTTP/1.1 400 Bad Request\r\n\r\n')
+      socket.destroy()
+      return
+    }
+
     targetServer = (targetServer || '').trim().replace(/\/+$/, '')
 
     if (!targetServer) {
@@ -207,7 +332,9 @@ server.on('upgrade', (req, socket, head) => {
     const upstreamUrl = `${wsProtocol}//${targetUrl.host}/api/v4/websocket`
 
     wss.handleUpgrade(req, socket, head, (clientWs) => {
-      const upstream = new WsClient(upstreamUrl)
+      const upstream = new WsClient(upstreamUrl, {
+        rejectUnauthorized: SECURE_TLS
+      })
       const buffer = []
 
       upstream.onmessage = (e) => {

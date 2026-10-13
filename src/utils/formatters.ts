@@ -131,14 +131,15 @@ const markedInstance = new Marked({
       const isSafe = /^(https?:\/\/|mailto:|tel:|\/)/i.test(href)
       const safeHref = isSafe ? href : '#'
       const text = this.parser.parseInline(token.tokens)
-      return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="text-[#3390ec] hover:underline font-medium break-all">${text}</a>`
+      return `<a href="${escapeHtml(safeHref)}" target="_blank" rel="noopener noreferrer" class="text-[#3390ec] hover:underline font-medium break-all">${text}</a>`
     },
     blockquote(token) {
       const body = this.parser.parse(token.tokens)
       return `<blockquote class="border-l-3 border-[#3390ec] pl-2.5 py-1 my-1.5 bg-black/5 dark:bg-black/15 rounded-r text-xs opacity-90 leading-relaxed">${body}</blockquote>`
     },
     code(token) {
-      const lang = token.lang ? `language-${token.lang}` : ''
+      const cleanLang = (token.lang || '').replace(/[^a-zA-Z0-9_-]/g, '')
+      const lang = cleanLang ? `language-${cleanLang}` : ''
       return `<pre class="bg-black/5 dark:bg-black/30 text-emerald-700 dark:text-emerald-400 p-2.5 my-1.5 rounded-xl text-xs font-mono overflow-x-auto border border-gray-300 dark:border-white/10"><code class="${lang}">${escapeHtml(token.text)}</code></pre>`
     },
     codespan(token) {
@@ -163,7 +164,8 @@ const markedInstance = new Marked({
         }
       },
       renderer(token: any) {
-        return `<span class="tg-mention text-[#3390ec] font-semibold hover:underline cursor-pointer inline-block" data-mention="${token.username}">@${token.username}</span>`
+        const username = escapeHtml(token.username || '')
+        return `<span class="tg-mention text-[#3390ec] font-semibold hover:underline cursor-pointer inline-block" data-mention="${username}">@${username}</span>`
       }
     },
     {

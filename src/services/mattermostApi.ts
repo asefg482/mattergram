@@ -33,6 +33,9 @@ class MattermostApiService {
     } else {
       this.cleanBaseUrl()
     }
+    if (this.token && typeof document !== 'undefined') {
+      document.cookie = `mattergram_session=${this.token}; path=/; SameSite=Lax`
+    }
   }
 
   public getBaseUrl(): string {
@@ -63,8 +66,14 @@ class MattermostApiService {
     this.token = token
     if (token) {
       localStorage.setItem('mattergram_token', token)
+      if (typeof document !== 'undefined') {
+        document.cookie = `mattergram_session=${token}; path=/; SameSite=Lax`
+      }
     } else {
       localStorage.removeItem('mattergram_token')
+      if (typeof document !== 'undefined') {
+        document.cookie = 'mattergram_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      }
     }
   }
 
@@ -462,33 +471,19 @@ class MattermostApiService {
   }
 
   public getFileDownloadUrl(fileId: string): string {
-    const params = new URLSearchParams()
-    if (this.token) params.set('mattergram_token', this.token)
-    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
-    const qs = params.toString() ? `?${params.toString()}` : ''
-    return `/api/v4/files/${fileId}${qs}`
+    return `/api/v4/files/${fileId}`
   }
 
   public getFilePreviewUrl(fileId: string): string {
-    const params = new URLSearchParams()
-    if (this.token) params.set('mattergram_token', this.token)
-    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
-    const qs = params.toString() ? `?${params.toString()}` : ''
-    return `/api/v4/files/${fileId}/preview${qs}`
+    return `/api/v4/files/${fileId}/preview`
   }
 
   public getFileThumbnailUrl(fileId: string): string {
-    const params = new URLSearchParams()
-    if (this.token) params.set('mattergram_token', this.token)
-    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
-    const qs = params.toString() ? `?${params.toString()}` : ''
-    return `/api/v4/files/${fileId}/thumbnail${qs}`
+    return `/api/v4/files/${fileId}/thumbnail`
   }
 
   public getUserAvatarUrl(userId: string, lastPictureUpdate?: number): string {
     const params = new URLSearchParams()
-    if (this.token) params.set('mattergram_token', this.token)
-    if (this.baseUrl) params.set('mattergram_server', this.baseUrl)
     if (lastPictureUpdate) params.set('_', String(lastPictureUpdate))
     const qs = params.toString() ? `?${params.toString()}` : ''
     return `/api/v4/users/${userId}/image${qs}`
