@@ -326,6 +326,23 @@ class MattermostApiService {
     return this.request<ChannelPostsResponse>(`/api/v4/posts/${postId}/thread`)
   }
 
+  public async searchTeamPosts(
+    teamId: string,
+    terms: string,
+    isOrSearch: boolean = false
+  ): Promise<{ order: string[]; posts: Record<string, MattermostPost> }> {
+    return this.request<{ order: string[]; posts: Record<string, MattermostPost> }>(
+      `/api/v4/teams/${teamId}/posts/search`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          terms,
+          is_or_search: isOrSearch
+        })
+      }
+    )
+  }
+
   public async createPost(
     channelId: string,
     message: string,

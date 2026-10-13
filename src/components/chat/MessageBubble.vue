@@ -364,6 +364,17 @@ async function handleTextClick(e: MouseEvent) {
     return
   }
 
+  const hashtagTarget = (e.target as HTMLElement).closest('[data-hashtag]') as HTMLElement | null
+  if (hashtagTarget) {
+    e.preventDefault()
+    e.stopPropagation()
+    const tag = hashtagTarget.getAttribute('data-hashtag')
+    if (tag) {
+      uiStore.openHashtagSearch(tag)
+    }
+    return
+  }
+
   const target = (e.target as HTMLElement).closest('[data-mention]') as HTMLElement | null
   if (target) {
     e.preventDefault()
@@ -434,6 +445,7 @@ function handleSenderClick() {
 <template>
   <div
     :id="`msg-${post.id}`"
+    :data-post-id="post.id"
     class="flex items-end gap-1.5 my-1 px-0.5 sm:px-1 group relative transition-colors duration-150 tg-message-row w-full rounded-lg hover:z-20"
     :class="isOutgoing ? 'justify-end' : 'justify-start'"
     @contextmenu.prevent="emit('contextmenu', $event)"

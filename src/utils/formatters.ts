@@ -169,6 +169,27 @@ const markedInstance = new Marked({
       }
     },
     {
+      name: 'hashtag',
+      level: 'inline',
+      start(src: string) {
+        return src.indexOf('#')
+      },
+      tokenizer(src: string) {
+        const match = /^#([a-zA-Z0-9_\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]+)/u.exec(src)
+        if (match) {
+          return {
+            type: 'hashtag',
+            raw: match[0],
+            tag: match[1]
+          }
+        }
+      },
+      renderer(token: any) {
+        const tag = escapeHtml(token.tag || '')
+        return `<span class="tg-hashtag text-[#3390ec] font-semibold hover:underline cursor-pointer inline-block" data-hashtag="${tag}">#${tag}</span>`
+      }
+    },
+    {
       name: 'spoiler',
       level: 'inline',
       start(src: string) {

@@ -460,6 +460,84 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // Search messages by hashtag across server & local cache
+  async function searchPostsByHashtag(tag: string, channelId?: string): Promise<MattermostPost[]> {
+    const cleanTag = tag.trim().replace(/^#/, '').toLowerCase()
+    if (!cleanTag) return []
+
+    const postsMap = new Map<string, MattermostPost>()
+    const escapedTag = cleanTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const tagRegex = new RegExp('#' + escapedTag + '(?![a-zA-Z0-9_\\u0600-\\u06FF])', 'i')
+
+    // 1. Search local cached posts (covers active channel, DMs, and groups loaded in store)
+    for (const [chId, channelPosts] of Object.entries(posts.value)) {
+      if (channelId && chId !== channelId) continue
+      for (const p of channelPosts) {
+        if (p.delete_at > 0) continue
+        if (p.message && tagRegex.test(p.message)) {
+          postsMap.set(p.id, p)
+        }
+      }
+    }
+
+    // 2. Search server across team posts (if team is available)
+    if (authStore.currentTeam?.id) {
+      try {
+        const res = await mmApi.searchTeamPosts(authStore.currentTeam.id, '#' + cleanTag)
+        if (res && res.posts) {
+          const order = res.order || Object.keys(res.posts)
+          for (const id of order) {
+            const p = res.posts[id]
+            if (!p || p.delete_at > 0) continue
+            if (channelId && p.channel_id !== channelId) continue
+            if (!postsMap.has(p.id)) {
+              postsMap.set(p.id, p)
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Server hashtag search encountered error or offline, fallback to local:', err)
+      }
+    }
+
+    const results = Array.from(postsMap.values())
+
+    // 3. Prefetch user profiles for authors
+    const userIds = Array.from(new Set(results.map((p) => p.user_id).filter(Boolean)))
+    if (userIds.length > 0) {
+      usersStore.fetchUsers(userIds).catch(() => {})
+    }
+
+    // 4. Sort most recent first
+    results.sort((a, b) => b.create_at - a.create_at)
+    return results
+  }
+
+  // Jump to a specific post in chat and highlight it
+  async function jumpToPost(channelId: string, postId: string) {
+    if (!channelId || !postId) return
+
+    // Switch to channel if not active
+    if (activeChannelId.value !== channelId) {
+      await selectChannel(channelId)
+    }
+
+    // Close thread view if currently open so main chat is visible
+    if (activeThreadRootPost.value) {
+      closeThread()
+    }
+
+    // Allow time for messages DOM to render
+    setTimeout(() => {
+      const el = document.getElementById(`msg-${postId}`) || document.querySelector(`[data-post-id="${postId}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('animate-pulse', 'bg-[#3390ec]/15')
+        setTimeout(() => el.classList.remove('animate-pulse', 'bg-[#3390ec]/15'), 2000)
+      }
+    }, 350)
+  }
+
   // Resolve top-level thread root post ID for a channel to satisfy Mattermost's 1-level threading rule
   function getThreadRootId(channelId: string, postId: string): string {
     if (!postId) return ''
@@ -1247,6 +1325,8 @@ export const useChatStore = defineStore('chat', () => {
     loadOlderPosts,
     getChannelFiles,
     scanOlderPostsForFiles,
+    searchPostsByHashtag,
+    jumpToPost,
     unreadCounts,
     unreadChatsCount,
     firstUnreadPostIds,

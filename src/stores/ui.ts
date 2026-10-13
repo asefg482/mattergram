@@ -166,12 +166,28 @@ export const useUiStore = defineStore('ui', () => {
     avatarPreview.value.isOpen = false
   }
 
+  const showHashtagDrawer = ref(false)
+  const activeHashtag = ref('')
+
+  function openHashtagSearch(tag: string) {
+    showRightSidebar.value = false
+    activeHashtag.value = tag.replace(/^#/, '').trim()
+    showHashtagDrawer.value = true
+  }
+
+  function closeHashtagSearch() {
+    showHashtagDrawer.value = false
+    activeHashtag.value = ''
+  }
+
   function openChatFiles() {
+    showHashtagDrawer.value = false
     rightSidebarTab.value = 'files'
     showRightSidebar.value = true
   }
 
   function openChatInfo() {
+    showHashtagDrawer.value = false
     rightSidebarTab.value = 'info'
     showRightSidebar.value = true
   }
@@ -217,6 +233,10 @@ export const useUiStore = defineStore('ui', () => {
     closeAvatarPreview,
     rightSidebarTab,
     openChatFiles,
-    openChatInfo
+    openChatInfo,
+    showHashtagDrawer,
+    activeHashtag,
+    openHashtagSearch,
+    closeHashtagSearch
   }
 })

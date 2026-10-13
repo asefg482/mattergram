@@ -9,6 +9,7 @@ import { notificationService } from '../services/notifications'
 import Sidebar from '../components/sidebar/Sidebar.vue'
 import ChatArea from '../components/chat/ChatArea.vue'
 import ChatInfoDrawer from '../components/info/ChatInfoDrawer.vue'
+import HashtagDrawer from '../components/chat/HashtagDrawer.vue'
 import SettingsModal from '../components/settings/SettingsModal.vue'
 
 const route = useRoute()
@@ -107,6 +108,9 @@ onMounted(async () => {
 
     <!-- Right Chat Info Drawer -->
     <ChatInfoDrawer />
+
+    <!-- Right Hashtag Drawer -->
+    <HashtagDrawer />
 
     <!-- Settings Modal -->
     <SettingsModal />
