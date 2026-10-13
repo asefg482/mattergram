@@ -209,6 +209,7 @@ function onChannelSwitch() {
 
   const targetPostId = (route.query.post as string) || (route.hash ? route.hash.replace(/^#post-/, '') : '')
   if (targetPostId && chatStore.activeChannelId) {
+    isChannelSwitching.value = false
     chatStore.jumpToPost(chatStore.activeChannelId, targetPostId)
     return
   }

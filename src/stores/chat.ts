@@ -662,11 +662,15 @@ export const useChatStore = defineStore('chat', () => {
   async function jumpToPost(channelId: string, postId: string) {
     if (!channelId || !postId) return
 
+    postId = postId.trim()
+    const ch = channels.value.find((c) => c.id === channelId || c.name === channelId)
+    const resolvedChannelId = ch ? ch.id : channelId
+
     const uiStore = useUiStore()
 
     // Switch to channel if not active
-    if (activeChannelId.value !== channelId) {
-      await selectChannel(channelId)
+    if (activeChannelId.value !== resolvedChannelId) {
+      await selectChannel(resolvedChannelId)
     }
 
     // Close thread view if currently open so main chat is visible
@@ -680,26 +684,43 @@ export const useChatStore = defineStore('chat', () => {
     uiStore.showHashtagDrawer = false
     uiStore.showTodoModal = false
 
+    // If channel is actively loading posts, wait for it to settle
+    if (loadingPosts.value) {
+      let waitCount = 0
+      while (loadingPosts.value && waitCount < 30) {
+        await new Promise((r) => setTimeout(r, 60))
+        waitCount++
+      }
+    }
+
     // If post is not yet loaded in local store, fetch around it
-    const inStore = posts.value[channelId]?.some((p) => p.id === postId)
+    const inStore = posts.value[resolvedChannelId]?.some((p) => p.id === postId)
     if (!inStore) {
-      await loadPostsAround(channelId, postId)
+      await loadPostsAround(resolvedChannelId, postId)
     }
 
     // Scroll to message and trigger focus glow
     function doScroll(attempts = 0) {
       const el = document.getElementById(`msg-${postId}`) || document.querySelector(`[data-post-id="${postId}"]`)
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const container = document.querySelector('.tg-scroll-container') as HTMLElement | null
+        if (container) {
+          const containerRect = container.getBoundingClientRect()
+          const elRect = el.getBoundingClientRect()
+          const targetTop = container.scrollTop + (elRect.top - containerRect.top) - (containerRect.height / 2) + (elRect.height / 2)
+          container.scrollTo({ top: targetTop, behavior: 'smooth' })
+        } else {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
         uiStore.triggerPostFocus(postId)
-      } else if (attempts < 5) {
-        setTimeout(() => doScroll(attempts + 1), 120)
+      } else if (attempts < 15) {
+        setTimeout(() => doScroll(attempts + 1), 100)
       }
     }
 
     setTimeout(() => {
       doScroll(0)
-    }, 150)
+    }, 120)
   }
 
   // Resolve top-level thread root post ID for a channel to satisfy Mattermost's 1-level threading rule

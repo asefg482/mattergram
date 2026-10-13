@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import type { MattermostPost, MattermostFileInfo } from '../../types/mattermost'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
 import { useUiStore } from '../../stores/ui'
+
+const router = useRouter()
 import {
   formatMessageTime,
   renderTelegramMarkdown,
@@ -417,8 +420,25 @@ async function handleTextClick(e: MouseEvent) {
     return
   }
 
-  const linkTarget = (e.target as HTMLElement).closest('a') as HTMLElement | null
+  const linkTarget = (e.target as HTMLElement).closest('a') as HTMLAnchorElement | null
   if (linkTarget) {
+    const href = linkTarget.getAttribute('href') || ''
+    if (href.startsWith(window.location.origin) || href.startsWith('/c/')) {
+      e.preventDefault()
+      e.stopPropagation()
+      try {
+        const url = new URL(href, window.location.origin)
+        const match = url.pathname.match(/\/c\/([^/]+)/)
+        const channelId = match ? match[1] : ''
+        const postId = url.searchParams.get('post')
+        if (channelId && postId) {
+          chatStore.jumpToPost(channelId, postId)
+          return
+        }
+      } catch {}
+      router.push(href.replace(window.location.origin, ''))
+      return
+    }
     e.stopPropagation()
     return
   }
