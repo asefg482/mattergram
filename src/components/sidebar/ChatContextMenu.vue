@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '../../stores/chat'
 import { useUiStore } from '../../stores/ui'
+import { showConfirm } from '../../stores/alert'
+import { notificationService } from '../../services/notifications'
 import type { MattermostChannel } from '../../types/mattermost'
 import {
   Pin,
@@ -12,7 +14,8 @@ import {
   Check,
   PanelRight,
   FolderOpen,
-  LogOut
+  LogOut,
+  Link
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -37,7 +40,7 @@ const transformOrigin = ref('top left')
 function adjustPosition() {
   const el = menuRef.value
   const menuWidth = el?.offsetWidth || 208
-  const menuHeight = el?.offsetHeight || 190
+  const menuHeight = el?.offsetHeight || 240
   const padding = 8
 
   let x = props.position.x + 2
@@ -121,6 +124,78 @@ function handleViewFiles() {
   emit('close')
 }
 
+const isGroup = computed(() => {
+  if (!props.channel) return false
+  return props.channel.type !== 'D' && props.channel.display_name !== 'Saved Messages'
+})
+
+function fallbackCopy(text: string) {
+  try {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.position = 'fixed'
+    el.style.opacity = '0'
+    document.body.appendChild(el)
+    el.focus()
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+  } catch (err) {
+    console.warn('Fallback copy failed:', err)
+  }
+}
+
+function handleCopyLink() {
+  if (!props.channel) return
+  const url = `${window.location.origin}/c/${props.channel.id}`
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      notificationService.showToast({ message: 'Link copied to clipboard' })
+    }).catch(() => {
+      fallbackCopy(url)
+      notificationService.showToast({ message: 'Link copied to clipboard' })
+    })
+  } else {
+    fallbackCopy(url)
+    notificationService.showToast({ message: 'Link copied to clipboard' })
+  }
+  emit('close')
+}
+
+async function handleExitGroup() {
+  if (!props.channel) return
+  const channelToExit = props.channel
+  const channelName = channelToExit.display_name || channelToExit.name || 'Group'
+  emit('close')
+
+  const confirmed = await showConfirm(
+    `Are you sure you want to leave ${channelName}?`,
+    {
+      title: 'Exit Group',
+      confirmText: 'Exit',
+      cancelText: 'Cancel',
+      isDestructive: true
+    }
+  )
+
+  if (!confirmed) return
+
+  try {
+    await chatStore.leaveChannel(channelToExit.id)
+    if (chatStore.activeChannelId === channelToExit.id || router.currentRoute.value.params.channelId === channelToExit.id) {
+      router.push('/')
+    }
+    notificationService.showToast({
+      message: `You have left ${channelName}`
+    })
+  } catch (err) {
+    console.error('Failed to exit group:', err)
+    notificationService.showToast({
+      message: 'Failed to exit group. Please try again.'
+    })
+  }
+}
+
 function onWindowClick(e: MouseEvent) {
   if (props.isOpen && menuRef.value && !menuRef.value.contains(e.target as Node)) {
     emit('close')
@@ -163,7 +238,7 @@ onUnmounted(() => {
         <!-- Pin / Unpin -->
         <button
           @click="handleTogglePin"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <Pin class="w-4 h-4 text-[#3390ec]" />
           <span>{{ channel.is_pinned ? 'Unpin from Top' : 'Pin to Top' }}</span>
@@ -172,7 +247,7 @@ onUnmounted(() => {
         <!-- Mute / Unmute -->
         <button
           @click="handleToggleMute"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <VolumeX v-if="channel.is_muted" class="w-4 h-4 text-[#7f91a4]" />
           <Volume2 v-else class="w-4 h-4 text-[#7f91a4]" />
@@ -182,7 +257,7 @@ onUnmounted(() => {
         <!-- Mark as Read / Unread -->
         <button
           @click="handleToggleMarkAsUnread"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <CheckCheck v-if="chatStore.unreadCounts[channel.id]" class="w-4 h-4 text-emerald-400" />
           <Check v-else class="w-4 h-4 text-[#7f91a4]" />
@@ -191,10 +266,19 @@ onUnmounted(() => {
 
         <div class="my-1 border-t border-[#dfe1e5] dark:border-[#202b36]"></div>
 
+        <!-- Copy Link (for chat, group, channel) -->
+        <button
+          @click="handleCopyLink"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+        >
+          <Link class="w-4 h-4 text-[#3390ec]" />
+          <span>Copy Link</span>
+        </button>
+
         <!-- Shared Files -->
         <button
           @click="handleViewFiles"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <FolderOpen class="w-4 h-4 text-[#7f91a4]" />
           <span>Shared Files</span>
@@ -203,11 +287,24 @@ onUnmounted(() => {
         <!-- View Info -->
         <button
           @click="handleViewInfo"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <PanelRight class="w-4 h-4 text-[#7f91a4]" />
           <span>View Info</span>
         </button>
+
+        <!-- Exit Group (For Group / Channel) -->
+        <template v-if="isGroup">
+          <div class="my-1 border-t border-[#dfe1e5] dark:border-[#202b36]"></div>
+
+          <button
+            @click="handleExitGroup"
+            class="w-full px-3.5 py-2 flex items-center gap-3 text-red-500 hover:bg-red-500/10 text-left transition-colors cursor-pointer"
+          >
+            <LogOut class="w-4 h-4 text-red-500" />
+            <span>Exit</span>
+          </button>
+        </template>
       </div>
     </div>
   </div>

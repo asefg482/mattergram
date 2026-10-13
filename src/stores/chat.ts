@@ -1382,6 +1382,17 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function leaveChannel(channelId: string): Promise<void> {
+    const myId = authStore.currentUser?.id
+    if (!myId || !channelId) return
+    await mmApi.removeChannelMember(channelId, myId)
+    channels.value = channels.value.filter((c) => c.id !== channelId)
+    delete channelMembers.value[channelId]
+    if (activeChannelId.value === channelId) {
+      activeChannelId.value = null
+    }
+  }
+
   async function setChannelMemberAdmin(channelId: string, userId: string, isAdmin: boolean): Promise<void> {
     await mmApi.setChannelMemberAdmin(channelId, userId, isAdmin)
     await fetchChannelMembers(channelId)
@@ -1578,6 +1589,7 @@ export const useChatStore = defineStore('chat', () => {
     fetchChannelMembers,
     addMemberToChannel,
     removeMemberFromChannel,
+    leaveChannel,
     setChannelMemberAdmin,
     getCurrentUserChannelMember,
     canCurrentUserManageChannel,
