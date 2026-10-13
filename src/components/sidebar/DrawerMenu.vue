@@ -545,6 +545,7 @@ const backdropStyle = computed(() => {
             <span>Developed By Asef Ghorbani for Dornica</span>
             <span class="inline-block text-xs">💜</span>
           </p>
+          <p class="text-[10px] text-[#7f91a4] opacity-80">نسخه 1.0.9</p>
           <p v-if="authStore.showBaseUrl" class="text-[10px] opacity-60 truncate">{{ authStore.baseUrl }}</p>
         </div>
       </div>
