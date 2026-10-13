@@ -424,9 +424,13 @@ const backdropStyle = computed(() => {
             <span class="flex-1 text-left">TODO list</span>
             <span
               v-if="todoStore.pendingCount > 0"
-              class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3390ec] text-white flex items-center gap-1 shadow-xs"
+              class="inline-flex items-center justify-center h-5 min-w-5 rounded-full text-[11px] font-bold leading-none select-none bg-[#3390ec] text-white shrink-0 shadow-xs"
+              :class="String(todoStore.pendingCount).length > 1 ? 'px-1.5' : 'w-5 p-0'"
+              style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums;"
             >
-              {{ todoStore.pendingCount }}
+              <span class="inline-block transform -translate-y-[0.5px]">
+                {{ todoStore.pendingCount > 99 ? '99+' : todoStore.pendingCount }}
+              </span>
             </span>
           </button>
 
