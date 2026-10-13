@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useChatStore } from '../../stores/chat'
@@ -313,11 +313,65 @@ function finishSearch() {
     uiStore.isMobileSidebarOpen = false
   }
 }
+
+// Resizable Chat List Sidebar (Telegram Desktop style)
+const isResizing = ref(false)
+const isDesktop = ref(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+
+function updateIsDesktop() {
+  isDesktop.value = window.innerWidth >= 768
+}
+
+function startResize(e: MouseEvent | TouchEvent) {
+  if (!isDesktop.value) return
+  e.preventDefault()
+  isResizing.value = true
+
+  const startX = 'touches' in e ? e.touches[0].clientX : e.clientX
+  const startWidth = uiStore.sidebarWidth
+
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+
+  function onPointerMove(moveEvent: MouseEvent | TouchEvent) {
+    if (!isResizing.value) return
+    const currentX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX
+    const delta = currentX - startX
+    const maxWidth = Math.min(window.innerWidth * 0.55, uiStore.MAX_SIDEBAR_WIDTH)
+    const newWidth = Math.max(uiStore.MIN_SIDEBAR_WIDTH, Math.min(maxWidth, startWidth + delta))
+    uiStore.setSidebarWidth(newWidth)
+  }
+
+  function onPointerUp() {
+    isResizing.value = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    window.removeEventListener('mousemove', onPointerMove)
+    window.removeEventListener('mouseup', onPointerUp)
+    window.removeEventListener('touchmove', onPointerMove)
+    window.removeEventListener('touchend', onPointerUp)
+  }
+
+  window.addEventListener('mousemove', onPointerMove)
+  window.addEventListener('mouseup', onPointerUp)
+  window.addEventListener('touchmove', onPointerMove, { passive: false })
+  window.addEventListener('touchend', onPointerUp)
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateIsDesktop)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsDesktop)
+})
 </script>
 
 <template>
   <div
-    class="w-full md:w-80 lg:w-96 h-full flex flex-col bg-white dark:bg-[#17212b] border-r border-[#dfe1e5] dark:border-[#101921] relative shrink-0 select-none z-20"
+    class="w-full h-full flex flex-col bg-white dark:bg-[#17212b] border-r border-[#dfe1e5] dark:border-[#101921] relative shrink-0 select-none z-20"
+    :style="isDesktop ? { width: `${uiStore.sidebarWidth}px` } : {}"
+    :class="{ 'transition-none': isResizing }"
   >
     <!-- Top Header: Hamburger & Search Input -->
     <div
@@ -579,5 +633,28 @@ function finishSearch() {
       :isOpen="showChatContextMenu"
       @close="showChatContextMenu = false"
     />
+
+    <!-- Desktop Resize Splitter Handle (Telegram Desktop Style) -->
+    <div
+      v-if="isDesktop"
+      @mousedown="startResize"
+      @touchstart="startResize"
+      @dblclick="uiStore.resetSidebarWidth"
+      class="hidden md:block absolute -right-1 top-0 bottom-0 w-2.5 cursor-col-resize z-30 group/resizer hover:bg-[#3390ec]/20 active:bg-[#3390ec]/40 transition-colors select-none"
+      :class="{ '!bg-[#3390ec]/30': isResizing }"
+      title="Drag to resize chat list (Double-click to reset)"
+    >
+      <!-- Visual line indicator on hover/drag -->
+      <div
+        class="w-[2px] h-full mx-auto transition-colors"
+        :class="isResizing ? 'bg-[#3390ec]' : 'group-hover/resizer:bg-[#3390ec]/80'"
+      ></div>
+    </div>
+
+    <!-- Transparent drag barrier during active resizing -->
+    <div
+      v-if="isResizing"
+      class="fixed inset-0 z-50 cursor-col-resize select-none pointer-events-auto"
+    ></div>
   </div>
 </template>

@@ -100,6 +100,31 @@ export const useUiStore = defineStore('ui', () => {
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
 
+  // Resizable Chat List Sidebar Width (Desktop)
+  const DEFAULT_SIDEBAR_WIDTH = 380
+  const MIN_SIDEBAR_WIDTH = 260
+  const MAX_SIDEBAR_WIDTH = 620
+
+  const savedWidth = typeof window !== 'undefined' ? localStorage.getItem('mattergram_sidebar_width') : null
+  const sidebarWidth = ref<number>(
+    savedWidth ? Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, parseInt(savedWidth, 10))) : DEFAULT_SIDEBAR_WIDTH
+  )
+
+  function setSidebarWidth(width: number) {
+    const clamped = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, Math.round(width)))
+    sidebarWidth.value = clamped
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mattergram_sidebar_width', String(clamped))
+    }
+  }
+
+  function resetSidebarWidth() {
+    sidebarWidth.value = DEFAULT_SIDEBAR_WIDTH
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mattergram_sidebar_width', String(DEFAULT_SIDEBAR_WIDTH))
+    }
+  }
+
   const avatarPreview = ref<AvatarPreviewState>({
     isOpen: false,
     url: '',
@@ -218,6 +243,12 @@ export const useUiStore = defineStore('ui', () => {
     showTodoModal,
     previewFile,
     isMobileSidebarOpen,
+    sidebarWidth,
+    setSidebarWidth,
+    resetSidebarWidth,
+    DEFAULT_SIDEBAR_WIDTH,
+    MIN_SIDEBAR_WIDTH,
+    MAX_SIDEBAR_WIDTH,
     mentionModal,
     avatarPreview,
     setTheme,
