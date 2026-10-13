@@ -1,4 +1,4 @@
-import { format, isToday, isYesterday, isThisYear } from 'date-fns'
+import { ref } from 'vue'
 
 // Telegram Avatar Gradient colors
 const TG_AVATAR_GRADIENTS = [
@@ -48,55 +48,219 @@ export function getInitials(name: string = ''): string {
   return res
 }
 
-export function formatChatListTime(timestamp: number): string {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  if (isToday(date)) {
-    return format(date, 'HH:mm')
+// Timezone and Time Format state (reactive across all components)
+export const userTimezone = ref<string>(localStorage.getItem('mattergram_timezone') || '')
+export const userTimeFormat = ref<'24h' | '12h'>((localStorage.getItem('mattergram_time_format') as any) || '24h')
+
+export function getEffectiveTimezone(): string {
+  if (userTimezone.value) return userTimezone.value
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Tehran'
+  } catch {
+    return 'Asia/Tehran'
   }
-  if (isYesterday(date)) {
-    return 'Yesterday'
-  }
-  if (isThisYear(date)) {
-    return format(date, 'MMM d')
-  }
-  return format(date, 'dd/MM/yy')
 }
 
-const messageTimeCache = new Map<number, string>()
-export function formatMessageTime(timestamp: number): string {
-  if (!timestamp) return ''
-  const cached = messageTimeCache.get(timestamp)
+export function setTimezone(tz: string) {
+  userTimezone.value = tz
+  if (tz) {
+    localStorage.setItem('mattergram_timezone', tz)
+  } else {
+    localStorage.removeItem('mattergram_timezone')
+  }
+  clearTimeCaches()
+}
+
+export function setTimeFormat(fmt: '24h' | '12h') {
+  userTimeFormat.value = fmt
+  localStorage.setItem('mattergram_time_format', fmt)
+  clearTimeCaches()
+}
+
+const messageTimeCache = new Map<string, string>()
+const chatListTimeCache = new Map<string, string>()
+const dateSeparatorCache = new Map<string, string>()
+
+export function clearTimeCaches() {
+  messageTimeCache.clear()
+  chatListTimeCache.clear()
+  dateSeparatorCache.clear()
+}
+
+export function toSafeDate(timestamp: number | string | Date | null | undefined): Date | null {
+  if (!timestamp) return null
+  if (timestamp instanceof Date) return isNaN(timestamp.getTime()) ? null : timestamp
+  let num = typeof timestamp === 'string' ? Number(timestamp) : timestamp
+  if (isNaN(num) || num <= 0) return null
+  if (num < 10000000000) num *= 1000
+  const d = new Date(num)
+  return isNaN(d.getTime()) ? null : d
+}
+
+function getZonedYMD(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date)
+}
+
+export function isDifferentDay(currTimestamp: number | string | null | undefined, prevTimestamp?: number | string | null | undefined): boolean {
+  if (!prevTimestamp) return true
+  const d1 = toSafeDate(currTimestamp)
+  const d2 = toSafeDate(prevTimestamp)
+  if (!d1 || !d2) return true
+  const tz = getEffectiveTimezone()
+  return getZonedYMD(d1, tz) !== getZonedYMD(d2, tz)
+}
+
+export function formatMessageTime(timestamp: number | string | Date | null | undefined): string {
+  const d = toSafeDate(timestamp)
+  if (!d) return ''
+
+  const tz = getEffectiveTimezone()
+  const is12h = userTimeFormat.value === '12h'
+  const cacheKey = `${d.getTime()}_${tz}_${is12h}`
+  const cached = messageTimeCache.get(cacheKey)
   if (cached) return cached
 
-  const res = format(new Date(timestamp), 'HH:mm')
-  if (messageTimeCache.size > 2000) messageTimeCache.clear()
-  messageTimeCache.set(timestamp, res)
-  return res
+  try {
+    const res = new Intl.DateTimeFormat(is12h ? 'en-US' : 'en-GB', {
+      timeZone: tz,
+      hour: is12h ? 'numeric' : '2-digit',
+      minute: '2-digit',
+      hour12: is12h
+    }).format(d)
+
+    if (messageTimeCache.size > 2000) messageTimeCache.clear()
+    messageTimeCache.set(cacheKey, res)
+    return res
+  } catch (err) {
+    console.error('Error formatting message time:', err)
+    return ''
+  }
 }
 
-export function formatDateSeparator(timestamp: number): string {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  if (isToday(date)) return 'Today'
-  if (isYesterday(date)) return 'Yesterday'
-  if (isThisYear(date)) return format(date, 'MMMM d')
-  return format(date, 'MMMM d, yyyy')
+export function formatDateSeparator(timestamp: number | string | Date | null | undefined): string {
+  const d = toSafeDate(timestamp)
+  if (!d) return ''
+
+  const tz = getEffectiveTimezone()
+  const now = new Date()
+  const nowYMD = getZonedYMD(now, tz)
+  const dateYMD = getZonedYMD(d, tz)
+
+  if (dateYMD === nowYMD) return 'Today'
+
+  const yesterday = new Date(now.getTime() - 86400000)
+  if (dateYMD === getZonedYMD(yesterday, tz)) return 'Yesterday'
+
+  const cacheKey = `${dateYMD}_${tz}`
+  const cached = dateSeparatorCache.get(cacheKey)
+  if (cached) return cached
+
+  try {
+    const dYear = parseInt(dateYMD.slice(0, 4), 10)
+    const nowYear = parseInt(nowYMD.slice(0, 4), 10)
+
+    const res = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      month: 'long',
+      day: 'numeric',
+      ...(dYear !== nowYear ? { year: 'numeric' } : {})
+    }).format(d)
+
+    if (dateSeparatorCache.size > 1000) dateSeparatorCache.clear()
+    dateSeparatorCache.set(cacheKey, res)
+    return res
+  } catch (err) {
+    console.error('Error formatting date separator:', err)
+    return ''
+  }
 }
 
-export function formatViewedAtTime(timestamp: number): string {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  if (isToday(date)) {
-    return `Today at ${format(date, 'HH:mm')}`
+export function formatChatListTime(timestamp: number | string | Date | null | undefined): string {
+  const d = toSafeDate(timestamp)
+  if (!d) return ''
+
+  const tz = getEffectiveTimezone()
+  const now = new Date()
+  const nowYMD = getZonedYMD(now, tz)
+  const dateYMD = getZonedYMD(d, tz)
+
+  if (dateYMD === nowYMD) {
+    return formatMessageTime(d)
   }
-  if (isYesterday(date)) {
-    return `Yesterday at ${format(date, 'HH:mm')}`
+
+  const yesterday = new Date(now.getTime() - 86400000)
+  if (dateYMD === getZonedYMD(yesterday, tz)) {
+    return 'Yesterday'
   }
-  if (isThisYear(date)) {
-    return format(date, 'MMM d, HH:mm')
+
+  const cacheKey = `${dateYMD}_${tz}`
+  const cached = chatListTimeCache.get(cacheKey)
+  if (cached) return cached
+
+  try {
+    const dYear = parseInt(dateYMD.slice(0, 4), 10)
+    const nowYear = parseInt(nowYMD.slice(0, 4), 10)
+
+    let res: string
+    if (dYear === nowYear) {
+      res = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        month: 'short',
+        day: 'numeric'
+      }).format(d)
+    } else {
+      res = new Intl.DateTimeFormat('en-GB', {
+        timeZone: tz,
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
+      }).format(d)
+    }
+
+    if (chatListTimeCache.size > 1000) chatListTimeCache.clear()
+    chatListTimeCache.set(cacheKey, res)
+    return res
+  } catch (err) {
+    console.error('Error formatting chat list time:', err)
+    return ''
   }
-  return format(date, 'MMM d yyyy, HH:mm')
+}
+
+export function formatViewedAtTime(timestamp: number | string | Date | null | undefined): string {
+  const d = toSafeDate(timestamp)
+  if (!d) return ''
+
+  const tz = getEffectiveTimezone()
+  const now = new Date()
+  const nowYMD = getZonedYMD(now, tz)
+  const dateYMD = getZonedYMD(d, tz)
+  const timeStr = formatMessageTime(d)
+
+  if (dateYMD === nowYMD) {
+    return `Today at ${timeStr}`
+  }
+
+  const yesterday = new Date(now.getTime() - 86400000)
+  if (dateYMD === getZonedYMD(yesterday, tz)) {
+    return `Yesterday at ${timeStr}`
+  }
+
+  const dYear = parseInt(dateYMD.slice(0, 4), 10)
+  const nowYear = parseInt(nowYMD.slice(0, 4), 10)
+
+  const datePart = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    month: 'short',
+    day: 'numeric',
+    ...(dYear !== nowYear ? { year: 'numeric' } : {})
+  }).format(d)
+
+  return `${datePart}, ${timeStr}`
 }
 
 export function formatFileSize(bytes: number): string {

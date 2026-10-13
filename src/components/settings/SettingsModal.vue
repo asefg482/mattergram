@@ -21,12 +21,21 @@ import {
   BellOff,
   Palette,
   Zap,
-  Check
+  Check,
+  Clock,
+  Globe
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { notificationService } from '../../services/notifications'
 import { mmApi } from '../../services/mattermostApi'
 import { THEME_PRESETS, ANIMATION_PRESETS } from '../../utils/themes'
+import {
+  userTimezone,
+  userTimeFormat,
+  setTimezone,
+  setTimeFormat,
+  getEffectiveTimezone
+} from '../../utils/formatters'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -267,6 +276,61 @@ function selectAnimation(id: string) {
                 :class="notifEnabled && notifPermission === 'granted' ? 'translate-x-4' : 'translate-x-0'"
               ></div>
             </div>
+          </div>
+
+          <!-- Time Format (24h vs 12h) -->
+          <div class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#202b36] transition-colors">
+            <div class="flex items-center gap-3">
+              <Clock class="w-5 h-5 text-[#3390ec]" />
+              <div>
+                <span class="text-xs font-medium text-gray-800 dark:text-white block">Time Format</span>
+                <span class="text-[10px] text-[#7f91a4] block">Choose between 24-hour or 12-hour AM/PM clock</span>
+              </div>
+            </div>
+            <div class="flex items-center bg-[#f1f1f1] dark:bg-[#101921] p-0.5 rounded-lg border border-[#dfe1e5]/60 dark:border-[#202b36]">
+              <button
+                @click="setTimeFormat('24h')"
+                type="button"
+                class="px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer"
+                :class="userTimeFormat === '24h' ? 'bg-[#3390ec] text-white shadow-xs' : 'text-[#7f91a4] hover:text-gray-900 dark:hover:text-white'"
+              >
+                24-Hour
+              </button>
+              <button
+                @click="setTimeFormat('12h')"
+                type="button"
+                class="px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer"
+                :class="userTimeFormat === '12h' ? 'bg-[#3390ec] text-white shadow-xs' : 'text-[#7f91a4] hover:text-gray-900 dark:hover:text-white'"
+              >
+                12-Hour
+              </button>
+            </div>
+          </div>
+
+          <!-- Timezone -->
+          <div class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#202b36] transition-colors">
+            <div class="flex items-center gap-3">
+              <Globe class="w-5 h-5 text-[#3390ec]" />
+              <div>
+                <span class="text-xs font-medium text-gray-800 dark:text-white block">Timezone</span>
+                <span class="text-[10px] text-[#7f91a4] block">Active: {{ getEffectiveTimezone() }}</span>
+              </div>
+            </div>
+            <select
+              :value="userTimezone"
+              @change="setTimezone(($event.target as HTMLSelectElement).value)"
+              class="text-xs bg-[#f1f1f1] dark:bg-[#101921] text-gray-800 dark:text-white border border-[#dfe1e5]/60 dark:border-[#202b36] rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#3390ec] cursor-pointer"
+            >
+              <option value="">Auto ({{ getEffectiveTimezone() }})</option>
+              <option value="Asia/Tehran">Tehran (UTC+03:30)</option>
+              <option value="UTC">UTC (UTC+00:00)</option>
+              <option value="Asia/Dubai">Dubai (UTC+04:00)</option>
+              <option value="Europe/Istanbul">Istanbul (UTC+03:00)</option>
+              <option value="Europe/London">London (UTC+00:00)</option>
+              <option value="Europe/Berlin">Berlin (UTC+01:00)</option>
+              <option value="America/New_York">New York (UTC-05:00)</option>
+              <option value="America/Los_Angeles">Los Angeles (UTC-08:00)</option>
+            </select>
           </div>
         </div>
 

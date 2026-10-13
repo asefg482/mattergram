@@ -10,7 +10,7 @@ import MessageInput from './MessageInput.vue'
 import FilePreviewModal from './FilePreviewModal.vue'
 import MessageContextMenu from './MessageContextMenu.vue'
 import MessageViewersModal from './MessageViewersModal.vue'
-import { formatDateSeparator } from '../../utils/formatters'
+import { formatDateSeparator, isDifferentDay } from '../../utils/formatters'
 import type { MattermostPost } from '../../types/mattermost'
 import { MessageSquare, ArrowDown, Loader2, UploadCloud } from 'lucide-vue-next'
 
@@ -126,13 +126,7 @@ const isChatLoading = computed(() => {
 // Check if sender name should be shown (in group channels for incoming messages)
 const isGroup = computed(() => channel.value?.type !== 'D')
 
-// Date separator helper
-function isDifferentDay(currTimestamp: number, prevTimestamp?: number): boolean {
-  if (!prevTimestamp) return true
-  const d1 = new Date(currTimestamp).toDateString()
-  const d2 = new Date(prevTimestamp).toDateString()
-  return d1 !== d2
-}
+
 
 // Telegram unread messages separator check
 function isFirstUnread(postId: string): boolean {

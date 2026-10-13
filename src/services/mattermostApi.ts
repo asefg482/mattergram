@@ -438,6 +438,10 @@ class MattermostApiService {
     })
   }
 
+  public async getMyPreferences(): Promise<Array<{ user_id: string; category: string; name: string; value: string }>> {
+    return this.request<Array<{ user_id: string; category: string; name: string; value: string }>>('/api/v4/users/me/preferences')
+  }
+
   public async getUsersStatuses(userIds: string[]): Promise<UserStatus[]> {
     if (!userIds.length) return []
     return this.request<UserStatus[]>('/api/v4/users/status/ids', {

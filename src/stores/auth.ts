@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { mmApi } from '../services/mattermostApi'
 import { mmWs } from '../services/mattermostWs'
+import { setTimezone, setTimeFormat } from '../utils/formatters'
 import type { MattermostUser, MattermostTeam } from '../types/mattermost'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -27,6 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await mmApi.login(loginId, pass)
       currentUser.value = res.user
       token.value = res.token
+      syncUserDisplayPreferences(res.user)
 
       // Load teams
       await loadTeams()
@@ -112,12 +114,39 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function syncUserDisplayPreferences(user: MattermostUser) {
+    try {
+      // 1. Sync Timezone if not already customized by user in Mattergram
+      if (!localStorage.getItem('mattergram_timezone') && user.timezone) {
+        const userTz = user.timezone
+        const tz = (userTz.useAutomaticTimezone === 'false' && userTz.manualTimezone)
+          ? userTz.manualTimezone
+          : (userTz.automaticTimezone || '')
+        if (tz) {
+          setTimezone(tz)
+        }
+      }
+
+      // 2. Sync Military Time (12h vs 24h) from Mattermost preferences
+      if (!localStorage.getItem('mattergram_time_format')) {
+        const prefs = await mmApi.getMyPreferences()
+        const milPref = prefs.find((p) => p.category === 'display_settings' && p.name === 'use_military_time')
+        if (milPref) {
+          setTimeFormat(milPref.value === 'true' ? '24h' : '12h')
+        }
+      }
+    } catch (err) {
+      console.warn('Could not sync user display preferences:', err)
+    }
+  }
+
   async function initAuth() {
     if (!token.value) return
     isLoading.value = true
     try {
       const user = await mmApi.getMe()
       currentUser.value = user
+      syncUserDisplayPreferences(user)
       await loadTeams()
       mmWs.connect(token.value)
     } catch (err) {
