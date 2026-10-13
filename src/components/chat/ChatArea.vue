@@ -11,6 +11,7 @@ import FilePreviewModal from './FilePreviewModal.vue'
 import MessageContextMenu from './MessageContextMenu.vue'
 import MessageViewersModal from './MessageViewersModal.vue'
 import { formatDateSeparator, isDifferentDay } from '../../utils/formatters'
+import { getSelectedTextForPost } from '../../utils/selection'
 import type { MattermostPost } from '../../types/mattermost'
 import { MessageSquare, ArrowDown, Loader2, UploadCloud } from 'lucide-vue-next'
 
@@ -97,6 +98,7 @@ function preventWindowDrop(e: DragEvent) {
 const contextPost = ref<MattermostPost | null>(null)
 const contextPos = ref({ x: 0, y: 0 })
 const showContextMenu = ref(false)
+const contextSelectedText = ref('')
 
 // Message Viewers & Reactions Modal State
 const showViewersModal = ref(false)
@@ -110,6 +112,7 @@ function onOpenViewers(post: MattermostPost, tab: 'viewers' | 'reactions' = 'vie
 }
 
 function onMessageContextMenu(e: MouseEvent, post: MattermostPost) {
+  contextSelectedText.value = getSelectedTextForPost(post)
   contextPost.value = post
   contextPos.value = { x: e.clientX, y: e.clientY }
   showContextMenu.value = true
@@ -658,6 +661,7 @@ onUnmounted(() => {
           :post="contextPost"
           :position="contextPos"
           :isOpen="showContextMenu"
+          :selectedText="contextSelectedText"
           @close="showContextMenu = false"
           @viewers="(p) => onOpenViewers(p, 'viewers')"
         />

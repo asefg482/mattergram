@@ -19,11 +19,13 @@ import {
 } from 'lucide-vue-next'
 import ReactionPicker from './ReactionPicker.vue'
 import { frequentReactions, recordReactionUsage } from '../../utils/reactions'
+import { getSelectedTextForPost } from '../../utils/selection'
 
 const props = defineProps<{
   post: MattermostPost | null
   position: { x: number; y: number }
   isOpen: boolean
+  selectedText?: string
 }>()
 
 const emit = defineEmits<{
@@ -184,9 +186,67 @@ function handleEdit() {
   emit('close')
 }
 
+const activeSelectedText = ref('')
+
+watch(
+  () => [props.isOpen, props.selectedText, props.post?.id],
+  ([isOpen]) => {
+    if (isOpen) {
+      if (props.selectedText && props.selectedText.trim()) {
+        activeSelectedText.value = props.selectedText
+      } else {
+        activeSelectedText.value = getSelectedTextForPost(props.post)
+      }
+    } else {
+      activeSelectedText.value = ''
+    }
+  },
+  { immediate: true }
+)
+
+const hasSelectedText = computed(() => {
+  return Boolean(activeSelectedText.value && activeSelectedText.value.trim().length > 0)
+})
+
+function fallbackCopy(text: string) {
+  try {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.position = 'fixed'
+    el.style.opacity = '0'
+    document.body.appendChild(el)
+    el.focus()
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+  } catch (err) {
+    console.warn('Fallback clipboard copy failed:', err)
+  }
+}
+
+function handleCopySelectedText() {
+  const text = activeSelectedText.value || getSelectedTextForPost(props.post)
+  if (text) {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {
+        fallbackCopy(text)
+      })
+    } else {
+      fallbackCopy(text)
+    }
+  }
+  emit('close')
+}
+
 function handleCopy() {
   if (props.post?.message) {
-    navigator.clipboard.writeText(props.post.message)
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(props.post.message).catch(() => {
+        fallbackCopy(props.post!.message)
+      })
+    } else {
+      fallbackCopy(props.post.message)
+    }
   }
   emit('close')
 }
@@ -336,11 +396,21 @@ onUnmounted(() => {
           <span>Edit</span>
         </button>
 
+        <!-- Copy Selected Text (only if text is selected) -->
+        <button
+          v-if="hasSelectedText"
+          @click="handleCopySelectedText"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+        >
+          <Copy class="w-4 h-4 text-[#3390ec]" />
+          <span>Copy Selected Text</span>
+        </button>
+
         <!-- Copy Text -->
         <button
           v-if="post.message"
           @click="handleCopy"
-          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
         >
           <Copy class="w-4 h-4 text-[#7f91a4]" />
           <span>Copy Text</span>
