@@ -331,13 +331,13 @@ onUnmounted(() => {
       </div>
 
       <!-- Video Preview Player -->
-      <div v-else-if="isVideo && file" class="max-w-4xl w-full max-h-[82vh] flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-200">
+      <div v-else-if="isVideo && file" class="max-w-5xl xl:max-w-6xl w-full max-h-[86vh] flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-200">
         <TelegramVideoPlayer
           :src="fileUrl"
           :name="file.name"
           :size="file.size"
           :downloadUrl="fileUrl"
-          maxHeight="max-h-[78vh]"
+          maxHeight="max-h-[82vh]"
           rounded="rounded-2xl shadow-2xl"
           class="w-full"
         />

@@ -10,7 +10,9 @@ import {
   Minimize,
   PictureInPicture2,
   Download,
-  Loader2
+  Loader2,
+  Scan,
+  Minimize2
 } from 'lucide-vue-next'
 import { formatFileSize } from '../../utils/formatters'
 
@@ -42,6 +44,7 @@ const bufferProgress = ref(0)
 const volume = ref(1)
 const isMuted = ref(false)
 const isFullscreen = ref(false)
+const isFillMode = ref(false) // false: fit (contain), true: fill (cover edge-to-edge)
 const playbackSpeed = ref<number>(1)
 const showControls = ref(true)
 const isHovered = ref(false)
@@ -199,19 +202,122 @@ async function togglePiP() {
   }
 }
 
-// Fullscreen
-function toggleFullscreen() {
+// Cross-browser Fullscreen helpers
+function getFullscreenElement(): Element | null {
+  if (typeof document === 'undefined') return null
+  return (
+    document.fullscreenElement ||
+    (document as any).webkitFullscreenElement ||
+    (document as any).mozFullScreenElement ||
+    (document as any).msFullscreenElement ||
+    null
+  )
+}
+
+async function requestNativeFullscreen(elem: HTMLElement): Promise<boolean> {
+  try {
+    if (elem.requestFullscreen) {
+      await elem.requestFullscreen()
+      return true
+    } else if ((elem as any).webkitRequestFullscreen) {
+      await (elem as any).webkitRequestFullscreen()
+      return true
+    } else if ((elem as any).mozRequestFullScreen) {
+      await (elem as any).mozRequestFullScreen()
+      return true
+    } else if ((elem as any).msRequestFullscreen) {
+      await (elem as any).msRequestFullscreen()
+      return true
+    }
+  } catch (err) {
+    console.warn('requestFullscreen failed:', err)
+  }
+  return false
+}
+
+async function exitNativeFullscreen(): Promise<boolean> {
+  try {
+    if (document.exitFullscreen) {
+      await document.exitFullscreen()
+      return true
+    } else if ((document as any).webkitExitFullscreen) {
+      await (document as any).webkitExitFullscreen()
+      return true
+    } else if ((document as any).mozCancelFullScreen) {
+      await (document as any).mozCancelFullScreen()
+      return true
+    } else if ((document as any).msExitFullscreen) {
+      await (document as any).msExitFullscreen()
+      return true
+    }
+  } catch (err) {
+    console.warn('exitFullscreen failed:', err)
+  }
+  return false
+}
+
+async function toggleFullscreen() {
   const c = containerRef.value
+  const v = videoRef.value
   if (!c) return
-  if (!document.fullscreenElement) {
-    c.requestFullscreen().catch((err) => console.warn('Fullscreen failed:', err))
+
+  if (isFullscreen.value) {
+    // Exit fullscreen
+    if (getFullscreenElement()) {
+      await exitNativeFullscreen()
+    }
+    if ((v as any)?.webkitDisplayingFullscreen) {
+      try {
+        (v as any).webkitExitFullscreen?.()
+      } catch {}
+    }
+    isFullscreen.value = false
   } else {
-    document.exitFullscreen().catch(() => {})
+    // Enter fullscreen
+    let nativeSuccess = await requestNativeFullscreen(c)
+
+    // iOS Safari fallback (iPhone only supports full screen on video element itself)
+    if (!nativeSuccess && v && (v as any).webkitEnterFullscreen) {
+      try {
+        (v as any).webkitEnterFullscreen()
+        nativeSuccess = true
+      } catch (err) {
+        console.warn('iOS webkitEnterFullscreen failed:', err)
+      }
+    }
+
+    // Set state (CSS fixed fallback ensures 100vw x 100vh full screen in all circumstances)
+    isFullscreen.value = true
   }
 }
 
+function toggleFillMode() {
+  isFillMode.value = !isFillMode.value
+}
+
 function onFullscreenChange() {
-  isFullscreen.value = !!document.fullscreenElement
+  const fsElem = getFullscreenElement()
+  if (fsElem) {
+    isFullscreen.value = fsElem === containerRef.value || containerRef.value?.contains(fsElem) || false
+  } else {
+    isFullscreen.value = false
+  }
+}
+
+function onKeyDown(e: KeyboardEvent) {
+  const target = e.target as HTMLElement
+  if (target && ['input', 'textarea'].includes(target.tagName.toLowerCase())) return
+
+  if (e.key === 'Escape' && isFullscreen.value) {
+    e.preventDefault()
+    toggleFullscreen()
+  } else if ((e.key === 'f' || e.key === 'F') && (isFullscreen.value || isHovered.value)) {
+    e.preventDefault()
+    toggleFullscreen()
+  } else if (e.key === ' ' && isHovered.value) {
+    e.preventDefault()
+    togglePlay()
+  }
 }
 
 // Scrubbing / Seeking logic
@@ -255,10 +361,28 @@ function onScrubberMouseDown(e: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
+  document.addEventListener('mozfullscreenchange', onFullscreenChange)
+  document.addEventListener('MSFullscreenChange', onFullscreenChange)
+  window.addEventListener('keydown', onKeyDown)
+
+  const v = videoRef.value
+  if (v) {
+    v.addEventListener('webkitbeginfullscreen', () => {
+      isFullscreen.value = true
+    })
+    v.addEventListener('webkitendfullscreen', () => {
+      isFullscreen.value = false
+    })
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
+  document.removeEventListener('mozfullscreenchange', onFullscreenChange)
+  document.removeEventListener('MSFullscreenChange', onFullscreenChange)
+  window.removeEventListener('keydown', onKeyDown)
   if (controlsTimer) clearTimeout(controlsTimer)
 })
 </script>
@@ -267,25 +391,35 @@ onUnmounted(() => {
   <div
     ref="containerRef"
     data-no-bubble-reply
-    class="relative overflow-hidden group select-none bg-black transition-all"
+    class="group select-none bg-black transition-all"
     :class="[
-      rounded,
-      isFullscreen ? 'w-screen h-screen flex items-center justify-center rounded-none' : ''
+      isFullscreen
+        ? 'fixed inset-0 z-[999999] !w-screen !h-screen !max-w-none !max-h-none !m-0 !p-0 !rounded-none !border-0 !shadow-none flex items-center justify-center bg-black'
+        : [rounded, 'relative overflow-hidden']
     ]"
     @mousemove="onMouseMove"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
     @click.stop
   >
-    <!-- HTML5 Video Tag -->
+    <!-- HTML5 Video Element: expands to maximum width/height in fullscreen -->
     <video
       ref="videoRef"
       :src="src"
       preload="metadata"
       playsinline
-      class="w-full h-auto object-contain block mx-auto cursor-pointer"
-      :class="[maxHeight, isFullscreen ? 'max-h-screen h-full w-full' : '']"
+      webkit-playsinline
+      class="cursor-pointer transition-all duration-150"
+      :class="[
+        isFullscreen
+          ? '!w-full !h-full !max-w-full !max-h-full !m-0 !p-0 !rounded-none !border-0 block'
+          : [maxHeight, 'w-full h-auto block mx-auto']
+      ]"
+      :style="{
+        objectFit: isFullscreen ? (isFillMode ? 'cover' : 'contain') : 'contain'
+      }"
       @click="togglePlay"
+      @dblclick.stop="toggleFullscreen"
       @timeupdate="onTimeUpdate"
       @durationchange="onDurationChange"
       @progress="updateBuffer"
@@ -312,7 +446,7 @@ onUnmounted(() => {
       >
         <button
           @click.stop="togglePlay"
-          class="pointer-events-auto w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/60 hover:bg-[#3390ec] text-white flex items-center justify-center backdrop-blur-md shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 group/btn"
+          class="pointer-events-auto w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/60 hover:bg-[#3390ec] text-white flex items-center justify-center backdrop-blur-md shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 group/btn cursor-pointer"
           title="Play"
         >
           <Play class="w-7 h-7 sm:w-8 sm:h-8 fill-current translate-x-0.5" />
@@ -336,7 +470,7 @@ onUnmounted(() => {
       {{ formatTime(duration) }}
     </div>
 
-    <!-- Top Info Bar (File Name & Download) -->
+    <!-- Top Info Bar (File Name, Download, Exit Fullscreen) -->
     <transition
       enter-active-class="transition-opacity duration-200"
       enter-from-class="opacity-0"
@@ -346,8 +480,9 @@ onUnmounted(() => {
       leave-to-class="opacity-0"
     >
       <div
-        v-if="showControls && (name || size)"
-        class="absolute top-0 left-0 right-0 p-3 pt-2.5 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between text-white text-xs z-10"
+        v-if="showControls"
+        class="absolute top-0 left-0 right-0 p-3 pt-2.5 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between text-white text-xs z-10"
+        :style="isFullscreen ? 'padding-top: max(0.85rem, env(safe-area-inset-top, 0px)); padding-left: max(1rem, env(safe-area-inset-left, 0px)); padding-right: max(1rem, env(safe-area-inset-right, 0px));' : ''"
       >
         <div class="flex items-center gap-2 truncate pr-3">
           <span class="truncate font-medium text-[11px] sm:text-xs text-white/95" :title="name">
@@ -358,17 +493,30 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <a
-          v-if="downloadUrl || src"
-          :href="downloadUrl || src"
-          :download="name || 'video.mp4'"
-          target="_blank"
-          @click.stop
-          class="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors shrink-0"
-          title="Download Video"
-        >
-          <Download class="w-4 h-4" />
-        </a>
+        <div class="flex items-center gap-1 shrink-0">
+          <!-- Download -->
+          <a
+            v-if="downloadUrl || src"
+            :href="downloadUrl || src"
+            :download="name || 'video.mp4'"
+            target="_blank"
+            @click.stop
+            class="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            title="Download Video"
+          >
+            <Download class="w-4 h-4" />
+          </a>
+
+          <!-- Exit Fullscreen Button in top bar if in fullscreen -->
+          <button
+            v-if="isFullscreen"
+            @click.stop="toggleFullscreen"
+            class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+            title="Exit Fullscreen (Esc)"
+          >
+            <Minimize class="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </transition>
 
@@ -383,7 +531,8 @@ onUnmounted(() => {
     >
       <div
         v-if="showControls"
-        class="absolute bottom-0 left-0 right-0 p-3 pt-6 bg-gradient-to-t from-black/85 via-black/50 to-transparent flex flex-col gap-1.5 z-10"
+        class="absolute bottom-0 left-0 right-0 p-3 pt-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex flex-col gap-2 z-10"
+        :style="isFullscreen ? 'padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); padding-left: max(1rem, env(safe-area-inset-left, 0px)); padding-right: max(1rem, env(safe-area-inset-right, 0px));' : ''"
         @click.stop
       >
         <!-- Interactive Progress Scrub Bar -->
@@ -418,7 +567,7 @@ onUnmounted(() => {
             <!-- Play / Pause Button -->
             <button
               @click.stop="togglePlay"
-              class="p-1 text-white/90 hover:text-white hover:scale-105 transition-all"
+              class="p-1 text-white/90 hover:text-white hover:scale-105 transition-all cursor-pointer"
               :title="isPlaying ? 'Pause (Space)' : 'Play (Space)'"
             >
               <Pause v-if="isPlaying" class="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
@@ -429,7 +578,7 @@ onUnmounted(() => {
             <div class="flex items-center gap-1.5 group/vol relative">
               <button
                 @click.stop="toggleMute"
-                class="p-1 text-white/80 hover:text-white transition-colors"
+                class="p-1 text-white/80 hover:text-white transition-colors cursor-pointer"
                 :title="isMuted ? 'Unmute' : 'Mute'"
               >
                 <VolumeX v-if="isMuted || volume === 0" class="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -437,7 +586,7 @@ onUnmounted(() => {
                 <Volume2 v-else class="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
 
-              <!-- Volume Slider (slides open on hover) -->
+              <!-- Volume Slider -->
               <input
                 type="range"
                 min="0"
@@ -455,12 +604,24 @@ onUnmounted(() => {
             </span>
           </div>
 
-          <!-- Right Controls: Speed, PiP, Fullscreen -->
+          <!-- Right Controls: Speed, PiP, Fill/Fit Mode, Fullscreen -->
           <div class="flex items-center gap-1 sm:gap-2">
+            <!-- Fill / Fit Aspect Ratio Toggle (In Fullscreen mode) -->
+            <button
+              v-if="isFullscreen"
+              @click.stop="toggleFillMode"
+              class="px-2 py-0.5 rounded text-[10px] sm:text-xs font-semibold bg-white/10 hover:bg-white/20 text-white/90 transition-colors flex items-center gap-1 cursor-pointer"
+              :title="isFillMode ? 'Switch to Fit (تناسب با صفحه)' : 'Switch to Fill (پر کردن کامل صفحه)'"
+            >
+              <Scan v-if="!isFillMode" class="w-3.5 h-3.5" />
+              <Minimize2 v-else class="w-3.5 h-3.5" />
+              <span>{{ isFillMode ? 'Fill' : 'Fit' }}</span>
+            </button>
+
             <!-- Playback Speed Button -->
             <button
               @click.stop="cycleSpeed"
-              class="px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold bg-white/10 hover:bg-white/20 text-white/90 transition-colors"
+              class="px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold bg-white/10 hover:bg-white/20 text-white/90 transition-colors cursor-pointer"
               title="Playback speed"
             >
               {{ playbackSpeed }}x
@@ -470,7 +631,7 @@ onUnmounted(() => {
             <button
               v-if="supportsPiP"
               @click.stop="togglePiP"
-              class="p-1 text-white/80 hover:text-white hover:scale-105 transition-all"
+              class="p-1 text-white/80 hover:text-white hover:scale-105 transition-all cursor-pointer"
               title="Picture in picture"
             >
               <PictureInPicture2 class="w-4 h-4" />
@@ -479,11 +640,11 @@ onUnmounted(() => {
             <!-- Fullscreen Button -->
             <button
               @click.stop="toggleFullscreen"
-              class="p-1 text-white/80 hover:text-white hover:scale-105 transition-all"
-              :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
+              class="p-1 text-white/80 hover:text-white hover:scale-105 transition-all cursor-pointer"
+              :title="isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen (F)'"
             >
-              <Minimize v-if="isFullscreen" class="w-4 h-4" />
-              <Maximize v-else class="w-4 h-4" />
+              <Minimize v-if="isFullscreen" class="w-4 h-4 sm:w-5 sm:h-5 text-[#3390ec]" />
+              <Maximize v-else class="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
@@ -514,5 +675,36 @@ input[type='range']::-moz-range-thumb {
   background: white;
   cursor: pointer;
   border: none;
+}
+
+/* Native Fullscreen element styling */
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background-color: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:fullscreen video,
+:-webkit-full-screen video,
+:-moz-full-screen video {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
 }
 </style>
