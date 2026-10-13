@@ -36,9 +36,16 @@ import {
   Play,
   Pause,
   MessageSquare,
-  RotateCw
+  RotateCw,
+  UserPlus,
+  UserCog,
+  ShieldCheck,
+  Crown
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import AddChannelMembersModal from '../chat/AddChannelMembersModal.vue'
+import ManageMemberModal from '../chat/ManageMemberModal.vue'
+import type { MattermostChannelMember } from '../../types/mattermost'
 
 const authStore = useAuthStore()
 const chatStore = useChatStore()
@@ -51,28 +58,83 @@ const isPrivate = computed(() => channel.value?.type === 'P')
 const isPublic = computed(() => channel.value?.type === 'O')
 const isSavedMessages = computed(() => channel.value?.display_name === 'Saved Messages')
 
+const rawChannelMembers = ref<MattermostChannelMember[]>([])
 const members = ref<MattermostUser[]>([])
 const loadingMembers = ref(false)
+
+export interface MemberItem {
+  user: MattermostUser
+  member: MattermostChannelMember | null
+  isOwner: boolean
+  isAdmin: boolean
+  canManage: boolean
+  canRemove: boolean
+}
+
+const channelMemberItems = computed<MemberItem[]>(() => {
+  if (!channel.value) return []
+  const channelId = channel.value.id
+  const creatorId = channel.value.creator_id
+
+  return members.value.map((user) => {
+    const memberObj = rawChannelMembers.value.find((m) => m.user_id === user.id) || null
+    const isOwner = creatorId === user.id
+    const isAdmin = isOwner || Boolean(memberObj?.scheme_admin || memberObj?.roles?.includes('channel_admin') || user.roles?.includes('system_admin'))
+    const canManage = chatStore.canManageTargetMember(channelId, user.id, memberObj || undefined)
+    const canRemove = canManage
+
+    return {
+      user,
+      member: memberObj,
+      isOwner,
+      isAdmin,
+      canManage,
+      canRemove
+    }
+  })
+})
+
+const canAddMembers = computed(() => {
+  if (!channel.value) return false
+  return chatStore.canCurrentUserAddMembers(channel.value.id)
+})
+
+// Modals State
+const showAddMemberModal = ref(false)
+const showManageMemberModal = ref(false)
+const selectedMemberToManage = ref<MemberItem | null>(null)
+
+function openManageMemberModal(item: MemberItem) {
+  selectedMemberToManage.value = item
+  showManageMemberModal.value = true
+}
+
+async function loadChannelMembers() {
+  const newId = channel.value?.id
+  if (!newId || isDirect.value) {
+    members.value = []
+    rawChannelMembers.value = []
+    return
+  }
+  loadingMembers.value = true
+  try {
+    const rawMembers = await chatStore.fetchChannelMembers(newId)
+    rawChannelMembers.value = rawMembers || []
+    const userIds = (rawMembers || []).map((m: any) => m.user_id)
+    await usersStore.fetchUsers(userIds)
+    members.value = userIds.map((id: string) => usersStore.getUser(id)).filter(Boolean) as MattermostUser[]
+  } catch (err) {
+    console.error('Failed to load channel members:', err)
+  } finally {
+    loadingMembers.value = false
+  }
+}
 
 // Load members when channel changes
 watch(
   () => channel.value?.id,
-  async (newId) => {
-    if (!newId || isDirect.value) {
-      members.value = []
-      return
-    }
-    loadingMembers.value = true
-    try {
-      const rawMembers = await mmApi.getChannelMembers(newId)
-      const userIds = rawMembers.map((m: any) => m.user_id)
-      await usersStore.fetchUsers(userIds)
-      members.value = userIds.map((id: string) => usersStore.getUser(id)).filter(Boolean) as MattermostUser[]
-    } catch (err) {
-      console.error('Failed to load channel members:', err)
-    } finally {
-      loadingMembers.value = false
-    }
+  () => {
+    loadChannelMembers()
   },
   { immediate: true }
 )
@@ -497,43 +559,81 @@ function togglePlayAudio(file: MattermostFileInfo) {
             <Users class="w-3.5 h-3.5" />
             Members ({{ members.length }})
           </span>
+
+          <!-- Add Member Button -->
+          <button
+            v-if="canAddMembers"
+            @click="showAddMemberModal = true"
+            class="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#3390ec] hover:bg-[#3390ec]/10 rounded-xl transition-colors cursor-pointer"
+          >
+            <UserPlus class="w-3.5 h-3.5" />
+            <span>Add Member</span>
+          </button>
         </div>
 
         <!-- Members List -->
         <div class="space-y-1">
           <div
-            v-for="user in members"
-            :key="user.id"
-            @click="handleMemberClick(user)"
-            class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] cursor-pointer transition-colors"
+            v-for="item in channelMemberItems"
+            :key="item.user.id"
+            class="group/mem flex items-center gap-3 p-2 rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
           >
             <!-- Member Avatar -->
             <TelegramAvatar
-              :userId="user.id"
-              :name="usersStore.getUserDisplayName(user)"
+              :userId="item.user.id"
+              :name="usersStore.getUserDisplayName(item.user)"
               size="sm"
               :showOnlineDot="true"
-              :isOnline="usersStore.getStatus(user.id) === 'online'"
-              :lastPictureUpdate="(user as any)?.last_picture_update"
+              :isOnline="usersStore.getStatus(item.user.id) === 'online'"
+              :lastPictureUpdate="(item.user as any)?.last_picture_update"
+              class="cursor-pointer"
+              @click="handleMemberClick(item.user)"
             />
 
             <!-- Member Info -->
-            <div class="flex-1 min-w-0">
-              <div class="text-xs font-semibold text-gray-900 dark:text-white truncate">
-                {{ usersStore.getUserDisplayName(user) }}
+            <div class="flex-1 min-w-0 cursor-pointer" @click="handleMemberClick(item.user)">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                  {{ usersStore.getUserDisplayName(item.user) }}
+                </span>
+                <span v-if="item.user.id === authStore.currentUser?.id" class="text-[10px] text-[#7f91a4] shrink-0 font-normal">
+                  (You)
+                </span>
               </div>
               <div class="text-[11px] text-[#7f91a4] truncate">
-                {{ usersStore.getStatus(user.id) }}
+                {{ usersStore.getStatus(item.user.id) }}
               </div>
             </div>
 
-            <!-- Role Badge -->
-            <span
-              v-if="user.roles.includes('system_admin')"
-              class="text-[10px] px-1.5 py-0.5 rounded bg-[#3390ec]/20 text-[#3390ec] font-semibold"
-            >
-              Admin
-            </span>
+            <!-- Role Badge & Actions -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span
+                v-if="item.isOwner"
+                class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 font-semibold flex items-center gap-0.5"
+                title="Channel Owner"
+              >
+                <Crown class="w-3 h-3" />
+                Owner
+              </span>
+              <span
+                v-else-if="item.isAdmin"
+                class="text-[10px] px-1.5 py-0.5 rounded bg-[#3390ec]/20 text-[#3390ec] font-semibold flex items-center gap-0.5"
+                title="Channel Admin"
+              >
+                <ShieldCheck class="w-3 h-3" />
+                Admin
+              </span>
+
+              <!-- Manage Member Button (Only if current user has permission to manage this specific member) -->
+              <button
+                v-if="item.canManage"
+                @click.stop="openManageMemberModal(item)"
+                class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg opacity-80 sm:opacity-0 group-hover/mem:opacity-100 transition-all cursor-pointer"
+                title="Manage user permissions & role"
+              >
+                <UserCog class="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -952,5 +1052,28 @@ function togglePlayAudio(file: MattermostFileInfo) {
         </div>
       </div>
     </div>
+
+    <!-- Add Channel Members Modal -->
+    <AddChannelMembersModal
+      :isOpen="showAddMemberModal"
+      :channel="channel"
+      :existingMemberUserIds="rawChannelMembers.map((m) => m.user_id)"
+      @close="showAddMemberModal = false"
+      @added="loadChannelMembers"
+    />
+
+    <!-- Manage Channel Member Modal -->
+    <ManageMemberModal
+      :isOpen="showManageMemberModal"
+      :channel="channel"
+      :user="selectedMemberToManage?.user || null"
+      :member="selectedMemberToManage?.member || null"
+      :canManage="selectedMemberToManage?.canManage || false"
+      :canRemove="selectedMemberToManage?.canRemove || false"
+      :isOwner="selectedMemberToManage?.isOwner || false"
+      :isAdmin="selectedMemberToManage?.isAdmin || false"
+      @close="showManageMemberModal = false"
+      @updated="loadChannelMembers"
+    />
   </div>
 </template>

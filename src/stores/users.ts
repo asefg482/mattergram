@@ -75,8 +75,8 @@ export const useUsersStore = defineStore('users', () => {
     return user.username || user.email || 'User'
   }
 
-  async function searchUsers(term: string, teamId?: string) {
-    return mmApi.searchUsers(term, teamId)
+  async function searchUsers(term: string, teamId?: string, notInChannelId?: string) {
+    return mmApi.searchUsers(term, teamId, notInChannelId)
   }
 
   async function fetchUserByUsername(username: string): Promise<MattermostUser | null> {

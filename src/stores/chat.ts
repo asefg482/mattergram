@@ -1369,6 +1369,87 @@ export const useChatStore = defineStore('chat', () => {
     return []
   }
 
+  async function addMemberToChannel(channelId: string, userId: string): Promise<MattermostChannelMember> {
+    const res = await mmApi.addChannelMember(channelId, userId)
+    await fetchChannelMembers(channelId)
+    return res
+  }
+
+  async function removeMemberFromChannel(channelId: string, userId: string): Promise<void> {
+    await mmApi.removeChannelMember(channelId, userId)
+    if (channelMembers.value[channelId]) {
+      channelMembers.value[channelId] = channelMembers.value[channelId].filter((m) => m.user_id !== userId)
+    }
+  }
+
+  async function setChannelMemberAdmin(channelId: string, userId: string, isAdmin: boolean): Promise<void> {
+    await mmApi.setChannelMemberAdmin(channelId, userId, isAdmin)
+    await fetchChannelMembers(channelId)
+  }
+
+  function getCurrentUserChannelMember(channelId: string): MattermostChannelMember | undefined {
+    const myId = authStore.currentUser?.id
+    if (!myId || !channelId) return undefined
+    const list = channelMembers.value[channelId] || []
+    return list.find((m) => m.user_id === myId)
+  }
+
+  function canCurrentUserManageChannel(channelId: string): boolean {
+    if (authStore.currentUser?.roles.includes('system_admin')) {
+      return true
+    }
+    const channel = channels.value.find((c) => c.id === channelId)
+    if (channel && channel.creator_id && channel.creator_id === authStore.currentUser?.id) {
+      return true
+    }
+    const member = getCurrentUserChannelMember(channelId)
+    if (member && (member.scheme_admin || member.roles?.includes('channel_admin'))) {
+      return true
+    }
+    return false
+  }
+
+  function canCurrentUserAddMembers(channelId: string): boolean {
+    if (canCurrentUserManageChannel(channelId)) {
+      return true
+    }
+    const channel = channels.value.find((c) => c.id === channelId)
+    if (!channel) return false
+    if (channel.type === 'O') {
+      return true
+    }
+    const member = getCurrentUserChannelMember(channelId)
+    return Boolean(member)
+  }
+
+  function canManageTargetMember(channelId: string, targetUserId: string, targetMember?: MattermostChannelMember): boolean {
+    const myId = authStore.currentUser?.id
+    if (!myId || targetUserId === myId) return false
+    if (!canCurrentUserManageChannel(channelId)) return false
+
+    const channel = channels.value.find((c) => c.id === channelId)
+    if (channel && channel.creator_id && channel.creator_id === targetUserId) {
+      return false // Cannot manage channel owner
+    }
+
+    const targetUser = usersStore.getUser(targetUserId)
+    const isTargetSystemAdmin = Boolean(targetUser?.roles?.includes('system_admin'))
+    const isCurrentSystemAdmin = Boolean(authStore.currentUser?.roles.includes('system_admin'))
+
+    if (isTargetSystemAdmin && !isCurrentSystemAdmin) {
+      return false // Non-system admins cannot manage system admins
+    }
+
+    const isTargetAdmin = Boolean(targetMember?.scheme_admin || targetMember?.roles?.includes('channel_admin'))
+    if (isTargetAdmin) {
+      // Only system admin or channel creator can demote/remove another channel admin
+      const isCreator = Boolean(channel?.creator_id && channel.creator_id === myId)
+      return isCurrentSystemAdmin || isCreator
+    }
+
+    return true
+  }
+
   function getPostViewers(post: MattermostPost): string[] {
     if (!post) return []
     const myId = authStore.currentUser?.id
@@ -1495,6 +1576,13 @@ export const useChatStore = defineStore('chat', () => {
     selectChannel,
     loadPosts,
     fetchChannelMembers,
+    addMemberToChannel,
+    removeMemberFromChannel,
+    setChannelMemberAdmin,
+    getCurrentUserChannelMember,
+    canCurrentUserManageChannel,
+    canCurrentUserAddMembers,
+    canManageTargetMember,
     getPostViewers,
     getPostViewersCount,
     getThreadRootId,

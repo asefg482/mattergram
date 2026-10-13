@@ -18,9 +18,11 @@ import {
   VolumeX,
   Trash2,
   Check,
-  FolderOpen
+  FolderOpen,
+  UserPlus
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
+import AddChannelMembersModal from './AddChannelMembersModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -29,11 +31,17 @@ const usersStore = useUsersStore()
 const uiStore = useUiStore()
 
 const showMoreMenu = ref(false)
+const showAddMemberModal = ref(false)
 
 const channel = computed(() => chatStore.activeChannel)
 const isDirect = computed(() => channel.value?.type === 'D')
 const isPrivate = computed(() => channel.value?.type === 'P')
 const isPublic = computed(() => channel.value?.type === 'O')
+
+const canAddMembers = computed(() => {
+  if (!channel.value) return false
+  return chatStore.canCurrentUserAddMembers(channel.value.id)
+})
 
 const isSavedMessages = computed(() => channel.value?.display_name === 'Saved Messages')
 
@@ -247,9 +255,19 @@ function toggleMute() {
             </span>
           </button>
 
+          <!-- Add Member to Channel (Only for groups and when permitted) -->
+          <button
+            v-if="!isDirect && !isSavedMessages && canAddMembers"
+            @click="showAddMemberModal = true; showMoreMenu = false"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
+          >
+            <UserPlus class="w-4 h-4 text-[#3390ec]" />
+            <span>Add Member</span>
+          </button>
+
           <button
             @click="uiStore.openChatInfo(); showMoreMenu = false"
-            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
           >
             <PanelRight class="w-4 h-4 text-[#7f91a4]" />
             <span>View Info</span>
@@ -257,5 +275,14 @@ function toggleMute() {
         </div>
       </div>
     </div>
+
+    <!-- Add Channel Members Modal -->
+    <AddChannelMembersModal
+      :isOpen="showAddMemberModal"
+      :channel="channel"
+      :existingMemberUserIds="(channel ? chatStore.channelMembers[channel.id] : [])?.map((m) => m.user_id) || []"
+      @close="showAddMemberModal = false"
+      @added="(uids) => channel && chatStore.fetchChannelMembers(channel.id)"
+    />
   </div>
 </template>

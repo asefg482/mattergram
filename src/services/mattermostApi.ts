@@ -300,10 +300,68 @@ class MattermostApiService {
   }
 
   public async joinChannel(channelId: string, userId: string): Promise<any> {
-    return this.request(`/api/v4/channels/${channelId}/members`, {
+    return this.addChannelMember(channelId, userId)
+  }
+
+  public async addChannelMember(channelId: string, userId: string): Promise<MattermostChannelMember> {
+    return this.request<MattermostChannelMember>(`/api/v4/channels/${channelId}/members`, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId })
     })
+  }
+
+  public async removeChannelMember(channelId: string, userId: string): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/api/v4/channels/${channelId}/members/${userId}`, {
+      method: 'DELETE'
+    })
+  }
+
+  public async getChannelMember(channelId: string, userId: string): Promise<MattermostChannelMember> {
+    return this.request<MattermostChannelMember>(`/api/v4/channels/${channelId}/members/${userId}`)
+  }
+
+  public async updateChannelMemberRoles(channelId: string, userId: string, roles: string): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/api/v4/channels/${channelId}/members/${userId}/roles`, {
+      method: 'PUT',
+      body: JSON.stringify({ roles })
+    })
+  }
+
+  public async updateChannelMemberSchemeRoles(
+    channelId: string,
+    userId: string,
+    schemeRoles: { scheme_user: boolean; scheme_admin: boolean }
+  ): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/api/v4/channels/${channelId}/members/${userId}/schemeRoles`, {
+      method: 'PUT',
+      body: JSON.stringify(schemeRoles)
+    })
+  }
+
+  public async setChannelMemberAdmin(channelId: string, userId: string, isAdmin: boolean): Promise<any> {
+    try {
+      return await this.updateChannelMemberSchemeRoles(channelId, userId, {
+        scheme_user: true,
+        scheme_admin: isAdmin
+      })
+    } catch {
+      const roles = isAdmin ? 'channel_user channel_admin' : 'channel_user'
+      return await this.updateChannelMemberRoles(channelId, userId, roles)
+    }
+  }
+
+  public async getUsersNotInChannel(channelId: string, teamId?: string, page = 0, perPage = 60): Promise<MattermostUser[]> {
+    const params = new URLSearchParams({
+      not_in_channel: channelId,
+      page: String(page),
+      per_page: String(perPage)
+    })
+    if (teamId) params.set('in_team', teamId)
+    return this.request<MattermostUser[]>(`/api/v4/users?${params.toString()}`)
+  }
+
+  public async getTeamUsers(teamId: string, page = 0, perPage = 60): Promise<MattermostUser[]> {
+    return this.request<MattermostUser[]>(`/api/v4/users?in_team=${teamId}&page=${page}&per_page=${perPage}`)
   }
 
   public async getChannelMembers(channelId: string, page = 0, perPage = 100): Promise<MattermostChannelMember[]> {
@@ -447,9 +505,10 @@ class MattermostApiService {
     })
   }
 
-  public async searchUsers(term: string, teamId?: string): Promise<MattermostUser[]> {
+  public async searchUsers(term: string, teamId?: string, notInChannelId?: string): Promise<MattermostUser[]> {
     const payload: any = { term }
     if (teamId) payload.team_id = teamId
+    if (notInChannelId) payload.not_in_channel_id = notInChannelId
     return this.request<MattermostUser[]>('/api/v4/users/search', {
       method: 'POST',
       body: JSON.stringify(payload)
