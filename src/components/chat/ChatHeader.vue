@@ -45,6 +45,11 @@ const otherUserStatus = computed(() => {
 
 const isOnline = computed(() => otherUserStatus.value === 'online')
 
+const filesCount = computed(() => {
+  if (!channel.value?.id) return 0
+  return chatStore.getChannelFiles(channel.value.id).length
+})
+
 // Typing text
 const typingText = computed(() => {
   if (!channel.value) return ''
@@ -180,11 +185,17 @@ function toggleMute() {
       <!-- Shared Files -->
       <button
         @click="toggleFilesSidebar"
-        class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
+        class="relative p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
         :class="{ 'text-[#3390ec]': uiStore.showRightSidebar && uiStore.rightSidebarTab === 'files' }"
-        title="Shared Files"
+        title="Shared Files (فایل‌های این گفتگو)"
       >
         <FolderOpen class="w-4 h-4" />
+        <span
+          v-if="filesCount > 0"
+          class="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#3390ec] text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-xs"
+        >
+          {{ filesCount > 99 ? '99+' : filesCount }}
+        </span>
       </button>
 
       <!-- Toggle Right Sidebar Info -->
@@ -222,10 +233,18 @@ function toggleMute() {
 
           <button
             @click="uiStore.openChatFiles(); showMoreMenu = false"
-            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
+            class="w-full px-3.5 py-2 flex items-center justify-between text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
           >
-            <FolderOpen class="w-4 h-4 text-[#7f91a4]" />
-            <span>Shared Files</span>
+            <div class="flex items-center gap-2.5">
+              <FolderOpen class="w-4 h-4 text-[#7f91a4]" />
+              <span>Shared Files</span>
+            </div>
+            <span
+              v-if="filesCount > 0"
+              class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#3390ec]/20 text-[#3390ec] font-bold"
+            >
+              {{ filesCount }}
+            </span>
           </button>
 
           <button

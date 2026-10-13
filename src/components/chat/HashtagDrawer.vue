@@ -234,7 +234,7 @@ function canDelete(post: MattermostPost): boolean {
 <template>
   <div
     v-if="uiStore.showHashtagDrawer"
-    class="w-full md:w-84 lg:w-96 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none z-30 animate-in slide-in-from-right duration-200"
+    class="fixed inset-0 z-40 md:static md:inset-auto md:z-30 w-full md:w-84 lg:w-96 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none animate-in slide-in-from-right duration-200"
   >
     <!-- Header -->
     <div

@@ -32,7 +32,11 @@ import {
   ArrowLeft,
   ChevronRight,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Play,
+  Pause,
+  MessageSquare,
+  RotateCw
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 
@@ -180,39 +184,77 @@ const filteredFiles = computed(() => {
   return list.filter((f) => (f.name || '').toLowerCase().includes(q))
 })
 
-// Scanning earlier messages for older shared files
-const isScanningOlder = ref(false)
-const scanStatusNotice = ref('')
-
-const hasMoreHistory = computed(() => {
+// Full chat history crawl state
+const isScanningAll = computed(() => {
   const chId = channel.value?.id
-  if (!chId) return false
-  return chatStore.hasMoreOlderPosts[chId] !== false
+  return chId ? !!chatStore.isScanningAllFiles[chId] : false
 })
 
-async function scanOlderFiles() {
+const isAllScanned = computed(() => {
   const chId = channel.value?.id
-  if (!chId || isScanningOlder.value) return
+  return chId ? !!chatStore.allFilesScanned[chId] : false
+})
 
-  isScanningOlder.value = true
-  scanStatusNotice.value = ''
-
-  try {
-    const res = await chatStore.scanOlderPostsForFiles(chId)
-    if (res.addedFilesCount > 0) {
-      scanStatusNotice.value = `Loaded ${res.addedFilesCount} older file${res.addedFilesCount > 1 ? 's' : ''}`
-    } else if (!res.hasMore) {
-      scanStatusNotice.value = 'Reached beginning of chat'
-    } else {
-      scanStatusNotice.value = 'No files found in earlier batch'
+// Proactively crawl channel files whenever drawer is open
+watch(
+  () => [channel.value?.id, uiStore.showRightSidebar],
+  ([chId, isOpen]) => {
+    if (chId && isOpen) {
+      chatStore.fetchAllChannelFiles(chId as string)
     }
-  } catch (err) {
-    scanStatusNotice.value = 'Could not load older history'
-  } finally {
-    isScanningOlder.value = false
-    setTimeout(() => {
-      scanStatusNotice.value = ''
-    }, 3500)
+  },
+  { immediate: true }
+)
+
+function triggerFullScan(force = false) {
+  const chId = channel.value?.id
+  if (chId) {
+    chatStore.fetchAllChannelFiles(chId, force)
+  }
+}
+
+function jumpToFileMessage(file: MattermostFileInfo) {
+  if (!channel.value?.id || !file.post_id) return
+  if (window.innerWidth < 768) {
+    uiStore.showRightSidebar = false
+  }
+  chatStore.jumpToPost(channel.value.id, file.post_id)
+}
+
+const copiedFileId = ref<string | null>(null)
+function copyFileUrl(file: MattermostFileInfo) {
+  const url = window.location.origin + mmApi.getFileDownloadUrl(file.id)
+  navigator.clipboard.writeText(url)
+  copiedFileId.value = file.id
+  setTimeout(() => {
+    copiedFileId.value = null
+  }, 2000)
+}
+
+const playingAudioId = ref<string | null>(null)
+let currentAudio: HTMLAudioElement | null = null
+
+function togglePlayAudio(file: MattermostFileInfo) {
+  if (playingAudioId.value === file.id) {
+    if (currentAudio) {
+      currentAudio.pause()
+    }
+    playingAudioId.value = null
+    return
+  }
+  if (currentAudio) {
+    currentAudio.pause()
+  }
+  const audio = new Audio(mmApi.getFileDownloadUrl(file.id))
+  currentAudio = audio
+  playingAudioId.value = file.id
+  audio.play().catch(() => {
+    playingAudioId.value = null
+  })
+  audio.onended = () => {
+    if (playingAudioId.value === file.id) {
+      playingAudioId.value = null
+    }
   }
 }
 </script>
@@ -220,7 +262,7 @@ async function scanOlderFiles() {
 <template>
   <div
     v-if="uiStore.showRightSidebar && channel"
-    class="w-full md:w-80 lg:w-88 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none z-30 animate-in slide-in-from-right duration-200"
+    class="fixed inset-0 z-40 md:static md:inset-auto md:z-30 w-full md:w-80 lg:w-88 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none animate-in slide-in-from-right duration-200"
   >
     <!-- Header -->
     <div
@@ -236,12 +278,15 @@ async function scanOlderFiles() {
         >
           <ArrowLeft class="w-4 h-4" />
         </button>
-        <div class="min-w-0">
-          <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
-            Shared Files
-          </h3>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+              Shared Files
+            </h3>
+            <Loader2 v-if="isScanningAll" class="w-3.5 h-3.5 text-[#3390ec] animate-spin shrink-0" />
+          </div>
           <p class="text-[11px] text-[#7f91a4]">
-            {{ allFiles.length }} file{{ allFiles.length === 1 ? '' : 's' }}
+            {{ isScanningAll ? `Scanning history... (${allFiles.length})` : `${allFiles.length} file${allFiles.length === 1 ? '' : 's'}` }}
           </p>
         </div>
       </div>
@@ -602,13 +647,37 @@ async function scanOlderFiles() {
               <span class="text-[10px] mt-1 text-white/80 font-mono">Video</span>
             </div>
 
-            <!-- Hover overlay -->
-            <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-              <ZoomIn class="w-5 h-5 drop-shadow" />
+            <!-- Hover overlay with actions -->
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white transition-opacity">
+              <button
+                @click.stop="uiStore.openFilePreview(file)"
+                class="p-1.5 rounded-full bg-black/50 hover:bg-[#3390ec] text-white transition-colors"
+                title="Preview"
+              >
+                <ZoomIn class="w-4 h-4 drop-shadow" />
+              </button>
+              <button
+                v-if="file.post_id"
+                @click.stop="jumpToFileMessage(file)"
+                class="p-1.5 rounded-full bg-black/50 hover:bg-[#3390ec] text-white transition-colors"
+                title="Go to message (نمایش در چت)"
+              >
+                <MessageSquare class="w-4 h-4 drop-shadow" />
+              </button>
+              <a
+                :href="mmApi.getFileDownloadUrl(file.id)"
+                :download="file.name"
+                target="_blank"
+                class="p-1.5 rounded-full bg-black/50 hover:bg-[#3390ec] text-white transition-colors"
+                title="Download"
+                @click.stop
+              >
+                <Download class="w-4 h-4 drop-shadow" />
+              </a>
             </div>
 
             <!-- Size badge -->
-            <div class="absolute bottom-1 right-1 text-[9px] px-1 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white/90 font-mono">
+            <div class="absolute bottom-1 right-1 text-[9px] px-1 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white/90 font-mono pointer-events-none">
               {{ formatFileSize(file.size) }}
             </div>
           </div>
@@ -624,8 +693,19 @@ async function scanOlderFiles() {
             :key="file.id"
             class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors group"
           >
-            <!-- File Type Icon -->
+            <!-- Audio Play Button OR File Type Icon -->
+            <button
+              v-if="isAudioFile(file)"
+              @click.stop="togglePlayAudio(file)"
+              class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95"
+              :class="playingAudioId === file.id ? 'bg-[#3390ec] text-white' : 'bg-purple-500/15 text-purple-500'"
+              title="Play audio preview"
+            >
+              <Pause v-if="playingAudioId === file.id" class="w-4 h-4 animate-pulse" />
+              <Play v-else class="w-4 h-4 fill-current ml-0.5" />
+            </button>
             <div
+              v-else
               class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               :class="getFileCategoryColor(file)"
             >
@@ -644,17 +724,40 @@ async function scanOlderFiles() {
               </div>
             </div>
 
-            <!-- Download Button -->
-            <a
-              :href="mmApi.getFileDownloadUrl(file.id)"
-              :download="file.name"
-              target="_blank"
-              class="p-2 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
-              title="Download file"
-              @click.stop
-            >
-              <Download class="w-4 h-4" />
-            </a>
+            <!-- Actions -->
+            <div class="flex items-center gap-0.5 shrink-0">
+              <!-- Jump to Message -->
+              <button
+                v-if="file.post_id"
+                @click.stop="jumpToFileMessage(file)"
+                class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                title="Go to message in chat (نمایش در گفتگو)"
+              >
+                <MessageSquare class="w-4 h-4" />
+              </button>
+
+              <!-- Copy Link -->
+              <button
+                @click.stop="copyFileUrl(file)"
+                class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                title="Copy file link"
+              >
+                <Check v-if="copiedFileId === file.id" class="w-4 h-4 text-emerald-400" />
+                <Copy v-else class="w-4 h-4" />
+              </button>
+
+              <!-- Download Button -->
+              <a
+                :href="mmApi.getFileDownloadUrl(file.id)"
+                :download="file.name"
+                target="_blank"
+                class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                title="Download file"
+                @click.stop
+              >
+                <Download class="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </div>
 
@@ -691,8 +794,34 @@ async function scanOlderFiles() {
                 <div v-else class="w-full h-full flex items-center justify-center bg-black/60 text-white">
                   <Film class="w-5 h-5" />
                 </div>
-                <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                  <ZoomIn class="w-5 h-5 drop-shadow" />
+
+                <!-- Hover actions -->
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white transition-opacity">
+                  <button
+                    @click.stop="uiStore.openFilePreview(file)"
+                    class="p-1.5 rounded-full bg-black/50 hover:bg-[#3390ec] text-white transition-colors"
+                    title="Preview"
+                  >
+                    <ZoomIn class="w-4 h-4 drop-shadow" />
+                  </button>
+                  <button
+                    v-if="file.post_id"
+                    @click.stop="jumpToFileMessage(file)"
+                    class="p-1.5 rounded-full bg-black/50 hover:bg-[#3390ec] text-white transition-colors"
+                    title="Go to message"
+                  >
+                    <MessageSquare class="w-4 h-4 drop-shadow" />
+                  </button>
+                  <a
+                    :href="mmApi.getFileDownloadUrl(file.id)"
+                    :download="file.name"
+                    target="_blank"
+                    class="p-1.5 rounded-full bg-black/50 hover:bg-[#3390ec] text-white transition-colors"
+                    title="Download"
+                    @click.stop
+                  >
+                    <Download class="w-4 h-4 drop-shadow" />
+                  </a>
                 </div>
               </div>
             </div>
@@ -721,6 +850,16 @@ async function scanOlderFiles() {
                 >
                   <img :src="mmApi.getFileThumbnailUrl(file.id)" class="w-full h-full object-cover" />
                 </div>
+                <button
+                  v-else-if="isAudioFile(file)"
+                  @click.stop="togglePlayAudio(file)"
+                  class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95"
+                  :class="playingAudioId === file.id ? 'bg-[#3390ec] text-white' : 'bg-purple-500/15 text-purple-500'"
+                  title="Play audio preview"
+                >
+                  <Pause v-if="playingAudioId === file.id" class="w-4 h-4 animate-pulse" />
+                  <Play v-else class="w-4 h-4 fill-current ml-0.5" />
+                </button>
                 <div
                   v-else
                   class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -741,41 +880,75 @@ async function scanOlderFiles() {
                   </div>
                 </div>
 
-                <!-- Download -->
-                <a
-                  :href="mmApi.getFileDownloadUrl(file.id)"
-                  :download="file.name"
-                  target="_blank"
-                  class="p-2 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
-                  title="Download file"
-                  @click.stop
-                >
-                  <Download class="w-4 h-4" />
-                </a>
+                <!-- Actions -->
+                <div class="flex items-center gap-0.5 shrink-0">
+                  <button
+                    v-if="file.post_id"
+                    @click.stop="jumpToFileMessage(file)"
+                    class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                    title="Go to message in chat (نمایش در گفتگو)"
+                  >
+                    <MessageSquare class="w-4 h-4" />
+                  </button>
+
+                  <button
+                    @click.stop="copyFileUrl(file)"
+                    class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                    title="Copy file link"
+                  >
+                    <Check v-if="copiedFileId === file.id" class="w-4 h-4 text-emerald-400" />
+                    <Copy v-else class="w-4 h-4" />
+                  </button>
+
+                  <a
+                    :href="mmApi.getFileDownloadUrl(file.id)"
+                    :download="file.name"
+                    target="_blank"
+                    class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                    title="Download file"
+                    @click.stop
+                  >
+                    <Download class="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Scan Earlier History Section -->
+        <!-- History Scan Status & Actions Footer -->
         <div class="mt-6 pt-4 border-t border-[#dfe1e5]/60 dark:border-[#202b36]/60 text-center">
-          <div v-if="scanStatusNotice" class="text-xs font-medium text-[#3390ec] mb-2 animate-in fade-in">
-            {{ scanStatusNotice }}
+          <div v-if="isScanningAll" class="flex flex-col items-center justify-center gap-1.5 text-xs text-[#3390ec] py-2 animate-in fade-in">
+            <Loader2 class="w-4 h-4 animate-spin" />
+            <span class="font-medium">Scanning entire chat history for files...</span>
+            <span class="text-[11px] text-[#7f91a4]">({{ allFiles.length }} files found so far)</span>
+          </div>
+
+          <div v-else-if="isAllScanned" class="flex flex-col items-center justify-center gap-1.5 text-xs text-[#7f91a4] py-1">
+            <div class="flex items-center gap-1.5 text-emerald-500 font-medium">
+              <Check class="w-3.5 h-3.5" />
+              <span>Entire chat history scanned</span>
+            </div>
+            <p class="text-[11px] text-[#7f91a4]">
+              {{ allFiles.length }} shared file{{ allFiles.length === 1 ? '' : 's' }} in this conversation
+            </p>
+            <button
+              @click="triggerFullScan(true)"
+              class="mt-1 px-3 py-1 text-[11px] font-medium rounded-lg text-[#3390ec] hover:bg-[#3390ec]/10 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <RotateCw class="w-3 h-3" />
+              <span>Rescan history</span>
+            </button>
           </div>
 
           <button
-            v-if="hasMoreHistory"
-            @click="scanOlderFiles"
-            :disabled="isScanningOlder"
-            class="w-full py-2 px-3 text-xs font-medium rounded-xl border border-[#dfe1e5] dark:border-[#202b36] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-[#7f91a4] hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            v-else
+            @click="triggerFullScan(false)"
+            class="w-full py-2 px-3 text-xs font-medium rounded-xl border border-[#dfe1e5] dark:border-[#202b36] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-[#7f91a4] hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Loader2 v-if="isScanningOlder" class="w-3.5 h-3.5 animate-spin text-[#3390ec]" />
-            <Search v-else class="w-3.5 h-3.5" />
-            <span>{{ isScanningOlder ? 'Scanning earlier messages...' : 'Scan earlier history for more files' }}</span>
+            <Search class="w-3.5 h-3.5 text-[#3390ec]" />
+            <span>Scan entire chat history for all files</span>
           </button>
-          <div v-else class="text-[11px] text-[#7f91a4] italic">
-            Entire conversation history loaded
-          </div>
         </div>
       </div>
     </div>

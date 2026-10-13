@@ -6,6 +6,7 @@ import { soundService } from '../services/sounds'
 import { notificationService } from '../services/notifications'
 import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
+import { useUiStore } from './ui'
 import { toEmojiName, toEmojiChar } from '../utils/formatters'
 import { recordReactionUsage } from '../utils/reactions'
 import type { MattermostChannel, MattermostPost, MattermostReaction, MattermostChannelMember, MattermostFileInfo } from '../types/mattermost'
@@ -427,24 +428,38 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // Extract all files from a channel's loaded messages (for Shared Files feature)
+  // Store of all files discovered for each channel (persistent in store)
+  const channelFiles = ref<Record<string, MattermostFileInfo[]>>({})
+  const isScanningAllFiles = ref<Record<string, boolean>>({})
+  const allFilesScanned = ref<Record<string, boolean>>({})
+
+  // Extract all files from a channel's loaded messages and file cache (for Shared Files feature)
   function getChannelFiles(channelId: string): MattermostFileInfo[] {
     if (!channelId) return []
-    const channelPosts = posts.value[channelId] || []
     const filesMap = new Map<string, MattermostFileInfo>()
 
+    // 1. Files from channelFiles cache
+    const cachedFiles = channelFiles.value[channelId] || []
+    for (const f of cachedFiles) {
+      if (f && f.id) filesMap.set(f.id, f)
+    }
+
+    // 2. Files from current posts in memory
+    const channelPosts = posts.value[channelId] || []
     for (const post of channelPosts) {
       if (post.delete_at > 0) continue
       if (post.metadata?.files && Array.isArray(post.metadata.files)) {
         for (const file of post.metadata.files) {
-          if (file && file.id && !filesMap.has(file.id)) {
+          if (file && file.id) {
+            if (!file.post_id) file.post_id = post.id
+            if (!file.channel_id) file.channel_id = channelId
             filesMap.set(file.id, file)
           }
         }
       }
     }
 
-    return Array.from(filesMap.values()).sort((a, b) => b.create_at - a.create_at)
+    return Array.from(filesMap.values()).sort((a, b) => (b.create_at || 0) - (a.create_at || 0))
   }
 
   // Scan earlier messages in channel to discover more historical files
@@ -457,6 +472,92 @@ export const useChatStore = defineStore('chat', () => {
     return {
       addedFilesCount: Math.max(0, afterCount - beforeCount),
       hasMore
+    }
+  }
+
+  // Crawl entire channel/group/PV message history in chunks to discover all shared files
+  async function fetchAllChannelFiles(channelId: string, force = false): Promise<void> {
+    if (!channelId) return
+    if (isScanningAllFiles.value[channelId]) return
+    if (allFilesScanned.value[channelId] && !force) return
+
+    isScanningAllFiles.value[channelId] = true
+
+    if (!channelFiles.value[channelId]) {
+      channelFiles.value[channelId] = []
+    }
+
+    try {
+      const currentList = getChannelFiles(channelId)
+      const existingFileIds = new Set(currentList.map((f) => f.id))
+
+      // Gather oldest known post id in memory to start crawling backwards
+      const knownPosts = (posts.value[channelId] || []).filter((p) => p.id && !p.id.startsWith('temp_'))
+      let beforePostId = knownPosts.length > 0 ? knownPosts[0].id : ''
+
+      let hasMore = true
+      let pageCount = 0
+      const maxPages = 60 // Crawl up to ~3,600 messages per channel
+
+      while (hasMore && pageCount < maxPages) {
+        pageCount++
+        const res = await mmApi.getPosts(channelId, 0, 60, beforePostId)
+        if (!res || !res.order || res.order.length === 0) {
+          hasMore = false
+          break
+        }
+
+        let newBatchOldestId = ''
+        for (const postId of res.order) {
+          newBatchOldestId = postId
+          const post = res.posts[postId]
+          if (!post || post.delete_at > 0) continue
+
+          if (post.metadata?.files && Array.isArray(post.metadata.files)) {
+            for (const file of post.metadata.files) {
+              if (file && file.id && !existingFileIds.has(file.id)) {
+                existingFileIds.add(file.id)
+                if (!file.post_id) file.post_id = post.id
+                if (!file.channel_id) file.channel_id = channelId
+                channelFiles.value[channelId].push(file)
+              }
+            }
+          } else if (post.file_ids && post.file_ids.length > 0) {
+            try {
+              const postFiles = await mmApi.getPostFiles(post.id)
+              if (Array.isArray(postFiles)) {
+                for (const file of postFiles) {
+                  if (file && file.id && !existingFileIds.has(file.id)) {
+                    existingFileIds.add(file.id)
+                    if (!file.post_id) file.post_id = post.id
+                    if (!file.channel_id) file.channel_id = channelId
+                    channelFiles.value[channelId].push(file)
+                  }
+                }
+              }
+            } catch (fileErr) {
+              console.warn('Could not load post files:', fileErr)
+            }
+          }
+        }
+
+        beforePostId = newBatchOldestId
+        if (res.order.length < 60) {
+          hasMore = false
+          break
+        }
+
+        // Brief delay between batches to keep the UI smooth and responsive
+        await new Promise((resolve) => setTimeout(resolve, 30))
+      }
+
+      if (!hasMore) {
+        allFilesScanned.value[channelId] = true
+      }
+    } catch (err) {
+      console.error('Failed to crawl channel files:', err)
+    } finally {
+      isScanningAllFiles.value[channelId] = false
     }
   }
 
@@ -527,13 +628,39 @@ export const useChatStore = defineStore('chat', () => {
       closeThread()
     }
 
+    // On mobile screens, close drawer so main chat is visible
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      const uiStore = useUiStore()
+      uiStore.showRightSidebar = false
+      uiStore.showHashtagDrawer = false
+    }
+
+    // If post is not yet loaded in local store, fetch it
+    const inStore = posts.value[channelId]?.some((p) => p.id === postId)
+    if (!inStore) {
+      try {
+        const postData = await mmApi.getPost(postId)
+        if (postData && postData.delete_at === 0) {
+          if (!posts.value[channelId]) posts.value[channelId] = []
+          if (!posts.value[channelId].some((p) => p.id === postId)) {
+            posts.value[channelId].push(postData)
+            posts.value[channelId].sort((a, b) => a.create_at - b.create_at)
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch post details for jumpToPost:', err)
+      }
+    }
+
     // Allow time for messages DOM to render
     setTimeout(() => {
       const el = document.getElementById(`msg-${postId}`) || document.querySelector(`[data-post-id="${postId}"]`)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        el.classList.add('animate-pulse', 'bg-[#3390ec]/15')
-        setTimeout(() => el.classList.remove('animate-pulse', 'bg-[#3390ec]/15'), 2000)
+        el.classList.add('animate-pulse', 'bg-[#3390ec]/20', 'ring-2', 'ring-[#3390ec]/60')
+        setTimeout(() => {
+          el.classList.remove('animate-pulse', 'bg-[#3390ec]/20', 'ring-2', 'ring-[#3390ec]/60')
+        }, 2500)
       }
     }, 350)
   }
@@ -724,6 +851,18 @@ export const useChatStore = defineStore('chat', () => {
         posts.value[channelId].push(newPost)
       }
 
+      // Update channel files cache if message contains attachments
+      if (newPost.metadata?.files && Array.isArray(newPost.metadata.files)) {
+        if (!channelFiles.value[channelId]) channelFiles.value[channelId] = []
+        for (const file of newPost.metadata.files) {
+          if (file && file.id && !channelFiles.value[channelId].some((f) => f.id === file.id)) {
+            if (!file.post_id) file.post_id = newPost.id
+            if (!file.channel_id) file.channel_id = channelId
+            channelFiles.value[channelId].unshift(file)
+          }
+        }
+      }
+
       // Reconcile thread post if in active thread
       if (activeThreadRootPost.value && (targetRootId === activeThreadRootPost.value.id || rootId === activeThreadRootPost.value.id)) {
         const tIdx = threadPosts.value.findIndex((p) => p.id === tempId || p.pending_post_id === tempId)
@@ -912,6 +1051,18 @@ export const useChatStore = defineStore('chat', () => {
       // Fetch author if needed
       if (post.user_id) {
         usersStore.fetchUsers([post.user_id])
+      }
+
+      // Update channel files cache if post contains attachments
+      if (post.metadata?.files && Array.isArray(post.metadata.files)) {
+        if (!channelFiles.value[channelId]) channelFiles.value[channelId] = []
+        for (const file of post.metadata.files) {
+          if (file && file.id && !channelFiles.value[channelId].some((f) => f.id === file.id)) {
+            if (!file.post_id) file.post_id = post.id
+            if (!file.channel_id) file.channel_id = channelId
+            channelFiles.value[channelId].unshift(file)
+          }
+        }
       }
 
       // Add to channel posts if already cached
@@ -1325,6 +1476,10 @@ export const useChatStore = defineStore('chat', () => {
     loadOlderPosts,
     getChannelFiles,
     scanOlderPostsForFiles,
+    channelFiles,
+    isScanningAllFiles,
+    allFilesScanned,
+    fetchAllChannelFiles,
     searchPostsByHashtag,
     jumpToPost,
     unreadCounts,

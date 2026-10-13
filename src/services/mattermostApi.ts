@@ -495,6 +495,10 @@ class MattermostApiService {
     return this.request<MattermostFileInfo>(`/api/v4/files/${fileId}/info`)
   }
 
+  public async getPostFiles(postId: string): Promise<MattermostFileInfo[]> {
+    return this.request<MattermostFileInfo[]>(`/api/v4/posts/${postId}/files/info`)
+  }
+
   public getFileDownloadUrl(fileId: string): string {
     return `/api/v4/files/${fileId}`
   }

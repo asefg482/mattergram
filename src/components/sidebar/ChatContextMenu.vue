@@ -11,6 +11,7 @@ import {
   CheckCheck,
   Check,
   PanelRight,
+  FolderOpen,
   LogOut
 } from 'lucide-vue-next'
 
@@ -106,6 +107,16 @@ function handleViewInfo() {
     chatStore.selectChannel(props.channel.id)
     router.push(`/c/${props.channel.id}`)
     uiStore.showRightSidebar = true
+    uiStore.rightSidebarTab = 'info'
+  }
+  emit('close')
+}
+
+function handleViewFiles() {
+  if (props.channel) {
+    chatStore.selectChannel(props.channel.id)
+    router.push(`/c/${props.channel.id}`)
+    uiStore.openChatFiles()
   }
   emit('close')
 }
@@ -179,6 +190,15 @@ onUnmounted(() => {
         </button>
 
         <div class="my-1 border-t border-[#dfe1e5] dark:border-[#202b36]"></div>
+
+        <!-- Shared Files -->
+        <button
+          @click="handleViewFiles"
+          class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+        >
+          <FolderOpen class="w-4 h-4 text-[#7f91a4]" />
+          <span>Shared Files</span>
+        </button>
 
         <!-- View Info -->
         <button
