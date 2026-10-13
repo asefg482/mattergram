@@ -16,7 +16,8 @@ import {
   FolderOpen,
   LogOut,
   Link,
-  Trash2
+  Trash2,
+  SlidersHorizontal
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -363,6 +364,41 @@ onUnmounted(() => {
             <span>{{ channel.type === 'D' ? 'Delete Chat' : 'Delete Channel' }}</span>
           </button>
         </template>
+
+        <!-- Corner Radius Control -->
+        <div class="mt-1.5 pt-1.5 px-3 border-t border-[#dfe1e5]/60 dark:border-[#202b36]/60 select-none">
+          <div class="flex items-center justify-between text-[11px] text-[#7f91a4] mb-1.5 font-medium">
+            <span class="flex items-center gap-1.5">
+              <SlidersHorizontal class="w-3.5 h-3.5 text-[#3390ec]" />
+              <span>Corner Radius</span>
+            </span>
+            <span class="font-mono text-[#3390ec] font-bold text-xs">{{ uiStore.menuRadius }}px</span>
+          </div>
+          <div class="flex items-center gap-1 justify-between mb-1">
+            <button
+              v-for="r in [0, 8, 16, 24]"
+              :key="r"
+              @click.stop="uiStore.setBorderRadius(r)"
+              class="flex-1 py-1 rounded-md text-[10px] font-semibold transition-all text-center cursor-pointer border"
+              :class="
+                uiStore.menuRadius === r
+                  ? 'bg-[#3390ec] text-white border-[#3390ec] shadow-xs'
+                  : 'bg-black/5 dark:bg-white/5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white border-transparent'
+              "
+            >
+              {{ r }}px
+            </button>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="24"
+            step="1"
+            :value="uiStore.menuRadius"
+            @input.stop="uiStore.setBorderRadius(Number(($event.target as HTMLInputElement).value))"
+            class="w-full accent-[#3390ec] cursor-pointer h-1.5 bg-gray-200 dark:bg-[#202b36] rounded-lg appearance-none mt-1"
+          />
+        </div>
       </div>
     </div>
   </div>
