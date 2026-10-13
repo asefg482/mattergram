@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { mmApi } from '../services/mattermostApi'
 import { mmWs } from '../services/mattermostWs'
+import { notificationService } from '../services/notifications'
 import { setTimezone, setTimeFormat } from '../utils/formatters'
 import type { MattermostUser, MattermostTeam } from '../types/mattermost'
 
@@ -35,6 +36,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Connect WebSocket
       mmWs.connect(res.token)
+
+      // Sync push notifications if preferred
+      notificationService.syncPushSubscription(res.user.id, res.token, baseUrl.value)
 
       return res
     } catch (err: any) {
@@ -149,6 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
       syncUserDisplayPreferences(user)
       await loadTeams()
       mmWs.connect(token.value)
+      notificationService.syncPushSubscription(user.id, token.value, baseUrl.value)
     } catch (err) {
       console.warn('Session expired or invalid, logging out:', err)
       await logout()

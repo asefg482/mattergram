@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import httpProxy from 'http-proxy'
 import { WebSocketServer, WebSocket as WsClient } from 'ws'
+import { initPushService, handlePushApiRequest } from './push-service.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -79,6 +80,14 @@ if (DEFAULT_MATTERMOST_SERVER) {
   console.warn('[Config Warning] MATTERMOST_BASE_URL is not defined in .env!')
 }
 
+// Initialize Web Push service (VAPID, background daemon, subscription store)
+initPushService({
+  rootDir: __dirname,
+  defaultServer: DEFAULT_MATTERMOST_SERVER,
+  allowedServers: ALLOWED_SERVERS,
+  secureTls: SECURE_TLS,
+})
+
 const proxy = httpProxy.createProxyServer({
   changeOrigin: true,
   secure: SECURE_TLS,
@@ -116,6 +125,12 @@ const MIME_TYPES = {
 }
 
 const server = http.createServer((req, res) => {
+  // Web Push API Endpoints
+  if (req.url && req.url.startsWith('/api/push')) {
+    handlePushApiRequest(req, res)
+    return
+  }
+
   // 1. API & Plugin Reverse Proxy
   if (req.url && (
     req.url.startsWith('/api/v4') ||
@@ -276,6 +291,10 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
         res.end(html)
         return
+      }
+      if (filePath.endsWith('sw.js')) {
+        res.setHeader('Service-Worker-Allowed', '/')
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
       }
       res.writeHead(200, { 'Content-Type': contentType })
       res.end(content)

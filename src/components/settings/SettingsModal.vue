@@ -19,6 +19,9 @@ import {
   Loader2,
   Bell,
   BellOff,
+  BellRing,
+  Smartphone,
+  Send,
   Palette,
   Zap,
   Check,
@@ -99,6 +102,44 @@ async function toggleNotifications() {
   } else {
     notifEnabled.value = !notifEnabled.value
     notificationService.setEnabled(notifEnabled.value)
+  }
+}
+
+const isTestingPush = ref(false)
+const testPushResult = ref<string | null>(null)
+
+async function togglePush() {
+  if (notificationService.pushSubscribed.value) {
+    await notificationService.unsubscribeFromPush()
+  } else {
+    const user = authStore.currentUser
+    const token = authStore.token
+    const serverUrl = authStore.baseUrl
+    await notificationService.subscribeToPush({
+      userId: user?.id,
+      token: token || undefined,
+      serverUrl
+    })
+  }
+}
+
+async function triggerTestPush() {
+  isTestingPush.value = true
+  testPushResult.value = null
+  try {
+    const ok = await notificationService.sendTestPush()
+    if (ok) {
+      testPushResult.value = 'Sent! Check notification center.'
+      setTimeout(() => {
+        testPushResult.value = null
+      }, 4000)
+    } else {
+      testPushResult.value = 'Failed to send test push'
+    }
+  } catch (err: any) {
+    testPushResult.value = err.message || 'Error sending push'
+  } finally {
+    isTestingPush.value = false
   }
 }
 
@@ -275,6 +316,65 @@ function selectAnimation(id: string) {
                 class="w-4 h-4 rounded-full bg-white transition-transform"
                 :class="notifEnabled && notifPermission === 'granted' ? 'translate-x-4' : 'translate-x-0'"
               ></div>
+            </div>
+          </div>
+
+          <!-- Background Web Push (PWA / Closed App) -->
+          <div
+            v-if="notificationService.isPushSupported.value"
+            class="p-3 rounded-xl bg-gray-50 dark:bg-[#101921]/60 border border-[#dfe1e5]/60 dark:border-[#202b36] space-y-2.5"
+          >
+            <div
+              @click="togglePush"
+              class="flex items-center justify-between cursor-pointer"
+            >
+              <div class="flex items-center gap-3">
+                <BellRing v-if="notificationService.pushSubscribed.value" class="w-5 h-5 text-emerald-500" />
+                <Smartphone v-else class="w-5 h-5 text-[#7f91a4]" />
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-gray-800 dark:text-white">Background Push Notifications</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      Offline / Closed App
+                    </span>
+                  </div>
+                  <span class="text-[10px] text-[#7f91a4] block">
+                    {{ notificationService.pushSubscribed.value
+                      ? 'Active — delivers to phone or desktop even when app is closed'
+                      : 'Receive alerts on mobile & desktop when app is closed' }}
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <Loader2 v-if="notificationService.isPushLoading.value" class="w-4 h-4 text-[#3390ec] animate-spin" />
+                <div
+                  v-else
+                  class="w-9 h-5 rounded-full p-0.5 transition-colors"
+                  :class="notificationService.pushSubscribed.value ? 'bg-emerald-500' : 'bg-gray-500'"
+                >
+                  <div
+                    class="w-4 h-4 rounded-full bg-white transition-transform"
+                    :class="notificationService.pushSubscribed.value ? 'translate-x-4' : 'translate-x-0'"
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Test Push Button if Subscribed -->
+            <div v-if="notificationService.pushSubscribed.value" class="pt-2 border-t border-gray-200 dark:border-[#202b36] flex items-center justify-between">
+              <span class="text-[10px] text-[#7f91a4]">
+                {{ testPushResult || 'Test background notification delivery:' }}
+              </span>
+              <button
+                type="button"
+                @click.stop="triggerTestPush"
+                :disabled="isTestingPush"
+                class="px-2.5 py-1 text-[11px] font-medium bg-[#3390ec]/10 hover:bg-[#3390ec]/20 text-[#3390ec] rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Loader2 v-if="isTestingPush" class="w-3 h-3 animate-spin" />
+                <Send v-else class="w-3 h-3" />
+                <span>{{ isTestingPush ? 'Sending...' : 'Send Test Notification' }}</span>
+              </button>
             </div>
           </div>
 

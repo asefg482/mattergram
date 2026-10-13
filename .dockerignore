@@ -10,3 +10,5 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 *.tsbuildinfo
+.vapid.json
+.push-subscriptions.json

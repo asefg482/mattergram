@@ -10,10 +10,24 @@ export interface InAppToast {
   timestamp: number
 }
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
 class NotificationService {
   private enabled = true
   public toasts = ref<InAppToast[]>([])
   public permission = ref<NotificationPermission>('default')
+  public isPushSupported = ref(false)
+  public pushSubscribed = ref(false)
+  public isPushLoading = ref(false)
   private originalTitle = 'Mattergram — Telegram for Mattermost'
   private hasAutoRequested = false
 
@@ -29,6 +43,11 @@ class NotificationService {
           this.permission.value = Notification.permission
         }
       })
+    }
+
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+      this.isPushSupported.value = true
+      this.checkPushSubscription()
     }
   }
 
@@ -62,6 +81,135 @@ class NotificationService {
       return res === 'granted'
     } catch {
       return false
+    }
+  }
+
+  public async checkPushSubscription(): Promise<boolean> {
+    if (!this.isPushSupported.value) return false
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      this.pushSubscribed.value = !!sub
+      return !!sub
+    } catch {
+      return false
+    }
+  }
+
+  public async subscribeToPush(options?: {
+    userId?: string
+    token?: string
+    serverUrl?: string
+  }): Promise<boolean> {
+    if (!this.isPushSupported.value) return false
+    this.isPushLoading.value = true
+
+    try {
+      // 1. Ensure permission is granted
+      if (this.permission.value !== 'granted') {
+        const granted = await this.requestPermission()
+        if (!granted) return false
+      }
+
+      // 2. Fetch VAPID public key from backend
+      const keyRes = await fetch('/api/push/vapid-public-key')
+      if (!keyRes.ok) throw new Error('Failed to retrieve VAPID public key')
+      const { publicKey } = await keyRes.json()
+
+      // 3. Register or obtain push subscription with Service Worker
+      const reg = await navigator.serviceWorker.ready
+      let sub = await reg.pushManager.getSubscription()
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as BufferSource
+        })
+      }
+
+      // 4. Send subscription to server
+      const subRes = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          userId: options?.userId,
+          token: options?.token,
+          serverUrl: options?.serverUrl
+        })
+      })
+
+      if (!subRes.ok) {
+        throw new Error('Failed to save push subscription on server')
+      }
+
+      this.pushSubscribed.value = true
+      localStorage.setItem('mattergram_push_enabled', 'true')
+      return true
+    } catch (err) {
+      console.error('[Notifications] Failed to subscribe to push:', err)
+      return false
+    } finally {
+      this.isPushLoading.value = false
+    }
+  }
+
+  public async unsubscribeFromPush(): Promise<boolean> {
+    if (!this.isPushSupported.value) return false
+    this.isPushLoading.value = true
+
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        await fetch('/api/push/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint })
+        }).catch(() => {})
+        await sub.unsubscribe()
+      }
+
+      this.pushSubscribed.value = false
+      localStorage.setItem('mattergram_push_enabled', 'false')
+      return true
+    } catch (err) {
+      console.error('[Notifications] Failed to unsubscribe from push:', err)
+      return false
+    } finally {
+      this.isPushLoading.value = false
+    }
+  }
+
+  public async sendTestPush(): Promise<boolean> {
+    if (!this.isPushSupported.value) return false
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (!sub) {
+        throw new Error('No active push subscription')
+      }
+
+      const res = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          title: 'Mattergram Notification',
+          body: 'پیام‌های دریافتی حتی در زمان بسته بودن برنامه به این دستگاه تحویل داده می‌شوند! 🚀'
+        })
+      })
+      return res.ok
+    } catch (err) {
+      console.error('[Notifications] Failed to send test push:', err)
+      return false
+    }
+  }
+
+  public async syncPushSubscription(userId?: string, token?: string, serverUrl?: string) {
+    if (!this.isPushSupported.value) return
+    const isPreferred = localStorage.getItem('mattergram_push_enabled') !== 'false'
+    if (isPreferred && this.permission.value === 'granted') {
+      await this.subscribeToPush({ userId, token, serverUrl })
     }
   }
 
@@ -159,7 +307,7 @@ class NotificationService {
 
         const n = new Notification(title, {
           body: options.message || '📎 Attachment',
-          icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232481cc'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.37.74-.56 2.92-1.27 4.86-2.11 5.83-2.52 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.01.19-.03.32z'/%3E%3C/svg%3E",
+          icon: '/icon-192.png',
           tag: options.channelId,
           silent: true // Sound already played via Web Audio API
         })

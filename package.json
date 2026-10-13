@@ -20,6 +20,7 @@
     "pinia": "^2.2.4",
     "vue": "^3.5.11",
     "vue-router": "^4.4.5",
+    "web-push": "^3.6.7",
     "ws": "^8.22.0"
   },
   "devDependencies": {

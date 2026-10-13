@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import httpProxy from 'http-proxy'
 import { WebSocketServer, WebSocket as WsClient } from 'ws'
+import { initPushService, handlePushApiRequest } from './push-service.js'
 
 function mattermostProxyPlugin(defaultFallback = '', secureTls = true, allowedServersList: string[] = []): Plugin {
   const allowedOrigins = new Set(
@@ -41,9 +42,29 @@ function mattermostProxyPlugin(defaultFallback = '', secureTls = true, allowedSe
 
   const wss = new WebSocketServer({ noServer: true })
 
+  // Initialize Web Push service for dev server
+  initPushService({
+    rootDir: process.cwd(),
+    defaultServer: defaultFallback,
+    allowedServers: allowedOrigins,
+    secureTls: secureTls,
+  })
+
   return {
     name: 'mattermost-proxy-plugin',
     configureServer(server) {
+      // Web Push API routes in dev
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url && req.url.startsWith('/api/push')) {
+          const handled = await handlePushApiRequest(req, res)
+          if (handled) return
+        }
+        if (req.url === '/sw.js') {
+          res.setHeader('Service-Worker-Allowed', '/')
+        }
+        next()
+      })
+
       // Dynamic HTTP Proxy middleware
       server.middlewares.use((req, res, next) => {
         if (req.url && (
