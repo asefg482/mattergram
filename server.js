@@ -51,6 +51,11 @@ const DEFAULT_MATTERMOST_SERVER = (
   ''
 ).trim().replace(/\/+$/, '')
 
+// Visibility of base URL in UI (default: true)
+const SHOW_MATTERMOST_BASE_URL =
+  process.env.SHOW_MATTERMOST_BASE_URL !== 'false' &&
+  process.env.VITE_SHOW_MATTERMOST_BASE_URL !== 'false'
+
 // Build strict allowlist of permitted origins to prevent SSRF (CWE-918)
 const ALLOWED_SERVERS = new Set(
   [
@@ -285,8 +290,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(500)
       res.end('Server Error')
     } else {
-      if (filePath.endsWith('index.html') && DEFAULT_MATTERMOST_SERVER) {
-        const injected = `<script>window.__MATTERGRAM_ENV__ = { MATTERMOST_BASE_URL: ${JSON.stringify(DEFAULT_MATTERMOST_SERVER)} };</script></head>`
+      if (filePath.endsWith('index.html')) {
+        const envScript = {
+          MATTERMOST_BASE_URL: DEFAULT_MATTERMOST_SERVER,
+          SHOW_MATTERMOST_BASE_URL: SHOW_MATTERMOST_BASE_URL
+        }
+        const injected = `<script>window.__MATTERGRAM_ENV__ = ${JSON.stringify(envScript)};</script></head>`
         const html = content.toString('utf8').replace('</head>', injected)
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
         res.end(html)

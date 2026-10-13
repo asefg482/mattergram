@@ -271,14 +271,30 @@ function mattermostProxyPlugin(defaultFallback = '', secureTls = true, allowedSe
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const defaultFallback = (env.MATTERMOST_BASE_URL || env.VITE_MATTERMOST_BASE_URL || '').trim().replace(/\/+$/, '')
+  const showBaseUrl = env.SHOW_MATTERMOST_BASE_URL !== 'false' && env.VITE_SHOW_MATTERMOST_BASE_URL !== 'false'
   const secureTls = env.MATTERMOST_TLS_INSECURE !== 'true'
   const allowedServers = (env.ALLOWED_MATTERMOST_SERVERS || '').split(',').map(s => s.trim()).filter(Boolean)
 
   return {
-    plugins: [vue(), mattermostProxyPlugin(defaultFallback, secureTls, allowedServers)],
-    envPrefix: ['VITE_', 'MATTERMOST_'],
+    plugins: [
+      vue(),
+      mattermostProxyPlugin(defaultFallback, secureTls, allowedServers),
+      {
+        name: 'html-transform-mattergram-env',
+        transformIndexHtml(html) {
+          const envScript = {
+            MATTERMOST_BASE_URL: defaultFallback,
+            SHOW_MATTERMOST_BASE_URL: showBaseUrl
+          }
+          const injected = `<script>window.__MATTERGRAM_ENV__ = ${JSON.stringify(envScript)};</script></head>`
+          return html.replace('</head>', injected)
+        }
+      }
+    ],
+    envPrefix: ['VITE_', 'MATTERMOST_', 'SHOW_'],
     define: {
-      'import.meta.env.MATTERMOST_BASE_URL': JSON.stringify(defaultFallback)
+      'import.meta.env.MATTERMOST_BASE_URL': JSON.stringify(defaultFallback),
+      'import.meta.env.SHOW_MATTERMOST_BASE_URL': JSON.stringify(showBaseUrl)
     },
     resolve: {
       alias: {

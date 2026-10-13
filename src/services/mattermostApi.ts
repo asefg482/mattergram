@@ -20,6 +20,20 @@ const ENV_SERVER_URL = (
   ''
 ).trim().replace(/\/+$/, '')
 
+const RUNTIME_SHOW_URL =
+  typeof window !== 'undefined' ? (window as any).__MATTERGRAM_ENV__?.SHOW_MATTERMOST_BASE_URL : undefined
+
+export const SHOW_MATTERMOST_BASE_URL: boolean = (() => {
+  if (RUNTIME_SHOW_URL !== undefined && RUNTIME_SHOW_URL !== null) {
+    return RUNTIME_SHOW_URL !== false && RUNTIME_SHOW_URL !== 'false' && RUNTIME_SHOW_URL !== 0 && RUNTIME_SHOW_URL !== '0'
+  }
+  const envVal = ((import.meta as any).env?.SHOW_MATTERMOST_BASE_URL ?? (import.meta as any).env?.VITE_SHOW_MATTERMOST_BASE_URL)
+  if (envVal !== undefined && envVal !== null && envVal !== '') {
+    return envVal !== false && envVal !== 'false' && envVal !== 0 && envVal !== '0'
+  }
+  return true // DEFAULT is true
+})()
+
 const INITIAL_SERVER_URL = ENV_SERVER_URL || (localStorage.getItem('mattergram_base_url') || '').trim().replace(/\/+$/, '')
 
 class MattermostApiService {
@@ -40,6 +54,10 @@ class MattermostApiService {
 
   public getBaseUrl(): string {
     return this.baseUrl || ENV_SERVER_URL || (localStorage.getItem('mattergram_base_url') || '').trim().replace(/\/+$/, '')
+  }
+
+  public isBaseUrlVisible(): boolean {
+    return SHOW_MATTERMOST_BASE_URL
   }
 
   public setBaseUrl(url: string) {

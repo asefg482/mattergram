@@ -440,7 +440,7 @@ async function handleRegister() {
         </form>
 
         <!-- Server Host Indicator -->
-        <div class="mt-5 pt-4 border-t border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-center text-xs text-[#7f91a4]">
+        <div v-if="authStore.showBaseUrl" class="mt-5 pt-4 border-t border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-center text-xs text-[#7f91a4]">
           <div class="flex items-center gap-1.5 min-w-0">
             <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
             <span class="truncate text-[11px] text-[#7f91a4]/90" :title="authStore.baseUrl">

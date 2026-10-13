@@ -10,6 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<MattermostUser | null>(null)
   const token = ref<string | null>(mmApi.getToken())
   const baseUrl = ref<string>(mmApi.getBaseUrl())
+  const showBaseUrl = ref<boolean>(mmApi.isBaseUrlVisible())
   const teams = ref<MattermostTeam[]>([])
   const currentTeam = ref<MattermostTeam | null>(null)
   const isLoading = ref(false)
@@ -166,6 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser,
     token,
     baseUrl,
+    showBaseUrl,
     teams,
     currentTeam,
     isLoading,

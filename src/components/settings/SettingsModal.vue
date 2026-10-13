@@ -207,7 +207,7 @@ function selectAnimation(id: string) {
         </div>
 
         <!-- Section 1: Server URL Configuration (Read-only from .env) -->
-        <div class="space-y-2">
+        <div v-if="authStore.showBaseUrl" class="space-y-2">
           <label class="block text-xs font-semibold text-[#7f91a4] uppercase tracking-wider flex items-center justify-between">
             <span class="flex items-center gap-1.5">
               <Server class="w-3.5 h-3.5 text-[#3390ec]" />
