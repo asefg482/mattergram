@@ -40,13 +40,19 @@ import {
   UserPlus,
   UserCog,
   ShieldCheck,
-  Crown
+  Crown,
+  LogOut,
+  Trash2
 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import AddChannelMembersModal from '../chat/AddChannelMembersModal.vue'
 import ManageMemberModal from '../chat/ManageMemberModal.vue'
+import { showConfirm } from '../../stores/alert'
+import { notificationService } from '../../services/notifications'
 import type { MattermostChannelMember } from '../../types/mattermost'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 const usersStore = useUsersStore()
@@ -98,6 +104,84 @@ const canAddMembers = computed(() => {
   if (!channel.value) return false
   return chatStore.canCurrentUserAddMembers(channel.value.id)
 })
+
+const isGroup = computed(() => {
+  if (!channel.value) return false
+  return channel.value.type !== 'D' && !isSavedMessages.value
+})
+
+const canDeleteChat = computed(() => {
+  if (!channel.value) return false
+  if (isSavedMessages.value) return false
+  if (isDirect.value) return true
+  return chatStore.canCurrentUserManageChannel(channel.value.id)
+})
+
+async function handleExitGroup() {
+  if (!channel.value) return
+  const channelToExit = channel.value
+  const channelName = channelToExit.display_name || channelToExit.name || 'Group'
+
+  const confirmed = await showConfirm(
+    `Are you sure you want to leave ${channelName}?`,
+    {
+      title: 'Exit Group',
+      confirmText: 'Exit',
+      cancelText: 'Cancel',
+      isDestructive: true
+    }
+  )
+
+  if (!confirmed) return
+
+  try {
+    uiStore.showRightSidebar = false
+    await chatStore.leaveChannel(channelToExit.id)
+    router.push('/')
+    notificationService.showToast({
+      message: `You have left ${channelName}`
+    })
+  } catch (err) {
+    console.error('Failed to exit group:', err)
+    notificationService.showToast({
+      message: 'Failed to exit group.'
+    })
+  }
+}
+
+async function handleDeleteChat() {
+  if (!channel.value) return
+  const channelToDelete = channel.value
+  const isDirectChat = channelToDelete.type === 'D'
+  const channelName = channelToDelete.display_name || channelToDelete.name || 'Chat'
+  const actionTitle = isDirectChat ? 'Delete Chat' : 'Delete Channel'
+  const promptMessage = isDirectChat
+    ? `Are you sure you want to delete the chat with ${channelName}?`
+    : `Are you sure you want to delete ${channelName}? This action cannot be undone.`
+
+  const confirmed = await showConfirm(promptMessage, {
+    title: actionTitle,
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    isDestructive: true
+  })
+
+  if (!confirmed) return
+
+  try {
+    uiStore.showRightSidebar = false
+    await chatStore.deleteChannel(channelToDelete.id)
+    router.push('/')
+    notificationService.showToast({
+      message: `${actionTitle} succeeded.`
+    })
+  } catch (err: any) {
+    console.error('Failed to delete chat:', err)
+    notificationService.showToast({
+      message: err.message || 'Failed to delete chat.'
+    })
+  }
+}
 
 // Modals State
 const showAddMemberModal = ref(false)
@@ -636,6 +720,29 @@ function togglePlayAudio(file: MattermostFileInfo) {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Danger Zone: Exit Group / Delete Chat -->
+      <div v-if="!isSavedMessages && (isGroup || canDeleteChat)" class="p-4 border-t border-[#dfe1e5] dark:border-[#202b36] space-y-2">
+        <!-- Exit Group -->
+        <button
+          v-if="isGroup"
+          @click="handleExitGroup"
+          class="w-full py-2 px-3 text-xs font-semibold rounded-xl text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <LogOut class="w-4 h-4 text-red-500" />
+          <span>Exit Group</span>
+        </button>
+
+        <!-- Delete Chat / Channel -->
+        <button
+          v-if="canDeleteChat"
+          @click="handleDeleteChat"
+          class="w-full py-2 px-3 text-xs font-semibold rounded-xl text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <Trash2 class="w-4 h-4 text-red-500" />
+          <span>{{ isDirect ? 'Delete Chat' : 'Delete Channel' }}</span>
+        </button>
       </div>
     </div>
 

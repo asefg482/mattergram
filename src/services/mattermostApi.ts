@@ -292,6 +292,12 @@ class MattermostApiService {
     })
   }
 
+  public async deleteChannel(channelId: string): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/api/v4/channels/${channelId}`, {
+      method: 'DELETE'
+    })
+  }
+
   public async searchChannels(teamId: string, term: string): Promise<MattermostChannel[]> {
     return this.request<MattermostChannel[]>(`/api/v4/teams/${teamId}/channels/search`, {
       method: 'POST',
@@ -517,6 +523,16 @@ class MattermostApiService {
 
   public async getMyPreferences(): Promise<Array<{ user_id: string; category: string; name: string; value: string }>> {
     return this.request<Array<{ user_id: string; category: string; name: string; value: string }>>('/api/v4/users/me/preferences')
+  }
+
+  public async savePreferences(
+    userId: string,
+    preferences: Array<{ user_id: string; category: string; name: string; value: string }>
+  ): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/api/v4/users/${userId}/preferences`, {
+      method: 'PUT',
+      body: JSON.stringify(preferences)
+    })
   }
 
   public async getUsersStatuses(userIds: string[]): Promise<UserStatus[]> {

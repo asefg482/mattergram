@@ -16,13 +16,16 @@ import {
   Lock,
   Volume2,
   VolumeX,
-  Trash2,
   Check,
   FolderOpen,
-  UserPlus
+  UserPlus,
+  LogOut,
+  Trash2
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import AddChannelMembersModal from './AddChannelMembersModal.vue'
+import { showConfirm } from '../../stores/alert'
+import { notificationService } from '../../services/notifications'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -44,6 +47,80 @@ const canAddMembers = computed(() => {
 })
 
 const isSavedMessages = computed(() => channel.value?.display_name === 'Saved Messages')
+
+const canDelete = computed(() => {
+  if (!channel.value) return false
+  if (isSavedMessages.value) return false
+  if (isDirect.value) return true
+  return chatStore.canCurrentUserManageChannel(channel.value.id)
+})
+
+async function handleExitGroup() {
+  if (!channel.value) return
+  const channelToExit = channel.value
+  const channelName = channelToExit.display_name || channelToExit.name || 'Group'
+  showMoreMenu.value = false
+
+  const confirmed = await showConfirm(
+    `Are you sure you want to leave ${channelName}?`,
+    {
+      title: 'Exit Group',
+      confirmText: 'Exit',
+      cancelText: 'Cancel',
+      isDestructive: true
+    }
+  )
+
+  if (!confirmed) return
+
+  try {
+    await chatStore.leaveChannel(channelToExit.id)
+    router.push('/')
+    notificationService.showToast({
+      message: `You have left ${channelName}`
+    })
+  } catch (err) {
+    console.error('Failed to exit group:', err)
+    notificationService.showToast({
+      message: 'Failed to exit group.'
+    })
+  }
+}
+
+async function handleDeleteChat() {
+  if (!channel.value) return
+  const channelToDelete = channel.value
+  const isDirectChat = channelToDelete.type === 'D'
+  const channelName = channelToDelete.display_name || channelToDelete.name || 'Chat'
+  const actionTitle = isDirectChat ? 'Delete Chat' : 'Delete Channel'
+  const promptMessage = isDirectChat
+    ? `Are you sure you want to delete the chat with ${channelName}?`
+    : `Are you sure you want to delete ${channelName}? This action cannot be undone.`
+
+  showMoreMenu.value = false
+
+  const confirmed = await showConfirm(promptMessage, {
+    title: actionTitle,
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    isDestructive: true
+  })
+
+  if (!confirmed) return
+
+  try {
+    await chatStore.deleteChannel(channelToDelete.id)
+    router.push('/')
+    notificationService.showToast({
+      message: `${actionTitle} succeeded.`
+    })
+  } catch (err: any) {
+    console.error('Failed to delete chat:', err)
+    notificationService.showToast({
+      message: err.message || 'Failed to delete chat.'
+    })
+  }
+}
 
 // User status for DM
 const otherUserStatus = computed(() => {
@@ -271,6 +348,26 @@ function toggleMute() {
           >
             <PanelRight class="w-4 h-4 text-[#7f91a4]" />
             <span>View Info</span>
+          </button>
+
+          <!-- Exit Group (For groups) -->
+          <button
+            v-if="!isDirect && !isSavedMessages"
+            @click="handleExitGroup"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-red-500 hover:bg-red-500/10 text-left cursor-pointer"
+          >
+            <LogOut class="w-4 h-4 text-red-500" />
+            <span>Exit</span>
+          </button>
+
+          <!-- Delete Chat / Channel -->
+          <button
+            v-if="canDelete"
+            @click="handleDeleteChat"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-red-500 hover:bg-red-500/10 text-left cursor-pointer"
+          >
+            <Trash2 class="w-4 h-4 text-red-500" />
+            <span>{{ isDirect ? 'Delete Chat' : 'Delete Channel' }}</span>
           </button>
         </div>
       </div>

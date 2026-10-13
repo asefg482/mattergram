@@ -15,7 +15,8 @@ import {
   PanelRight,
   FolderOpen,
   LogOut,
-  Link
+  Link,
+  Trash2
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -40,7 +41,7 @@ const transformOrigin = ref('top left')
 function adjustPosition() {
   const el = menuRef.value
   const menuWidth = el?.offsetWidth || 208
-  const menuHeight = el?.offsetHeight || 240
+  const menuHeight = el?.offsetHeight || 270
   const padding = 8
 
   let x = props.position.x + 2
@@ -196,6 +197,50 @@ async function handleExitGroup() {
   }
 }
 
+const canDelete = computed(() => {
+  if (!props.channel) return false
+  if (props.channel.display_name === 'Saved Messages') return false
+  if (props.channel.type === 'D') return true
+  return chatStore.canCurrentUserManageChannel(props.channel.id)
+})
+
+async function handleDeleteChat() {
+  if (!props.channel) return
+  const channelToDelete = props.channel
+  const isDirectChat = channelToDelete.type === 'D'
+  const channelName = channelToDelete.display_name || channelToDelete.name || 'Chat'
+  const actionTitle = isDirectChat ? 'Delete Chat' : 'Delete Channel'
+  const promptMessage = isDirectChat
+    ? `Are you sure you want to delete the chat with ${channelName}?`
+    : `Are you sure you want to delete ${channelName}? This action cannot be undone.`
+
+  emit('close')
+
+  const confirmed = await showConfirm(promptMessage, {
+    title: actionTitle,
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    isDestructive: true
+  })
+
+  if (!confirmed) return
+
+  try {
+    await chatStore.deleteChannel(channelToDelete.id)
+    if (chatStore.activeChannelId === channelToDelete.id || router.currentRoute.value.params.channelId === channelToDelete.id) {
+      router.push('/')
+    }
+    notificationService.showToast({
+      message: `${actionTitle} succeeded.`
+    })
+  } catch (err: any) {
+    console.error('Failed to delete chat:', err)
+    notificationService.showToast({
+      message: err.message || 'Failed to delete chat.'
+    })
+  }
+}
+
 function onWindowClick(e: MouseEvent) {
   if (props.isOpen && menuRef.value && !menuRef.value.contains(e.target as Node)) {
     emit('close')
@@ -303,6 +348,19 @@ onUnmounted(() => {
           >
             <LogOut class="w-4 h-4 text-red-500" />
             <span>Exit</span>
+          </button>
+        </template>
+
+        <!-- Delete Chat / Delete Channel -->
+        <template v-if="canDelete">
+          <div v-if="!isGroup" class="my-1 border-t border-[#dfe1e5] dark:border-[#202b36]"></div>
+
+          <button
+            @click="handleDeleteChat"
+            class="w-full px-3.5 py-2 flex items-center gap-3 text-red-500 hover:bg-red-500/10 text-left transition-colors cursor-pointer"
+          >
+            <Trash2 class="w-4 h-4 text-red-500" />
+            <span>{{ channel.type === 'D' ? 'Delete Chat' : 'Delete Channel' }}</span>
           </button>
         </template>
       </div>

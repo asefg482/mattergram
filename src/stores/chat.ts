@@ -1393,6 +1393,37 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function deleteChannel(channelId: string): Promise<void> {
+    const channel = channels.value.find((c) => c.id === channelId)
+    const myId = authStore.currentUser?.id
+
+    try {
+      await mmApi.deleteChannel(channelId)
+    } catch (err: any) {
+      if (channel && channel.type === 'D' && myId && channel.dm_user) {
+        try {
+          await mmApi.savePreferences(myId, [
+            { user_id: myId, category: 'direct_channel_show', name: channel.dm_user.id, value: 'false' }
+          ])
+        } catch {
+          throw err
+        }
+      } else {
+        throw err
+      }
+    }
+
+    channels.value = channels.value.filter((c) => c.id !== channelId)
+    delete channelMembers.value[channelId]
+    delete posts.value[channelId]
+    delete channelFiles.value[channelId]
+    delete unreadCounts.value[channelId]
+
+    if (activeChannelId.value === channelId) {
+      activeChannelId.value = null
+    }
+  }
+
   async function setChannelMemberAdmin(channelId: string, userId: string, isAdmin: boolean): Promise<void> {
     await mmApi.setChannelMemberAdmin(channelId, userId, isAdmin)
     await fetchChannelMembers(channelId)
@@ -1590,6 +1621,7 @@ export const useChatStore = defineStore('chat', () => {
     addMemberToChannel,
     removeMemberFromChannel,
     leaveChannel,
+    deleteChannel,
     setChannelMemberAdmin,
     getCurrentUserChannelMember,
     canCurrentUserManageChannel,
