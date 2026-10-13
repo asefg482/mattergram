@@ -95,6 +95,7 @@ export const useUiStore = defineStore('ui', () => {
   const showRightSidebar = ref(false)
   const rightSidebarTab = ref<'info' | 'files'>('info')
   const showSettingsModal = ref(false)
+  const showAccountSettingsModal = ref(false)
   const showNewChatModal = ref(false)
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
@@ -320,6 +321,7 @@ export const useUiStore = defineStore('ui', () => {
     editingPost,
     showRightSidebar,
     showSettingsModal,
+    showAccountSettingsModal,
     showNewChatModal,
     previewFile,
     isMobileSidebarOpen,

@@ -11,6 +11,7 @@ import ChatArea from '../components/chat/ChatArea.vue'
 import ChatInfoDrawer from '../components/info/ChatInfoDrawer.vue'
 import HashtagDrawer from '../components/chat/HashtagDrawer.vue'
 import SettingsModal from '../components/settings/SettingsModal.vue'
+import AccountSettingsModal from '../components/settings/AccountSettingsModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -119,5 +120,8 @@ onMounted(async () => {
 
     <!-- Settings Modal -->
     <SettingsModal />
+
+    <!-- Account Settings Modal -->
+    <AccountSettingsModal />
   </div>
 </template>

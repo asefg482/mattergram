@@ -18,7 +18,8 @@ import {
   Shield,
   Layers,
   Palette,
-  X
+  X,
+  UserCog
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { pwaService } from '../../services/pwa'
@@ -88,6 +89,11 @@ function openSettings() {
   } else {
     router.push('/settings')
   }
+}
+
+function openAccountSettings() {
+  closeDrawer()
+  uiStore.showAccountSettingsModal = true
 }
 
 async function handleLogout() {
@@ -441,10 +447,19 @@ const backdropStyle = computed(() => {
           <!-- Settings -->
           <button
             @click="openSettings"
-            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors cursor-pointer"
           >
             <Settings class="w-5 h-5 text-[#7f91a4]" />
             <span class="flex-1 text-left">Settings</span>
+          </button>
+
+          <!-- Account Settings -->
+          <button
+            @click="openAccountSettings"
+            class="w-full flex items-center gap-4 px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors cursor-pointer"
+          >
+            <UserCog class="w-5 h-5 text-[#3390ec]" />
+            <span class="flex-1 text-left">Account Settings</span>
           </button>
 
           <!-- Night Mode Toggle Switch -->

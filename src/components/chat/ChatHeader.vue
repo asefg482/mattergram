@@ -391,6 +391,7 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
       !uiStore.previewFile &&
       !uiStore.avatarPreview?.isOpen &&
       !uiStore.showSettingsModal &&
+      !uiStore.showAccountSettingsModal &&
       !uiStore.showNewChatModal
     ) {
       e.preventDefault()

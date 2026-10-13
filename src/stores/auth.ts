@@ -5,6 +5,7 @@ import { mmWs } from '../services/mattermostWs'
 import { notificationService } from '../services/notifications'
 import { setTimezone, setTimeFormat } from '../utils/formatters'
 import type { MattermostUser, MattermostTeam } from '../types/mattermost'
+import { useUsersStore } from './users'
 
 export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<MattermostUser | null>(null)
@@ -163,6 +164,66 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function refreshCurrentUser() {
+    if (!token.value) return null
+    try {
+      const user = await mmApi.getMe()
+      currentUser.value = user
+      const usersStore = useUsersStore()
+      usersStore.setUser(user)
+      return user
+    } catch (err) {
+      console.warn('Could not refresh current user:', err)
+      return null
+    }
+  }
+
+  async function updateCurrentUser(patch: Partial<{
+    username: string
+    email: string
+    first_name: string
+    last_name: string
+    nickname: string
+    position: string
+    props: Record<string, any>
+  }>) {
+    if (!currentUser.value) return null
+    const updated = await mmApi.patchUser(currentUser.value.id, patch)
+    currentUser.value = { ...currentUser.value, ...updated }
+    const usersStore = useUsersStore()
+    usersStore.setUser(currentUser.value)
+    return currentUser.value
+  }
+
+  async function updateProfileImage(file: File) {
+    if (!currentUser.value) return
+    await mmApi.uploadProfileImage(currentUser.value.id, file)
+    const refreshed = await refreshCurrentUser()
+    if (refreshed) {
+      (refreshed as any).last_picture_update = Date.now()
+      currentUser.value = { ...refreshed }
+      const usersStore = useUsersStore()
+      usersStore.setUser(currentUser.value)
+    }
+  }
+
+  async function deleteProfileImage() {
+    if (!currentUser.value) return
+    await mmApi.deleteProfileImage(currentUser.value.id)
+    const refreshed = await refreshCurrentUser()
+    if (refreshed) {
+      (refreshed as any).last_picture_update = Date.now()
+      currentUser.value = { ...refreshed }
+      const usersStore = useUsersStore()
+      usersStore.setUser(currentUser.value)
+    }
+  }
+
+  async function updatePassword(currentPassword: string, newPassword: string) {
+    if (!currentUser.value) return
+    return mmApi.updateUserPassword(currentUser.value.id, currentPassword, newPassword)
+  }
+
   return {
     currentUser,
     token,
@@ -180,6 +241,11 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     loadTeams,
     selectTeam,
-    initAuth
+    initAuth,
+    refreshCurrentUser,
+    updateCurrentUser,
+    updateProfileImage,
+    deleteProfileImage,
+    updatePassword
   }
 })

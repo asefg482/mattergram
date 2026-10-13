@@ -46,10 +46,17 @@ function onImgError() {
 // Reset state only when user changes or picture timestamp updates
 watch(
   () => [props.userId, props.lastPictureUpdate],
-  () => {
+  ([newUserId, newLastPic], [oldUserId, oldLastPic]) => {
     if (props.userId) {
-      imageLoaded.value = loadedAvatarUsers.has(props.userId)
-      imageError.value = failedAvatarUsers.has(props.userId)
+      if (newLastPic !== oldLastPic) {
+        failedAvatarUsers.delete(props.userId)
+        loadedAvatarUsers.delete(props.userId)
+        imageLoaded.value = false
+        imageError.value = false
+      } else {
+        imageLoaded.value = loadedAvatarUsers.has(props.userId)
+        imageError.value = failedAvatarUsers.has(props.userId)
+      }
     } else {
       imageLoaded.value = false
       imageError.value = false

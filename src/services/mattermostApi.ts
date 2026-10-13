@@ -561,6 +561,73 @@ class MattermostApiService {
     })
   }
 
+  public async patchUser(
+    userId: string,
+    patch: Partial<{
+      username: string
+      email: string
+      first_name: string
+      last_name: string
+      nickname: string
+      position: string
+      props: Record<string, any>
+    }>
+  ): Promise<MattermostUser> {
+    return this.request<MattermostUser>(`/api/v4/users/${userId}/patch`, {
+      method: 'PUT',
+      body: JSON.stringify(patch)
+    })
+  }
+
+  public async uploadProfileImage(userId: string, imageFile: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('image', imageFile)
+
+    const headers: Record<string, string> = {
+      'X-Mattermost-Server': this.baseUrl
+    }
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`
+    }
+
+    const res = await fetch(this.resolveEndpoint(`/api/v4/users/${userId}/image`), {
+      method: 'POST',
+      headers,
+      body: formData
+    })
+
+    if (!res.ok) {
+      let errMsg = `Upload profile image failed: ${res.statusText}`
+      try {
+        const errJson = await res.json()
+        if (errJson.message) errMsg = errJson.message
+      } catch {}
+      throw new Error(errMsg)
+    }
+
+    return res.json().catch(() => ({ status: 'OK' }))
+  }
+
+  public async deleteProfileImage(userId: string): Promise<any> {
+    return this.request(`/api/v4/users/${userId}/image`, {
+      method: 'DELETE'
+    })
+  }
+
+  public async updateUserPassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/api/v4/users/${userId}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword
+      })
+    })
+  }
+
   // --- Files ---
   public async uploadFile(channelId: string, file: File): Promise<MattermostFileInfo> {
     const formData = new FormData()

@@ -115,6 +115,12 @@ export const useUsersStore = defineStore('users', () => {
     return null
   }
 
+  function setUser(user: MattermostUser) {
+    if (!user || !user.id) return
+    users.value[user.id] = user
+    users.value = { ...users.value }
+  }
+
   return {
     users,
     statuses,
@@ -126,6 +132,7 @@ export const useUsersStore = defineStore('users', () => {
     getStatus,
     getUserDisplayName,
     searchUsers,
-    fetchUserByUsername
+    fetchUserByUsername,
+    setUser
   }
 })
