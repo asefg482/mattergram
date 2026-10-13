@@ -26,7 +26,11 @@ import {
   Zap,
   Check,
   Clock,
-  Globe
+  Globe,
+  SlidersHorizontal,
+  RotateCcw,
+  Link2,
+  Link2Off
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { notificationService } from '../../services/notifications'
@@ -159,6 +163,31 @@ function selectTheme(id: string) {
 
 function selectAnimation(id: string) {
   uiStore.setAnimationPreset(id)
+}
+
+// Corner Radius State & Methods
+const isRadiusLinked = ref(uiStore.chatRadius === uiStore.menuRadius)
+
+function handleChatRadiusChange(e: Event) {
+  const val = Number((e.target as HTMLInputElement).value)
+  if (isRadiusLinked.value) {
+    uiStore.setBorderRadius(val)
+  } else {
+    uiStore.setChatRadius(val)
+  }
+}
+
+function handleMenuRadiusChange(e: Event) {
+  const val = Number((e.target as HTMLInputElement).value)
+  if (isRadiusLinked.value) {
+    uiStore.setBorderRadius(val)
+  } else {
+    uiStore.setMenuRadius(val)
+  }
+}
+
+function selectRadiusPreset(val: number) {
+  uiStore.setBorderRadius(val)
 }
 </script>
 
@@ -551,6 +580,144 @@ function selectAnimation(id: string) {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Section 3.3: Corner Radius -->
+          <div class="pt-4 space-y-3 border-t border-gray-200 dark:border-[#202b36]">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <SlidersHorizontal class="w-4 h-4 text-[#3390ec]" />
+                <h5 class="text-xs font-semibold text-[#7f91a4] uppercase tracking-wider">Corner Radius</h5>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-md bg-[#3390ec]/15 text-[#3390ec] font-mono font-medium">
+                  {{ uiStore.chatRadius }}px
+                </span>
+                <button
+                  type="button"
+                  @click="uiStore.resetBorderRadius()"
+                  class="text-[11px] text-[#3390ec] hover:underline flex items-center gap-1 cursor-pointer"
+                  title="Reset to default 16px"
+                >
+                  <RotateCcw class="w-3 h-3" />
+                  <span>Default</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Mini Live Visual Preview (English) -->
+            <div class="p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-[#202b36] space-y-2">
+              <div class="text-[10px] text-[#7f91a4] font-medium flex items-center justify-between">
+                <span>Live Preview</span>
+                <span class="text-[9px] opacity-75">Applied instantly</span>
+              </div>
+
+              <!-- Mini message bubble -->
+              <div class="flex items-end gap-1.5">
+                <div
+                  class="px-3 py-1.5 text-[11px] bg-[#3390ec]/15 text-gray-900 dark:text-white border border-[#3390ec]/30 shadow-2xs transition-all duration-75"
+                  :style="{
+                    borderTopLeftRadius: `${uiStore.chatRadius}px`,
+                    borderTopRightRadius: `${uiStore.chatRadius}px`,
+                    borderBottomLeftRadius: `${uiStore.chatRadius}px`,
+                    borderBottomRightRadius: '3px'
+                  }"
+                >
+                  Sample chat message bubble
+                </div>
+              </div>
+
+              <!-- Mini chat input bar -->
+              <div
+                class="px-3 py-1.5 bg-white dark:bg-[#17212b] border border-gray-200 dark:border-white/10 flex items-center justify-between text-[11px] text-[#7f91a4] transition-all duration-75 shadow-2xs"
+                :style="{ borderRadius: `${uiStore.chatRadius}px` }"
+              >
+                <span class="truncate">Write a message...</span>
+                <div class="w-4 h-4 rounded-full bg-[#3390ec] text-white flex items-center justify-center text-[9px] font-bold">↑</div>
+              </div>
+
+              <!-- Mini context menu -->
+              <div
+                class="px-3 py-1.5 bg-white dark:bg-[#17212b] border border-gray-200 dark:border-[#202b36] shadow-2xs flex items-center justify-between text-[11px] text-gray-900 dark:text-white transition-all duration-75"
+                :style="{ borderRadius: `${uiStore.menuRadius}px` }"
+              >
+                <span class="font-medium">Context Menu</span>
+                <span class="text-[#3390ec] text-[10px] font-semibold">Copy Link</span>
+              </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="grid grid-cols-4 gap-1.5 text-center">
+              <button
+                v-for="p in [
+                  { label: 'Sharp', val: 0 },
+                  { label: 'Small', val: 8 },
+                  { label: 'Default', val: 16 },
+                  { label: 'Round', val: 24 }
+                ]"
+                :key="p.val"
+                type="button"
+                @click="selectRadiusPreset(p.val)"
+                class="py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border"
+                :class="
+                  uiStore.chatRadius === p.val && uiStore.menuRadius === p.val
+                    ? 'bg-[#3390ec] text-white border-[#3390ec] shadow-xs'
+                    : 'bg-white dark:bg-[#202b36] text-gray-800 dark:text-white border-gray-200 dark:border-[#202b36] hover:border-gray-400'
+                "
+              >
+                <span class="block text-[11px] leading-tight font-medium">{{ p.label }}</span>
+                <span class="block text-[9px] opacity-75 font-mono">{{ p.val }}px</span>
+              </button>
+            </div>
+
+            <!-- Sync Toggle -->
+            <div class="flex items-center justify-between text-xs pt-0.5">
+              <span class="text-[#7f91a4] text-[11px]">Sync Chat Box & Context Menus</span>
+              <button
+                type="button"
+                @click="isRadiusLinked = !isRadiusLinked"
+                class="flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer"
+                :class="isRadiusLinked ? 'bg-[#3390ec]/15 border-[#3390ec]/30 text-[#3390ec]' : 'bg-transparent border-gray-200 dark:border-[#202b36] text-[#7f91a4]'"
+              >
+                <Link2 v-if="isRadiusLinked" class="w-3 h-3" />
+                <Link2Off v-else class="w-3 h-3" />
+                <span>{{ isRadiusLinked ? 'Linked' : 'Separate' }}</span>
+              </button>
+            </div>
+
+            <!-- Slider: Chat Box -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-gray-800 dark:text-white font-medium">Chat Box</span>
+                <span class="font-mono text-[#3390ec] font-bold">{{ uiStore.chatRadius }}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="24"
+                step="1"
+                :value="uiStore.chatRadius"
+                @input="handleChatRadiusChange"
+                class="w-full accent-[#3390ec] cursor-pointer h-1.5 bg-gray-200 dark:bg-[#202b36] rounded-lg appearance-none"
+              />
+            </div>
+
+            <!-- Slider: Context Menus (When unlinked) -->
+            <div v-if="!isRadiusLinked" class="space-y-1 animate-in fade-in duration-150">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-gray-800 dark:text-white font-medium">Context Menus</span>
+                <span class="font-mono text-[#3390ec] font-bold">{{ uiStore.menuRadius }}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="24"
+                step="1"
+                :value="uiStore.menuRadius"
+                @input="handleMenuRadiusChange"
+                class="w-full accent-[#3390ec] cursor-pointer h-1.5 bg-gray-200 dark:bg-[#202b36] rounded-lg appearance-none"
+              />
             </div>
           </div>
         </div>

@@ -19,12 +19,7 @@ import {
   Shield,
   Layers,
   Palette,
-  X,
-  SlidersHorizontal,
-  RotateCcw,
-  Link2,
-  Link2Off,
-  ChevronDown
+  X
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import { pwaService } from '../../services/pwa'
@@ -50,32 +45,6 @@ const todoStore = useTodoStore()
 function openTodoList() {
   closeDrawer()
   uiStore.showTodoModal = true
-}
-
-// Corner Radius Controls State
-const isRadiusExpanded = ref(false)
-const isRadiusLinked = ref(uiStore.chatRadius === uiStore.menuRadius)
-
-function handleChatRadiusChange(e: Event) {
-  const val = Number((e.target as HTMLInputElement).value)
-  if (isRadiusLinked.value) {
-    uiStore.setBorderRadius(val)
-  } else {
-    uiStore.setChatRadius(val)
-  }
-}
-
-function handleMenuRadiusChange(e: Event) {
-  const val = Number((e.target as HTMLInputElement).value)
-  if (isRadiusLinked.value) {
-    uiStore.setBorderRadius(val)
-  } else {
-    uiStore.setMenuRadius(val)
-  }
-}
-
-function selectRadiusPreset(val: number) {
-  uiStore.setBorderRadius(val)
 }
 
 const user = computed(() => authStore.currentUser)
@@ -524,159 +493,6 @@ const backdropStyle = computed(() => {
                 class="w-4 h-4 rounded-full bg-white transition-transform"
                 :class="uiStore.theme === 'dark' ? 'translate-x-5' : 'translate-x-0'"
               ></div>
-            </div>
-          </div>
-
-          <!-- Corner Radius (انحنای گوشه‌ها) -->
-          <div class="border-y border-[#dfe1e5]/60 dark:border-[#202b36]/60 my-1">
-            <!-- Header Row -->
-            <div
-              @click="isRadiusExpanded = !isRadiusExpanded"
-              class="w-full flex items-center justify-between px-4 py-3 text-sm text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] cursor-pointer transition-colors select-none"
-            >
-              <div class="flex items-center gap-4">
-                <SlidersHorizontal class="w-5 h-5 text-[#3390ec]" />
-                <span>انحنای گوشه‌ها (Radius)</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs px-2 py-0.5 rounded-md bg-[#3390ec]/15 text-[#3390ec] font-mono font-medium">
-                  {{ uiStore.chatRadius }}px
-                </span>
-                <ChevronDown
-                  class="w-4 h-4 text-[#7f91a4] transition-transform duration-200"
-                  :class="isRadiusExpanded ? 'rotate-180' : ''"
-                />
-              </div>
-            </div>
-
-            <!-- Expanded Controls Card -->
-            <div
-              v-show="isRadiusExpanded"
-              class="px-4 pb-3 pt-1 space-y-3 bg-[#f8fafc]/50 dark:bg-[#121a24]/50 animate-in fade-in duration-150"
-            >
-              <!-- Live Visual Mini-Preview -->
-              <div class="p-2.5 bg-white dark:bg-[#17212b] rounded-xl border border-[#dfe1e5] dark:border-[#202b36] shadow-xs space-y-2">
-                <div class="text-[10px] text-[#7f91a4] font-medium flex items-center justify-between">
-                  <span>پیش‌نمایش زنده</span>
-                  <span class="text-[9px] opacity-75">اعمال در لحظه</span>
-                </div>
-
-                <!-- Mini Chat Bubble & Input -->
-                <div class="flex items-end gap-1.5">
-                  <div
-                    class="px-2.5 py-1 text-[11px] bg-[#eeffde] dark:bg-[#2b5278] text-[#111827] dark:text-white shadow-xs transition-all duration-75"
-                    :style="{
-                      borderTopLeftRadius: `${uiStore.chatRadius}px`,
-                      borderTopRightRadius: `${uiStore.chatRadius}px`,
-                      borderBottomLeftRadius: `${uiStore.chatRadius}px`,
-                      borderBottomRightRadius: '2px'
-                    }"
-                  >
-                    پیام چت با انحنای انتخابی
-                  </div>
-                </div>
-
-                <div
-                  class="px-2.5 py-1 bg-[#f4f4f5] dark:bg-[#242f3d] border border-gray-200 dark:border-white/5 flex items-center justify-between text-[10px] text-[#7f91a4] transition-all duration-75"
-                  :style="{ borderRadius: `${uiStore.chatRadius}px` }"
-                >
-                  <span class="truncate">چت باکس (Input Box)...</span>
-                  <div class="w-3.5 h-3.5 rounded-full bg-[#3390ec] text-white flex items-center justify-center text-[8px] font-bold">↑</div>
-                </div>
-
-                <!-- Mini Context Menu -->
-                <div
-                  class="px-2.5 py-1.5 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] shadow-sm flex items-center justify-between text-[10px] text-[#111827] dark:text-[#f5f5f5] transition-all duration-75"
-                  :style="{ borderRadius: `${uiStore.menuRadius}px` }"
-                >
-                  <span class="font-medium">منوی کلیک راست (Context Menu)</span>
-                  <span class="text-[#3390ec] text-[9px] font-semibold">Copy</span>
-                </div>
-              </div>
-
-              <!-- Quick Presets -->
-              <div>
-                <div class="text-[10px] text-[#7f91a4] mb-1.5 font-medium flex items-center justify-between">
-                  <span>حالت‌های آماده</span>
-                  <button
-                    @click="uiStore.resetBorderRadius()"
-                    class="text-[10px] text-[#3390ec] hover:underline flex items-center gap-1 cursor-pointer"
-                    title="بازنشانی به حالت پیش‌فرض (16px)"
-                  >
-                    <RotateCcw class="w-2.5 h-2.5" />
-                    <span>پیش‌فرض</span>
-                  </button>
-                </div>
-                <div class="grid grid-cols-4 gap-1.5 text-center">
-                  <button
-                    v-for="p in [
-                      { label: 'تیز', val: 0 },
-                      { label: 'کم', val: 8 },
-                      { label: 'معمولی', val: 16 },
-                      { label: 'گرد', val: 24 }
-                    ]"
-                    :key="p.val"
-                    @click="selectRadiusPreset(p.val)"
-                    class="py-1 px-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border"
-                    :class="
-                      uiStore.chatRadius === p.val && uiStore.menuRadius === p.val
-                        ? 'bg-[#3390ec] text-white border-[#3390ec] shadow-xs'
-                        : 'bg-white dark:bg-[#17212b] text-[#111827] dark:text-[#f5f5f5] border-[#dfe1e5] dark:border-[#202b36] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36]'
-                    "
-                  >
-                    <span class="block text-[10px] leading-tight">{{ p.label }}</span>
-                    <span class="block text-[9px] opacity-75 font-mono">{{ p.val }}px</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Link Toggle -->
-              <div class="flex items-center justify-between text-xs pt-1">
-                <span class="text-[#7f91a4] text-[11px]">تنظیم هماهنگ چت‌باکس و کلیک‌راست</span>
-                <button
-                  @click="isRadiusLinked = !isRadiusLinked"
-                  class="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer"
-                  :class="isRadiusLinked ? 'bg-[#3390ec]/15 border-[#3390ec]/30 text-[#3390ec]' : 'bg-transparent border-[#dfe1e5] dark:border-[#202b36] text-[#7f91a4]'"
-                >
-                  <Link2 v-if="isRadiusLinked" class="w-3 h-3" />
-                  <Link2Off v-else class="w-3 h-3" />
-                  <span>{{ isRadiusLinked ? 'یکپارچه' : 'جداگانه' }}</span>
-                </button>
-              </div>
-
-              <!-- Slider: Chat Box -->
-              <div class="space-y-1">
-                <div class="flex items-center justify-between text-[11px]">
-                  <span class="text-[#111827] dark:text-[#f5f5f5] font-medium">چت باکس (Chat Box)</span>
-                  <span class="font-mono text-[#3390ec] font-bold">{{ uiStore.chatRadius }}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="24"
-                  step="1"
-                  :value="uiStore.chatRadius"
-                  @input="handleChatRadiusChange"
-                  class="w-full accent-[#3390ec] cursor-pointer h-1.5 bg-gray-200 dark:bg-[#202b36] rounded-lg appearance-none"
-                />
-              </div>
-
-              <!-- Slider: Context Menu (Shown if unlinked) -->
-              <div v-if="!isRadiusLinked" class="space-y-1 animate-in fade-in duration-150">
-                <div class="flex items-center justify-between text-[11px]">
-                  <span class="text-[#111827] dark:text-[#f5f5f5] font-medium">کلیک راست (Context Menus)</span>
-                  <span class="font-mono text-[#3390ec] font-bold">{{ uiStore.menuRadius }}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="24"
-                  step="1"
-                  :value="uiStore.menuRadius"
-                  @input="handleMenuRadiusChange"
-                  class="w-full accent-[#3390ec] cursor-pointer h-1.5 bg-gray-200 dark:bg-[#202b36] rounded-lg appearance-none"
-                />
-              </div>
             </div>
           </div>
 

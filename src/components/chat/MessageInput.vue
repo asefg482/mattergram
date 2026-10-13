@@ -19,8 +19,7 @@ import {
   Edit2,
   Reply,
   AtSign,
-  Video,
-  SlidersHorizontal
+  Video
 } from 'lucide-vue-next'
 
 const props = withDefaults(
@@ -52,7 +51,6 @@ const showEmojiPicker = ref(false)
 const attachedFiles = ref<MattermostFileInfo[]>([])
 const isUploading = ref(false)
 const isSending = ref(false)
-const showRadiusPopover = ref(false)
 
 // Mentions State
 const channelMembers = ref<MattermostUser[]>([])
@@ -123,26 +121,15 @@ function focusInput(force = false) {
   }, 50)
 }
 
-function handleDocClick(e: MouseEvent) {
-  if (showRadiusPopover.value) {
-    const target = e.target as HTMLElement | null
-    if (!target?.closest('.tg-context-menu') && !target?.closest('[title*="Radius"]')) {
-      showRadiusPopover.value = false
-    }
-  }
-}
-
 onMounted(() => {
   if (!isMobileDevice()) {
     focusInput()
   }
   window.addEventListener('paste', handleGlobalPaste)
-  document.addEventListener('click', handleDocClick)
 })
 
 onUnmounted(() => {
   window.removeEventListener('paste', handleGlobalPaste)
-  document.removeEventListener('click', handleDocClick)
 })
 
 watch(
@@ -757,21 +744,11 @@ defineExpose({
 
         <!-- Emoji Picker Button -->
         <button
-          @click="showEmojiPicker = !showEmojiPicker; showRadiusPopover = false"
+          @click="showEmojiPicker = !showEmojiPicker"
           class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] rounded-full transition-colors shrink-0 mb-0.5 ml-1"
           title="Emojis"
         >
           <Smile class="w-5 h-5" />
-        </button>
-
-        <!-- Corner Radius Button -->
-        <button
-          @click="showRadiusPopover = !showRadiusPopover; showEmojiPicker = false"
-          class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] rounded-full transition-colors shrink-0 mb-0.5 ml-0.5 cursor-pointer"
-          :class="showRadiusPopover ? 'text-[#3390ec]' : ''"
-          title="تنظیم انحنای گوشه‌ها (Radius)"
-        >
-          <SlidersHorizontal class="w-4 h-4" />
         </button>
       </div>
 
@@ -796,54 +773,6 @@ defineExpose({
         class="absolute bottom-14 right-8 z-50"
       >
         <EmojiPicker @select="handleEmojiSelect" />
-      </div>
-
-      <!-- Corner Radius Popover in Chat Box -->
-      <div
-        v-if="showRadiusPopover"
-        class="absolute bottom-14 right-8 z-50 w-64 bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] p-3 animate-in fade-in zoom-in-95 duration-150 select-none tg-context-menu"
-        :style="{ borderRadius: `${uiStore.menuRadius}px` }"
-        @click.stop
-      >
-        <div class="flex items-center justify-between text-xs font-semibold text-[#111827] dark:text-[#f5f5f5] mb-2">
-          <span class="flex items-center gap-1.5">
-            <SlidersHorizontal class="w-3.5 h-3.5 text-[#3390ec]" />
-            <span>انحنای گوشه‌ها (Radius)</span>
-          </span>
-          <span class="font-mono text-[#3390ec] font-bold text-xs">{{ uiStore.chatRadius }}px</span>
-        </div>
-
-        <div class="grid grid-cols-4 gap-1 mb-2.5">
-          <button
-            v-for="r in [0, 8, 16, 24]"
-            :key="r"
-            @click="uiStore.setBorderRadius(r)"
-            class="py-1 rounded-md text-[11px] font-semibold transition-all text-center cursor-pointer border"
-            :class="
-              uiStore.chatRadius === r
-                ? 'bg-[#3390ec] text-white border-[#3390ec] shadow-xs'
-                : 'bg-black/5 dark:bg-white/5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white border-transparent'
-            "
-          >
-            {{ r }}px
-          </button>
-        </div>
-
-        <div class="space-y-1">
-          <div class="flex items-center justify-between text-[10px] text-[#7f91a4] font-medium">
-            <span>اسلایدر دقیق</span>
-            <span class="opacity-75">0px تا 24px</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="24"
-            step="1"
-            :value="uiStore.chatRadius"
-            @input="uiStore.setBorderRadius(Number(($event.target as HTMLInputElement).value))"
-            class="w-full accent-[#3390ec] cursor-pointer h-1.5 bg-gray-200 dark:bg-[#202b36] rounded-lg appearance-none"
-          />
-        </div>
       </div>
     </div>
   </div>
