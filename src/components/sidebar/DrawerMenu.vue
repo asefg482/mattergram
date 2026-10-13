@@ -335,40 +335,41 @@ const backdropStyle = computed(() => {
 </script>
 
 <template>
-  <div>
-    <!-- Backdrop Overlay -->
-    <transition
-      :css="!isDragging && !isSnapping"
-      enter-active-class="transition-opacity duration-300 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-200 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="isOpen || isDragging || isSnapping"
-        @click="closeDrawer"
-        class="fixed inset-0 bg-black/60 z-40 backdrop-blur-xs"
-        :style="isDragging || isSnapping ? backdropStyle : {}"
-      ></div>
-    </transition>
-
-    <!-- Drawer Panel -->
-    <transition
-      :css="!isDragging && !isSnapping"
-      enter-active-class="transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)"
-      enter-from-class="-translate-x-full"
-      enter-to-class="translate-x-0"
-      leave-active-class="transition-transform duration-200 ease-in"
-      leave-from-class="translate-x-0"
-      leave-to-class="-translate-x-full"
-    >
-      <div
-        v-if="isOpen || isDragging || isSnapping"
-        class="fixed top-0 bottom-0 left-0 w-72 bg-white dark:bg-[#17212b] z-50 shadow-2xl flex flex-col border-r border-[#dfe1e5] dark:border-[#101921]"
-        :style="isDragging || isSnapping ? drawerStyle : {}"
+  <Teleport to="body">
+    <div>
+      <!-- Backdrop Overlay -->
+      <transition
+        :css="!isDragging && !isSnapping"
+        enter-active-class="transition-opacity duration-300 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-opacity duration-200 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
       >
+        <div
+          v-if="isOpen || isDragging || isSnapping"
+          @click="closeDrawer"
+          class="fixed inset-0 bg-black/60 z-[60] backdrop-blur-xs"
+          :style="isDragging || isSnapping ? backdropStyle : {}"
+        ></div>
+      </transition>
+
+      <!-- Drawer Panel -->
+      <transition
+        :css="!isDragging && !isSnapping"
+        enter-active-class="transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)"
+        enter-from-class="-translate-x-full"
+        enter-to-class="translate-x-0"
+        leave-active-class="transition-transform duration-200 ease-in"
+        leave-from-class="translate-x-0"
+        leave-to-class="-translate-x-full"
+      >
+        <div
+          v-if="isOpen || isDragging || isSnapping"
+          class="fixed top-0 bottom-0 left-0 w-72 bg-white dark:bg-[#17212b] z-[70] shadow-2xl flex flex-col border-r border-[#dfe1e5] dark:border-[#101921]"
+          :style="isDragging || isSnapping ? drawerStyle : {}"
+        >
         <!-- User Profile Header -->
         <div
           class="px-4 pb-4 bg-[#3390ec] dark:bg-[#242f3d] text-white"
@@ -555,4 +556,5 @@ const backdropStyle = computed(() => {
       </div>
     </transition>
   </div>
+</Teleport>
 </template>

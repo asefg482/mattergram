@@ -100,11 +100,12 @@ async function handleCreateChannel() {
 </script>
 
 <template>
-  <div
-    v-if="isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
-  >
+  <Teleport to="body">
+    <div
+      v-if="isOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+    >
     <!-- Backdrop -->
     <div @click="emit('close')" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
 
@@ -264,4 +265,5 @@ async function handleCreateChannel() {
       </form>
     </div>
   </div>
+</Teleport>
 </template>

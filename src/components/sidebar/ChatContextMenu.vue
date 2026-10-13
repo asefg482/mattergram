@@ -265,13 +265,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="isOpen && channel" class="fixed inset-0 z-50 pointer-events-none">
-    <!-- Backdrop to capture right clicks -->
-    <div
-      class="absolute inset-0 pointer-events-auto"
-      @click="emit('close')"
-      @contextmenu.prevent="emit('close')"
-    ></div>
+  <Teleport to="body">
+    <div v-if="isOpen && channel" class="fixed inset-0 z-[60] pointer-events-none">
+      <!-- Backdrop to capture right clicks -->
+      <div
+        class="absolute inset-0 pointer-events-auto"
+        @click="emit('close')"
+        @contextmenu.prevent="emit('close')"
+      ></div>
 
     <!-- Telegram Chat Context Menu -->
     <div
@@ -366,4 +367,5 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+</Teleport>
 </template>
