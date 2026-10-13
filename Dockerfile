@@ -36,8 +36,12 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy compiled frontend assets from builder stage
 COPY --chown=node:node --from=builder /app/dist ./dist
 
-# Copy production backend server
+# Copy production backend server & background push notification service
 COPY --chown=node:node server.js ./server.js
+COPY --chown=node:node push-service.js ./push-service.js
+
+# Ensure app directory permissions for node user (vapid keys & push subscriptions storage)
+RUN chown -R node:node /app
 
 # Expose default application port
 EXPOSE 5173
