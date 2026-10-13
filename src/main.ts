@@ -13,12 +13,16 @@ import '@fontsource/vazirmatn/700.css'
 import '@fontsource/vazirmatn/800.css'
 
 import './style.css'
+import { initCodeCopyHandler } from './utils/formatters'
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+
+// Initialize global code copy handler
+initCodeCopyHandler()
 
 // Globally override native browser alert with custom UI
 if (typeof window !== 'undefined') {

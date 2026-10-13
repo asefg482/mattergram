@@ -272,6 +272,7 @@ export function formatFileSize(bytes: number): string {
 }
 
 import { Marked } from 'marked'
+import hljs from 'highlight.js'
 
 function escapeHtml(str: string): string {
   return str
@@ -280,6 +281,96 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
+  javascript: 'JavaScript',
+  js: 'JavaScript',
+  node: 'JavaScript',
+  typescript: 'TypeScript',
+  ts: 'TypeScript',
+  php: 'PHP',
+  python: 'Python',
+  py: 'Python',
+  html: 'HTML',
+  xml: 'XML',
+  css: 'CSS',
+  scss: 'SCSS',
+  sass: 'Sass',
+  json: 'JSON',
+  sql: 'SQL',
+  bash: 'Bash',
+  sh: 'Shell',
+  shell: 'Shell',
+  zsh: 'Zsh',
+  c: 'C',
+  cpp: 'C++',
+  'c++': 'C++',
+  csharp: 'C#',
+  cs: 'C#',
+  'c#': 'C#',
+  java: 'Java',
+  go: 'Go',
+  golang: 'Go',
+  rust: 'Rust',
+  rs: 'Rust',
+  ruby: 'Ruby',
+  rb: 'Ruby',
+  swift: 'Swift',
+  kotlin: 'Kotlin',
+  kt: 'Kotlin',
+  dart: 'Dart',
+  markdown: 'Markdown',
+  md: 'Markdown',
+  yaml: 'YAML',
+  yml: 'YAML',
+  dockerfile: 'Dockerfile',
+  docker: 'Dockerfile',
+  plaintext: 'Plain Text',
+  plantext: 'Plain Text',
+  plain: 'Plain Text',
+  text: 'Plain Text',
+  txt: 'Plain Text',
+  graphql: 'GraphQL',
+  gql: 'GraphQL',
+  lua: 'Lua',
+  perl: 'Perl',
+  pl: 'Perl',
+  r: 'R',
+  scala: 'Scala',
+  vue: 'Vue',
+  ini: 'Config',
+  env: 'Env'
+}
+
+function getLanguageDisplayName(lang: string): string {
+  const normalized = (lang || '').trim().toLowerCase()
+  if (!normalized) return 'Code'
+  if (LANGUAGE_DISPLAY_NAMES[normalized]) {
+    return LANGUAGE_DISPLAY_NAMES[normalized]
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+function resolveHighlightLanguage(lang: string): string | null {
+  const normalized = (lang || '').trim().toLowerCase()
+  if (!normalized) return null
+  if (['plaintext', 'plantext', 'plain', 'text', 'txt'].includes(normalized)) return null
+  if (normalized === 'js' || normalized === 'node') return 'javascript'
+  if (normalized === 'ts') return 'typescript'
+  if (normalized === 'py') return 'python'
+  if (normalized === 'sh' || normalized === 'zsh' || normalized === 'shell') return 'bash'
+  if (normalized === 'golang') return 'go'
+  if (normalized === 'rs') return 'rust'
+  if (normalized === 'rb') return 'ruby'
+  if (normalized === 'md') return 'markdown'
+  if (normalized === 'yml') return 'yaml'
+  if (normalized === 'cs' || normalized === 'c#') return 'csharp'
+  if (normalized === 'c++') return 'cpp'
+  if (normalized === 'docker') return 'dockerfile'
+  if (normalized === 'html') return 'xml'
+  if (hljs.getLanguage(normalized)) return normalized
+  return null
 }
 
 // Configured Marked instance with Telegram/Mattermost feature set
@@ -302,9 +393,44 @@ const markedInstance = new Marked({
       return `<blockquote class="border-l-3 border-[#3390ec] pl-2.5 py-1 my-1.5 bg-black/5 dark:bg-black/15 rounded-r text-xs opacity-90 leading-relaxed">${body}</blockquote>`
     },
     code(token) {
-      const cleanLang = (token.lang || '').replace(/[^a-zA-Z0-9_-]/g, '')
-      const lang = cleanLang ? `language-${cleanLang}` : ''
-      return `<pre class="bg-black/5 dark:bg-black/30 text-emerald-700 dark:text-emerald-400 p-2.5 my-1.5 rounded-xl text-xs font-mono overflow-x-auto border border-gray-300 dark:border-white/10"><code class="${lang}">${escapeHtml(token.text)}</code></pre>`
+      const rawLang = (token.lang || '').trim()
+      const highlightLang = resolveHighlightLanguage(rawLang)
+      const displayName = getLanguageDisplayName(rawLang)
+
+      let highlightedHtml = ''
+      if (highlightLang) {
+        try {
+          highlightedHtml = hljs.highlight(token.text, { language: highlightLang, ignoreIllegals: true }).value
+        } catch {
+          highlightedHtml = escapeHtml(token.text)
+        }
+      } else {
+        highlightedHtml = escapeHtml(token.text)
+      }
+
+      const langClass = highlightLang ? `language-${highlightLang} hljs` : 'hljs'
+
+      return `<div class="tg-code-block relative my-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 bg-[#f8fafc] dark:bg-[#111923] text-gray-900 dark:text-gray-100 shadow-xs">
+  <div class="tg-code-header flex items-center justify-between px-3 py-1.5 bg-[#edf2f7] dark:bg-[#182230] border-b border-black/10 dark:border-white/10 text-xs font-mono select-none">
+    <div class="tg-code-lang flex items-center gap-1.5 text-gray-700 dark:text-gray-300 font-semibold text-[11px] tracking-wide">
+      <span class="w-2 h-2 rounded-full bg-[#3390ec]"></span>
+      <span>${escapeHtml(displayName)}</span>
+    </div>
+    <button
+      type="button"
+      class="tg-code-copy-btn flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-sans text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+      title="Copy code"
+      onclick="window.__copyCodeBlock && window.__copyCodeBlock(this, event)"
+    >
+      <svg class="tg-copy-icon w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+      </svg>
+      <span class="tg-copy-text">Copy</span>
+    </button>
+  </div>
+  <pre class="p-3 overflow-x-auto text-xs font-mono leading-relaxed"><code class="${langClass}">${highlightedHtml}</code></pre>
+</div>`
     },
     codespan(token) {
       return `<code class="bg-black/5 dark:bg-black/25 text-pink-600 dark:text-pink-400 px-1 py-0.5 rounded text-xs font-mono">${escapeHtml(token.text)}</code>`
@@ -403,6 +529,84 @@ export function renderTelegramMarkdown(text: string): string {
     console.error('Markdown parse error:', err)
     return escapeHtml(text).replace(/\n/g, '<br/>')
   }
+}
+
+export function initCodeCopyHandler() {
+  if (typeof window === 'undefined') return
+
+  const handleCopy = (btn: HTMLElement, e?: Event) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const block = btn.closest('.tg-code-block')
+    const codeEl = block?.querySelector('pre code')
+    if (!codeEl) return
+
+    const rawText = codeEl.textContent || ''
+
+    const feedback = () => {
+      const copyIcon = btn.querySelector('.tg-copy-icon')
+      const copyText = btn.querySelector('.tg-copy-text')
+
+      btn.classList.add('text-emerald-500', 'dark:text-emerald-400')
+      if (copyText) copyText.textContent = 'Copied!'
+      if (copyIcon) {
+        copyIcon.innerHTML = `<polyline points="20 6 9 17 4 12"/>`
+        copyIcon.setAttribute('stroke-width', '2.5')
+      }
+
+      setTimeout(() => {
+        btn.classList.remove('text-emerald-500', 'dark:text-emerald-400')
+        const currentIcon = btn.querySelector('.tg-copy-icon')
+        if (currentIcon) {
+          currentIcon.innerHTML = `<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`
+          currentIcon.setAttribute('stroke-width', '2')
+        }
+        const textSpan = btn.querySelector('.tg-copy-text')
+        if (textSpan) textSpan.textContent = 'Copy'
+      }, 2000)
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(rawText).then(feedback).catch(() => {
+        fallbackCopy(rawText, feedback)
+      })
+    } else {
+      fallbackCopy(rawText, feedback)
+    }
+  }
+
+  function fallbackCopy(text: string, onSuccess: () => void) {
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      onSuccess()
+    } catch (err) {
+      console.warn('Failed to copy code:', err)
+    }
+  }
+
+  ;(window as any).__copyCodeBlock = handleCopy
+
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.tg-code-copy-btn') as HTMLElement | null
+    if (btn) {
+      handleCopy(btn, e)
+    }
+  })
+}
+
+// Auto-run if in browser
+if (typeof window !== 'undefined') {
+  initCodeCopyHandler()
 }
 
 export {

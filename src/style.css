@@ -637,3 +637,160 @@ html[data-anim='none'] *::after {
   background-color: var(--tg-blue-light) !important;
 }
 
+/* ==================== CODE BLOCKS & SYNTAX HIGHLIGHTING ==================== */
+.tg-code-block {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
+  user-select: text;
+}
+
+.tg-code-header {
+  direction: ltr !important;
+  text-align: left !important;
+  user-select: none;
+}
+
+.tg-code-block pre {
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+.tg-code-block code {
+  background: transparent !important;
+  padding: 0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.8rem !important;
+  line-height: 1.55 !important;
+  tab-size: 2;
+  white-space: pre !important;
+  word-break: normal !important;
+  direction: ltr !important;
+  text-align: left !important;
+  display: block;
+}
+
+/* Light Mode Syntax Colors */
+html:not(.dark) .tg-code-block .hljs-keyword,
+html:not(.dark) .tg-code-block .hljs-selector-tag,
+html:not(.dark) .tg-code-block .hljs-subst {
+  color: #a855f7;
+  font-weight: 600;
+}
+
+html:not(.dark) .tg-code-block .hljs-string,
+html:not(.dark) .tg-code-block .hljs-title,
+html:not(.dark) .tg-code-block .hljs-section,
+html:not(.dark) .tg-code-block .hljs-attribute,
+html:not(.dark) .tg-code-block .hljs-literal,
+html:not(.dark) .tg-code-block .hljs-template-tag,
+html:not(.dark) .tg-code-block .hljs-template-variable,
+html:not(.dark) .tg-code-block .hljs-type {
+  color: #16a34a;
+}
+
+html:not(.dark) .tg-code-block .hljs-number,
+html:not(.dark) .tg-code-block .hljs-regexp,
+html:not(.dark) .tg-code-block .hljs-link {
+  color: #ea580c;
+}
+
+html:not(.dark) .tg-code-block .hljs-function,
+html:not(.dark) .tg-code-block .hljs-title.function_ {
+  color: #0284c7;
+  font-weight: 600;
+}
+
+html:not(.dark) .tg-code-block .hljs-comment,
+html:not(.dark) .tg-code-block .hljs-quote {
+  color: #64748b;
+  font-style: italic;
+}
+
+html:not(.dark) .tg-code-block .hljs-variable,
+html:not(.dark) .tg-code-block .hljs-params,
+html:not(.dark) .tg-code-block .hljs-attr {
+  color: #0369a1;
+}
+
+html:not(.dark) .tg-code-block .hljs-built_in,
+html:not(.dark) .tg-code-block .hljs-symbol,
+html:not(.dark) .tg-code-block .hljs-bullet {
+  color: #0d9488;
+}
+
+html:not(.dark) .tg-code-block .hljs-meta,
+html:not(.dark) .tg-code-block .hljs-meta .hljs-keyword {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+html:not(.dark) .tg-code-block .hljs-tag,
+html:not(.dark) .tg-code-block .hljs-name {
+  color: #e11d48;
+}
+
+/* Dark Mode Syntax Colors */
+.dark .tg-code-block .hljs-keyword,
+.dark .tg-code-block .hljs-selector-tag,
+.dark .tg-code-block .hljs-subst {
+  color: #f472b6;
+  font-weight: 600;
+}
+
+.dark .tg-code-block .hljs-string,
+.dark .tg-code-block .hljs-title,
+.dark .tg-code-block .hljs-section,
+.dark .tg-code-block .hljs-attribute,
+.dark .tg-code-block .hljs-literal,
+.dark .tg-code-block .hljs-template-tag,
+.dark .tg-code-block .hljs-template-variable,
+.dark .tg-code-block .hljs-type {
+  color: #86efac;
+}
+
+.dark .tg-code-block .hljs-number,
+.dark .tg-code-block .hljs-regexp,
+.dark .tg-code-block .hljs-link {
+  color: #fcd34d;
+}
+
+.dark .tg-code-block .hljs-function,
+.dark .tg-code-block .hljs-title.function_ {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.dark .tg-code-block .hljs-comment,
+.dark .tg-code-block .hljs-quote {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.dark .tg-code-block .hljs-variable,
+.dark .tg-code-block .hljs-params,
+.dark .tg-code-block .hljs-attr {
+  color: #7dd3fc;
+}
+
+.dark .tg-code-block .hljs-built_in,
+.dark .tg-code-block .hljs-symbol,
+.dark .tg-code-block .hljs-bullet {
+  color: #2dd4bf;
+}
+
+.dark .tg-code-block .hljs-meta,
+.dark .tg-code-block .hljs-meta .hljs-keyword {
+  color: #c084fc;
+  font-weight: 600;
+}
+
+.dark .tg-code-block .hljs-tag,
+.dark .tg-code-block .hljs-name {
+  color: #fb7185;
+}
+

@@ -13,6 +13,7 @@
     "@fontsource/vazirmatn": "^5.3.0",
     "@vueuse/core": "^11.1.0",
     "date-fns": "^4.1.0",
+    "highlight.js": "^11.12.0",
     "http-proxy": "^1.18.1",
     "lucide-vue-next": "^0.451.0",
     "marked": "^18.1.0",
