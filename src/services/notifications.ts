@@ -119,12 +119,24 @@ class NotificationService {
       // 3. Register or obtain push subscription with Service Worker
       const reg = await navigator.serviceWorker.ready
       let sub = await reg.pushManager.getSubscription()
+
+      // If the VAPID public key on server changed, stale subscription must be refreshed
+      const savedVapidKey = localStorage.getItem('mattergram_vapid_public_key')
+      if (sub && savedVapidKey && savedVapidKey !== publicKey) {
+        console.warn('[Notifications] VAPID public key changed on server, refreshing subscription...')
+        try {
+          await sub.unsubscribe()
+        } catch {}
+        sub = null
+      }
+
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as BufferSource
         })
       }
+      localStorage.setItem('mattergram_vapid_public_key', publicKey)
 
       // 4. Send subscription to server
       const subRes = await fetch('/api/push/subscribe', {
@@ -180,11 +192,11 @@ class NotificationService {
     }
   }
 
-  public async sendTestPush(): Promise<boolean> {
-    if (!this.isPushSupported.value) return false
+  public async sendTestPush(): Promise<{ ok: boolean; error?: string }> {
+    if (!this.isPushSupported.value) return { ok: false, error: 'Push not supported' }
     try {
       const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
+      let sub = await reg.pushManager.getSubscription()
       if (!sub) {
         throw new Error('No active push subscription')
       }
@@ -198,10 +210,40 @@ class NotificationService {
           body: 'پیام‌های دریافتی حتی در زمان بسته بودن برنامه به این دستگاه تحویل داده می‌شوند! 🚀'
         })
       })
-      return res.ok
-    } catch (err) {
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        // If 401/403 or unexpected response code (e.g. stale VAPID subscription), auto-heal!
+        if (data.statusCode === 401 || data.statusCode === 403 || data.message?.includes('unexpected response code')) {
+          console.warn('[Notifications] Test push received auth error, auto-healing subscription...')
+          try {
+            await sub.unsubscribe()
+          } catch {}
+          localStorage.removeItem('mattergram_vapid_public_key')
+          const refreshed = await this.subscribeToPush()
+          if (refreshed) {
+            const newSub = await reg.pushManager.getSubscription()
+            if (newSub) {
+              const retryRes = await fetch('/api/push/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subscription: newSub,
+                  title: 'Mattergram Notification',
+                  body: 'پیام‌های دریافتی حتی در زمان بسته بودن برنامه به این دستگاه تحویل داده می‌شوند! 🚀'
+                })
+              })
+              if (retryRes.ok) return { ok: true }
+            }
+          }
+        }
+        return { ok: false, error: data.message || 'Push test failed' }
+      }
+
+      return { ok: true }
+    } catch (err: any) {
       console.error('[Notifications] Failed to send test push:', err)
-      return false
+      return { ok: false, error: err.message }
     }
   }
 

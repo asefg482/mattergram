@@ -131,14 +131,14 @@ async function triggerTestPush() {
   isTestingPush.value = true
   testPushResult.value = null
   try {
-    const ok = await notificationService.sendTestPush()
-    if (ok) {
+    const res = await notificationService.sendTestPush()
+    if (res.ok) {
       testPushResult.value = 'Sent! Check notification center.'
       setTimeout(() => {
         testPushResult.value = null
       }, 4000)
     } else {
-      testPushResult.value = 'Failed to send test push'
+      testPushResult.value = res.error || 'Failed to send test push'
     }
   } catch (err: any) {
     testPushResult.value = err.message || 'Error sending push'

@@ -21,15 +21,46 @@ let subscriptions = []
 // Map of userId -> { ws: WsClient, token: string, serverUrl: string, retryTimer: any, pingTimer: any, retryCount: number }
 const userSockets = new Map()
 
+function getStorageDir() {
+  const customDir = process.env.DATA_DIR || path.join(config.rootDir, 'data')
+  if (!fs.existsSync(customDir)) {
+    try {
+      fs.mkdirSync(customDir, { recursive: true })
+    } catch {}
+  }
+  return fs.existsSync(customDir) ? customDir : config.rootDir
+}
+
 function getVapidFilePath() {
-  return path.join(config.rootDir, '.vapid.json')
+  const dir = getStorageDir()
+  const candidate = path.join(dir, '.vapid.json')
+  if (!fs.existsSync(candidate) && fs.existsSync(path.join(config.rootDir, '.vapid.json'))) {
+    return path.join(config.rootDir, '.vapid.json')
+  }
+  return candidate
 }
 
 function getSubscriptionsFilePath() {
-  return path.join(config.rootDir, '.push-subscriptions.json')
+  const dir = getStorageDir()
+  const candidate = path.join(dir, '.push-subscriptions.json')
+  if (!fs.existsSync(candidate) && fs.existsSync(path.join(config.rootDir, '.push-subscriptions.json'))) {
+    return path.join(config.rootDir, '.push-subscriptions.json')
+  }
+  return candidate
 }
 
 function loadVapidKeys() {
+  // 1. Support environment variables (recommended for Docker / production)
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    vapidKeys = {
+      publicKey: process.env.VAPID_PUBLIC_KEY.trim(),
+      privateKey: process.env.VAPID_PRIVATE_KEY.trim()
+    }
+    console.log('[Push Service] Using VAPID keys from environment variables.')
+    return
+  }
+
+  // 2. Load from persistent file
   const filePath = getVapidFilePath()
   if (fs.existsSync(filePath)) {
     try {
@@ -43,7 +74,7 @@ function loadVapidKeys() {
     }
   }
 
-  // Generate new keys
+  // 3. Generate new keys
   const keys = webpush.generateVAPIDKeys()
   vapidKeys = {
     publicKey: keys.publicKey,
@@ -52,7 +83,7 @@ function loadVapidKeys() {
 
   try {
     fs.writeFileSync(filePath, JSON.stringify(vapidKeys, null, 2), 'utf8')
-    console.log('[Push Service] Generated and saved new VAPID keys to .vapid.json')
+    console.log('[Push Service] Generated and saved new VAPID keys to', filePath)
   } catch (err) {
     console.error('[Push Service] Failed to save .vapid.json:', err.message)
   }
@@ -111,7 +142,7 @@ async function sendToUserSubscriptions(userId, payloadStr) {
       if (err.statusCode === 404 || err.statusCode === 410) {
         cleanExpiredSubscription(sub.endpoint)
       } else {
-        console.warn(`[Push Service] Push failed for ${userId}:`, err.message || err.statusCode)
+        console.error(`[Push Service] Push failed for user ${userId} [HTTP ${err.statusCode || 'N/A'}]:`, err.body || err.message)
       }
     }
   }
@@ -298,11 +329,13 @@ export function initPushService(options = {}) {
   }
 
   loadVapidKeys()
+  const subject = process.env.VAPID_SUBJECT || 'mailto:support@mattergram.app'
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:admin@mattergram.local',
+    subject,
     vapidKeys.publicKey,
     vapidKeys.privateKey
   )
+  console.log(`[Push Service] Initialized with VAPID Subject: ${subject}`)
 
   loadSubscriptions()
 
@@ -455,8 +488,14 @@ export async function handlePushApiRequest(req, res) {
       res.end(JSON.stringify({ ok: true }))
       return true
     } catch (err) {
+      console.error(`[Push Service] Test push failed [HTTP ${err.statusCode || 500}]:`, err.body || err.message)
       res.writeHead(500, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'TEST_PUSH_FAILED', message: err.message }))
+      res.end(JSON.stringify({
+        error: 'TEST_PUSH_FAILED',
+        message: err.message,
+        statusCode: err.statusCode,
+        details: err.body || undefined
+      }))
       return true
     }
   }

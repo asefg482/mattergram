@@ -10,6 +10,15 @@ services:
     environment:
       - MATTERMOST_BASE_URL=${MATTERMOST_BASE_URL}
       - PORT=5173
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:support@mattergram.app}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - DATA_DIR=/app/data
+    volumes:
+      - mattergram_data:/app/data
     env_file:
       - path: .env
         required: false
+
+volumes:
+  mattergram_data:
