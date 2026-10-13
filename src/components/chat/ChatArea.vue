@@ -117,6 +117,11 @@ function onMessageContextMenu(e: MouseEvent, post: MattermostPost) {
 
 const channel = computed(() => chatStore.activeChannel)
 const posts = computed(() => chatStore.currentPosts)
+const isChatLoading = computed(() => {
+  const id = chatStore.activeChannelId
+  if (!id) return false
+  return chatStore.loadingPosts || !chatStore.hasLoadedChannelPosts[id]
+})
 
 // Check if sender name should be shown (in group channels for incoming messages)
 const isGroup = computed(() => channel.value?.type !== 'D')
@@ -563,12 +568,15 @@ onUnmounted(() => {
           :class="{ 'opacity-0': isChannelSwitching }"
         >
           <!-- Loading spinner -->
-          <div v-if="chatStore.loadingPosts && posts.length === 0" class="flex items-center justify-center py-12">
-            <Loader2 class="w-6 h-6 animate-spin text-[#3390ec]" />
+          <div v-if="isChatLoading && posts.length === 0" class="flex flex-col items-center justify-center h-full py-16 select-none animate-in fade-in duration-150">
+            <div class="px-4 py-2 rounded-full bg-white/80 dark:bg-[#17212b]/90 border border-[#dfe1e5]/60 dark:border-[#202b36]/60 backdrop-blur-md shadow-sm flex items-center gap-2.5 text-xs font-medium text-[#3390ec]">
+              <Loader2 class="w-4 h-4 animate-spin text-[#3390ec]" />
+              <span class="text-xs text-[#7f91a4]">Loading messages...</span>
+            </div>
           </div>
 
           <!-- No messages yet -->
-          <div v-else-if="posts.length === 0" class="flex flex-col items-center justify-center h-full text-center p-6 text-xs text-[#7f91a4]">
+          <div v-else-if="!isChatLoading && posts.length === 0" class="flex flex-col items-center justify-center h-full text-center p-6 text-xs text-[#7f91a4] select-none">
             <div class="px-4 py-2 rounded-full bg-black/20 backdrop-blur-xs text-white/80">
               No messages here yet. Send a message to start!
             </div>

@@ -5,25 +5,34 @@ import { useChatStore } from '../../stores/chat'
 import { useUsersStore } from '../../stores/users'
 import { useUiStore } from '../../stores/ui'
 import { mmApi } from '../../services/mattermostApi'
-import { getAvatarGradient, getInitials } from '../../utils/formatters'
-import type { MattermostUser } from '../../types/mattermost'
+import { formatFileSize, formatMessageTime } from '../../utils/formatters'
+import type { MattermostUser, MattermostFileInfo } from '../../types/mattermost'
 import {
   X,
   Bell,
   BellOff,
   Users,
   Info,
-  Hash,
-  Lock,
-  Bookmark,
-  Shield,
-  FileText,
   ZoomIn,
   Copy,
   Check,
   AtSign,
   Briefcase,
-  Mail
+  Mail,
+  FolderOpen,
+  Image as ImageIcon,
+  Music,
+  Film,
+  FileText,
+  FileArchive,
+  FileSpreadsheet,
+  FileCode,
+  Download,
+  Search,
+  ArrowLeft,
+  ChevronRight,
+  Loader2,
+  ExternalLink
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 
@@ -98,6 +107,114 @@ function handleMemberClick(user: MattermostUser) {
     })
   }
 }
+
+// ----------------------------------------------------
+// Shared Files Feature (for Channel, Group, and DM/PV)
+// ----------------------------------------------------
+
+function isImageFile(file: MattermostFileInfo): boolean {
+  if (!file) return false
+  const ext = file.extension?.toLowerCase() || ''
+  const mime = file.mime_type?.toLowerCase() || ''
+  return mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)
+}
+
+function isVideoFile(file: MattermostFileInfo): boolean {
+  if (!file) return false
+  const ext = file.extension?.toLowerCase() || ''
+  const mime = file.mime_type?.toLowerCase() || ''
+  return mime.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'ogg'].includes(ext)
+}
+
+function isAudioFile(file: MattermostFileInfo): boolean {
+  if (!file) return false
+  const ext = file.extension?.toLowerCase() || ''
+  const mime = file.mime_type?.toLowerCase() || ''
+  return mime.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus'].includes(ext)
+}
+
+function getFileCategoryIcon(file: MattermostFileInfo) {
+  const ext = file.extension?.toLowerCase() || ''
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return FileArchive
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return FileSpreadsheet
+  if (['js', 'ts', 'py', 'json', 'html', 'css', 'go', 'rs', 'c', 'cpp'].includes(ext)) return FileCode
+  if (isAudioFile(file)) return Music
+  return FileText
+}
+
+function getFileCategoryColor(file: MattermostFileInfo): string {
+  const ext = file.extension?.toLowerCase() || ''
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'bg-amber-500/15 text-amber-500'
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'bg-emerald-500/15 text-emerald-500'
+  if (['pdf'].includes(ext)) return 'bg-rose-500/15 text-rose-500'
+  if (isAudioFile(file)) return 'bg-purple-500/15 text-purple-500'
+  return 'bg-[#3390ec]/15 text-[#3390ec]'
+}
+
+const allFiles = computed<MattermostFileInfo[]>(() => {
+  if (!channel.value?.id) return []
+  return chatStore.getChannelFiles(channel.value.id)
+})
+
+const mediaFiles = computed(() => allFiles.value.filter((f) => isImageFile(f) || isVideoFile(f)))
+const docFiles = computed(() => allFiles.value.filter((f) => !isImageFile(f) && !isVideoFile(f) && !isAudioFile(f)))
+const audioFiles = computed(() => allFiles.value.filter((f) => isAudioFile(f)))
+
+type FileTabCategory = 'all' | 'media' | 'docs' | 'audio'
+const activeFileCategory = ref<FileTabCategory>('all')
+const fileSearchQuery = ref('')
+
+const filteredFiles = computed(() => {
+  let list = allFiles.value
+  if (activeFileCategory.value === 'media') {
+    list = mediaFiles.value
+  } else if (activeFileCategory.value === 'docs') {
+    list = docFiles.value
+  } else if (activeFileCategory.value === 'audio') {
+    list = audioFiles.value
+  }
+
+  const q = fileSearchQuery.value.trim().toLowerCase()
+  if (!q) return list
+
+  return list.filter((f) => (f.name || '').toLowerCase().includes(q))
+})
+
+// Scanning earlier messages for older shared files
+const isScanningOlder = ref(false)
+const scanStatusNotice = ref('')
+
+const hasMoreHistory = computed(() => {
+  const chId = channel.value?.id
+  if (!chId) return false
+  return chatStore.hasMoreOlderPosts[chId] !== false
+})
+
+async function scanOlderFiles() {
+  const chId = channel.value?.id
+  if (!chId || isScanningOlder.value) return
+
+  isScanningOlder.value = true
+  scanStatusNotice.value = ''
+
+  try {
+    const res = await chatStore.scanOlderPostsForFiles(chId)
+    if (res.addedFilesCount > 0) {
+      scanStatusNotice.value = `Loaded ${res.addedFilesCount} older file${res.addedFilesCount > 1 ? 's' : ''}`
+    } else if (!res.hasMore) {
+      scanStatusNotice.value = 'Reached beginning of chat'
+    } else {
+      scanStatusNotice.value = 'No files found in earlier batch'
+    }
+  } catch (err) {
+    scanStatusNotice.value = 'Could not load older history'
+  } finally {
+    isScanningOlder.value = false
+    setTimeout(() => {
+      scanStatusNotice.value = ''
+    }, 3500)
+  }
+}
 </script>
 
 <template>
@@ -110,19 +227,40 @@ function handleMemberClick(user: MattermostUser) {
       class="px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between"
       style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
     >
-      <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+      <!-- Mode: Files Header -->
+      <div v-if="uiStore.rightSidebarTab === 'files'" class="flex items-center gap-2 min-w-0">
+        <button
+          @click="uiStore.rightSidebarTab = 'info'"
+          class="p-1.5 -ml-1 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors"
+          title="Back to info"
+        >
+          <ArrowLeft class="w-4 h-4" />
+        </button>
+        <div class="min-w-0">
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+            Shared Files
+          </h3>
+          <p class="text-[11px] text-[#7f91a4]">
+            {{ allFiles.length }} file{{ allFiles.length === 1 ? '' : 's' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Mode: Info Header -->
+      <h3 v-else class="text-sm font-bold text-gray-900 dark:text-white">
         {{ isDirect ? 'User Info' : 'Channel Info' }}
       </h3>
+
       <button
         @click="uiStore.showRightSidebar = false"
-        class="p-1.5 text-[#7f91a4] hover:text-white rounded-full transition-colors"
+        class="p-1.5 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors"
       >
         <X class="w-5 h-5" />
       </button>
     </div>
 
-    <!-- Scrollable Content -->
-    <div class="flex-1 overflow-y-auto">
+    <!-- Mode: Info Scrollable Content -->
+    <div v-if="uiStore.rightSidebarTab === 'info'" class="flex-1 overflow-y-auto">
       <!-- Profile Card -->
       <div class="p-6 flex flex-col items-center text-center border-b border-[#dfe1e5] dark:border-[#101921]">
         <!-- Avatar (Clickable to Enlarge if DM) -->
@@ -262,6 +400,51 @@ function handleMemberClick(user: MattermostUser) {
         </div>
       </div>
 
+      <!-- Shared Files Card in Info Tab -->
+      <div
+        @click="uiStore.openChatFiles()"
+        class="p-4 border-b border-[#dfe1e5] dark:border-[#101921] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] cursor-pointer transition-colors group"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#3390ec]/15 text-[#3390ec] flex items-center justify-center shrink-0">
+              <FolderOpen class="w-4 h-4" />
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span>Shared Files & Media</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#3390ec]/20 text-[#3390ec] font-bold">
+                  {{ allFiles.length }}
+                </span>
+              </div>
+              <div class="text-[11px] text-[#7f91a4] mt-0.5">
+                {{ mediaFiles.length }} media · {{ docFiles.length }} docs · {{ audioFiles.length }} audio
+              </div>
+            </div>
+          </div>
+          <ChevronRight class="w-4 h-4 text-[#7f91a4] group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
+        </div>
+
+        <!-- Mini Previews of Recent Media (if available) -->
+        <div v-if="mediaFiles.length > 0" class="grid grid-cols-4 gap-1.5 mt-3">
+          <div
+            v-for="f in mediaFiles.slice(0, 4)"
+            :key="f.id"
+            class="aspect-square rounded-lg overflow-hidden bg-black/10 dark:bg-black/30 relative"
+          >
+            <img
+              v-if="isImageFile(f)"
+              :src="mmApi.getFileThumbnailUrl(f.id)"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center bg-black/40 text-white">
+              <Film class="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Members Section (For Group Channels) -->
       <div v-if="!isDirect && !isSavedMessages" class="p-4">
         <div class="flex items-center justify-between mb-3 text-xs text-[#7f91a4]">
@@ -306,6 +489,292 @@ function handleMemberClick(user: MattermostUser) {
             >
               Admin
             </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode: Full Shared Files Browser -->
+    <div v-else class="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#17212b]">
+      <!-- Search Bar -->
+      <div class="p-3 border-b border-[#dfe1e5] dark:border-[#101921]">
+        <div class="relative flex items-center">
+          <Search class="w-4 h-4 text-[#7f91a4] absolute left-3 pointer-events-none" />
+          <input
+            v-model="fileSearchQuery"
+            type="text"
+            placeholder="Search files by name..."
+            class="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl bg-[#f1f1f1] dark:bg-[#202b36] text-gray-900 dark:text-white placeholder-[#7f91a4] border-none focus:outline-none focus:ring-1 focus:ring-[#3390ec]"
+          />
+          <button
+            v-if="fileSearchQuery"
+            @click="fileSearchQuery = ''"
+            class="p-1 absolute right-2 text-[#7f91a4] hover:text-white"
+          >
+            <X class="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Category Tabs -->
+      <div class="flex items-center px-2 py-2 gap-1 border-b border-[#dfe1e5] dark:border-[#101921] overflow-x-auto no-scrollbar">
+        <button
+          @click="activeFileCategory = 'all'"
+          class="px-2.5 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
+          :class="activeFileCategory === 'all' ? 'bg-[#3390ec] text-white shadow-xs' : 'text-[#7f91a4] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36]'"
+        >
+          <span>All</span>
+          <span class="text-[10px] opacity-80">({{ allFiles.length }})</span>
+        </button>
+
+        <button
+          @click="activeFileCategory = 'media'"
+          class="px-2.5 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
+          :class="activeFileCategory === 'media' ? 'bg-[#3390ec] text-white shadow-xs' : 'text-[#7f91a4] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36]'"
+        >
+          <ImageIcon class="w-3 h-3" />
+          <span>Media</span>
+          <span class="text-[10px] opacity-80">({{ mediaFiles.length }})</span>
+        </button>
+
+        <button
+          @click="activeFileCategory = 'docs'"
+          class="px-2.5 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
+          :class="activeFileCategory === 'docs' ? 'bg-[#3390ec] text-white shadow-xs' : 'text-[#7f91a4] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36]'"
+        >
+          <FileText class="w-3 h-3" />
+          <span>Docs</span>
+          <span class="text-[10px] opacity-80">({{ docFiles.length }})</span>
+        </button>
+
+        <button
+          @click="activeFileCategory = 'audio'"
+          class="px-2.5 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
+          :class="activeFileCategory === 'audio' ? 'bg-[#3390ec] text-white shadow-xs' : 'text-[#7f91a4] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36]'"
+        >
+          <Music class="w-3 h-3" />
+          <span>Audio</span>
+          <span class="text-[10px] opacity-80">({{ audioFiles.length }})</span>
+        </button>
+      </div>
+
+      <!-- Scrollable Files Container -->
+      <div class="flex-1 overflow-y-auto p-3">
+        <!-- Empty State -->
+        <div
+          v-if="filteredFiles.length === 0"
+          class="flex flex-col items-center justify-center h-64 text-center p-6 text-[#7f91a4]"
+        >
+          <div class="w-12 h-12 rounded-2xl bg-[#3390ec]/10 flex items-center justify-center text-[#3390ec] mb-3">
+            <FolderOpen class="w-6 h-6" />
+          </div>
+          <p class="text-xs font-semibold text-gray-800 dark:text-white/90">
+            {{ fileSearchQuery ? 'No matching files found' : 'No shared files yet' }}
+          </p>
+          <p class="text-[11px] mt-1 text-[#7f91a4] max-w-[200px]">
+            {{ fileSearchQuery ? 'Try another search term or filter' : 'Photos, videos, audio, and documents shared in this chat will appear here' }}
+          </p>
+        </div>
+
+        <!-- Media Grid View (when category is Media) -->
+        <div
+          v-else-if="activeFileCategory === 'media'"
+          class="grid grid-cols-3 gap-1.5"
+        >
+          <div
+            v-for="file in filteredFiles"
+            :key="file.id"
+            @click="uiStore.openFilePreview(file)"
+            class="relative aspect-square rounded-lg overflow-hidden bg-black/10 dark:bg-black/40 group cursor-pointer border border-transparent hover:border-[#3390ec]/60 transition-all"
+            :title="file.name"
+          >
+            <img
+              v-if="isImageFile(file)"
+              :src="mmApi.getFileThumbnailUrl(file.id)"
+              class="w-full h-full object-cover transition-transform group-hover:scale-105"
+              loading="lazy"
+            />
+            <div
+              v-else-if="isVideoFile(file)"
+              class="w-full h-full flex flex-col items-center justify-center bg-black/60 text-white"
+            >
+              <Film class="w-6 h-6" />
+              <span class="text-[10px] mt-1 text-white/80 font-mono">Video</span>
+            </div>
+
+            <!-- Hover overlay -->
+            <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+              <ZoomIn class="w-5 h-5 drop-shadow" />
+            </div>
+
+            <!-- Size badge -->
+            <div class="absolute bottom-1 right-1 text-[9px] px-1 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white/90 font-mono">
+              {{ formatFileSize(file.size) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Files & Audio List View (when category is Docs or Audio) -->
+        <div
+          v-else-if="activeFileCategory === 'docs' || activeFileCategory === 'audio'"
+          class="space-y-1.5"
+        >
+          <div
+            v-for="file in filteredFiles"
+            :key="file.id"
+            class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors group"
+          >
+            <!-- File Type Icon -->
+            <div
+              class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              :class="getFileCategoryColor(file)"
+            >
+              <component :is="getFileCategoryIcon(file)" class="w-4 h-4" />
+            </div>
+
+            <!-- File Info -->
+            <div class="flex-1 min-w-0 pr-1">
+              <div class="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                {{ file.name }}
+              </div>
+              <div class="text-[11px] text-[#7f91a4] mt-0.5 flex items-center gap-2">
+                <span>{{ formatFileSize(file.size) }}</span>
+                <span>·</span>
+                <span>{{ formatMessageTime(file.create_at) }}</span>
+              </div>
+            </div>
+
+            <!-- Download Button -->
+            <a
+              :href="mmApi.getFileDownloadUrl(file.id)"
+              :download="file.name"
+              target="_blank"
+              class="p-2 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
+              title="Download file"
+              @click.stop
+            >
+              <Download class="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+
+        <!-- Category: 'All' Mixed View -->
+        <div v-else class="space-y-4">
+          <!-- Media Subsection in All view -->
+          <div v-if="mediaFiles.length > 0 && !fileSearchQuery">
+            <div class="flex items-center justify-between mb-2 px-1">
+              <span class="text-[11px] font-bold text-[#7f91a4] uppercase tracking-wider flex items-center gap-1.5">
+                <ImageIcon class="w-3 h-3" />
+                Media ({{ mediaFiles.length }})
+              </span>
+              <button
+                @click="activeFileCategory = 'media'"
+                class="text-[11px] text-[#3390ec] hover:underline font-semibold"
+              >
+                View all
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <div
+                v-for="file in mediaFiles.slice(0, 6)"
+                :key="file.id"
+                @click="uiStore.openFilePreview(file)"
+                class="relative aspect-square rounded-lg overflow-hidden bg-black/10 dark:bg-black/40 group cursor-pointer border border-transparent hover:border-[#3390ec]/60 transition-all"
+                :title="file.name"
+              >
+                <img
+                  v-if="isImageFile(file)"
+                  :src="mmApi.getFileThumbnailUrl(file.id)"
+                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center bg-black/60 text-white">
+                  <Film class="w-5 h-5" />
+                </div>
+                <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                  <ZoomIn class="w-5 h-5 drop-shadow" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents and Audio Subsection in All view -->
+          <div>
+            <div v-if="!fileSearchQuery && (docFiles.length > 0 || audioFiles.length > 0)" class="flex items-center justify-between mb-2 px-1">
+              <span class="text-[11px] font-bold text-[#7f91a4] uppercase tracking-wider flex items-center gap-1.5">
+                <FileText class="w-3 h-3" />
+                Files & Audio ({{ docFiles.length + audioFiles.length }})
+              </span>
+            </div>
+
+            <div class="space-y-1.5">
+              <div
+                v-for="file in (fileSearchQuery ? filteredFiles : [...docFiles, ...audioFiles])"
+                :key="file.id"
+                class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-colors group"
+                @click="isImageFile(file) || isVideoFile(file) ? uiStore.openFilePreview(file) : null"
+              >
+                <!-- Thumbnail or File Icon -->
+                <div
+                  v-if="isImageFile(file)"
+                  class="w-9 h-9 rounded-xl overflow-hidden bg-black/10 shrink-0 cursor-pointer"
+                >
+                  <img :src="mmApi.getFileThumbnailUrl(file.id)" class="w-full h-full object-cover" />
+                </div>
+                <div
+                  v-else
+                  class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  :class="getFileCategoryColor(file)"
+                >
+                  <component :is="getFileCategoryIcon(file)" class="w-4 h-4" />
+                </div>
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0 pr-1">
+                  <div class="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                    {{ file.name }}
+                  </div>
+                  <div class="text-[11px] text-[#7f91a4] mt-0.5 flex items-center gap-2">
+                    <span>{{ formatFileSize(file.size) }}</span>
+                    <span>·</span>
+                    <span>{{ formatMessageTime(file.create_at) }}</span>
+                  </div>
+                </div>
+
+                <!-- Download -->
+                <a
+                  :href="mmApi.getFileDownloadUrl(file.id)"
+                  :download="file.name"
+                  target="_blank"
+                  class="p-2 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
+                  title="Download file"
+                  @click.stop
+                >
+                  <Download class="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scan Earlier History Section -->
+        <div class="mt-6 pt-4 border-t border-[#dfe1e5]/60 dark:border-[#202b36]/60 text-center">
+          <div v-if="scanStatusNotice" class="text-xs font-medium text-[#3390ec] mb-2 animate-in fade-in">
+            {{ scanStatusNotice }}
+          </div>
+
+          <button
+            v-if="hasMoreHistory"
+            @click="scanOlderFiles"
+            :disabled="isScanningOlder"
+            class="w-full py-2 px-3 text-xs font-medium rounded-xl border border-[#dfe1e5] dark:border-[#202b36] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-[#7f91a4] hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Loader2 v-if="isScanningOlder" class="w-3.5 h-3.5 animate-spin text-[#3390ec]" />
+            <Search v-else class="w-3.5 h-3.5" />
+            <span>{{ isScanningOlder ? 'Scanning earlier messages...' : 'Scan earlier history for more files' }}</span>
+          </button>
+          <div v-else class="text-[11px] text-[#7f91a4] italic">
+            Entire conversation history loaded
           </div>
         </div>
       </div>

@@ -93,6 +93,7 @@ export const useUiStore = defineStore('ui', () => {
   const replyingTo = ref<MattermostPost | null>(null)
   const editingPost = ref<MattermostPost | null>(null)
   const showRightSidebar = ref(false)
+  const rightSidebarTab = ref<'info' | 'files'>('info')
   const showSettingsModal = ref(false)
   const showNewChatModal = ref(false)
   const showTodoModal = ref(false)
@@ -165,6 +166,16 @@ export const useUiStore = defineStore('ui', () => {
     avatarPreview.value.isOpen = false
   }
 
+  function openChatFiles() {
+    rightSidebarTab.value = 'files'
+    showRightSidebar.value = true
+  }
+
+  function openChatInfo() {
+    rightSidebarTab.value = 'info'
+    showRightSidebar.value = true
+  }
+
   // Initialize theme on start
   if (theme.value === 'dark') {
     document.documentElement.classList.add('dark')
@@ -203,6 +214,9 @@ export const useUiStore = defineStore('ui', () => {
     updateMentionModal,
     closeMentionModal,
     openAvatarPreview,
-    closeAvatarPreview
+    closeAvatarPreview,
+    rightSidebarTab,
+    openChatFiles,
+    openChatInfo
   }
 })

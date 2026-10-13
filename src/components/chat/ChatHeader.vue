@@ -17,7 +17,8 @@ import {
   Volume2,
   VolumeX,
   Trash2,
-  Check
+  Check,
+  FolderOpen
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 
@@ -66,7 +67,19 @@ const subtitleText = computed(() => {
 })
 
 function toggleRightSidebar() {
-  uiStore.showRightSidebar = !uiStore.showRightSidebar
+  if (uiStore.showRightSidebar && uiStore.rightSidebarTab === 'info') {
+    uiStore.showRightSidebar = false
+  } else {
+    uiStore.openChatInfo()
+  }
+}
+
+function toggleFilesSidebar() {
+  if (uiStore.showRightSidebar && uiStore.rightSidebarTab === 'files') {
+    uiStore.showRightSidebar = false
+  } else {
+    uiStore.openChatFiles()
+  }
 }
 
 function handleAvatarClick() {
@@ -164,11 +177,21 @@ function toggleMute() {
         <Search class="w-4 h-4" />
       </button>
 
+      <!-- Shared Files -->
+      <button
+        @click="toggleFilesSidebar"
+        class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
+        :class="{ 'text-[#3390ec]': uiStore.showRightSidebar && uiStore.rightSidebarTab === 'files' }"
+        title="Shared Files"
+      >
+        <FolderOpen class="w-4 h-4" />
+      </button>
+
       <!-- Toggle Right Sidebar Info -->
       <button
         @click="toggleRightSidebar"
         class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors"
-        :class="{ 'text-[#3390ec]': uiStore.showRightSidebar }"
+        :class="{ 'text-[#3390ec]': uiStore.showRightSidebar && uiStore.rightSidebarTab === 'info' }"
         title="Chat info"
       >
         <PanelRight class="w-4 h-4" />
@@ -198,7 +221,15 @@ function toggleMute() {
           </button>
 
           <button
-            @click="toggleRightSidebar(); showMoreMenu = false"
+            @click="uiStore.openChatFiles(); showMoreMenu = false"
+            class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
+          >
+            <FolderOpen class="w-4 h-4 text-[#7f91a4]" />
+            <span>Shared Files</span>
+          </button>
+
+          <button
+            @click="uiStore.openChatInfo(); showMoreMenu = false"
             class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left"
           >
             <PanelRight class="w-4 h-4 text-[#7f91a4]" />

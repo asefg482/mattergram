@@ -8,7 +8,7 @@ import { useAuthStore } from './auth'
 import { useUsersStore } from './users'
 import { toEmojiName, toEmojiChar } from '../utils/formatters'
 import { recordReactionUsage } from '../utils/reactions'
-import type { MattermostChannel, MattermostPost, MattermostReaction, MattermostChannelMember } from '../types/mattermost'
+import type { MattermostChannel, MattermostPost, MattermostReaction, MattermostChannelMember, MattermostFileInfo } from '../types/mattermost'
 
 export const useChatStore = defineStore('chat', () => {
   const authStore = useAuthStore()
@@ -21,6 +21,7 @@ export const useChatStore = defineStore('chat', () => {
   const channelMembers = ref<Record<string, MattermostChannelMember[]>>({})
   const loadingChannels = ref(false)
   const loadingPosts = ref(false)
+  const hasLoadedChannelPosts = ref<Record<string, boolean>>({})
   const loadingOlderPosts = ref(false)
   const hasMoreOlderPosts = ref<Record<string, boolean>>({})
   const unreadCounts = ref<Record<string, number>>({})
@@ -293,6 +294,9 @@ export const useChatStore = defineStore('chat', () => {
 
     closeThread()
     activeChannelId.value = targetId
+    if (!posts.value[targetId] || !hasLoadedChannelPosts.value[targetId]) {
+      loadingPosts.value = true
+    }
     scrollToBottomTrigger.value++
     fetchChannelMembers(targetId)
 
@@ -358,6 +362,7 @@ export const useChatStore = defineStore('chat', () => {
     } catch (err) {
       console.error('Failed to load posts:', err)
     } finally {
+      hasLoadedChannelPosts.value[channelId] = true
       loadingPosts.value = false
     }
   }
@@ -419,6 +424,39 @@ export const useChatStore = defineStore('chat', () => {
       return { addedCount: 0 }
     } finally {
       loadingOlderPosts.value = false
+    }
+  }
+
+  // Extract all files from a channel's loaded messages (for Shared Files feature)
+  function getChannelFiles(channelId: string): MattermostFileInfo[] {
+    if (!channelId) return []
+    const channelPosts = posts.value[channelId] || []
+    const filesMap = new Map<string, MattermostFileInfo>()
+
+    for (const post of channelPosts) {
+      if (post.delete_at > 0) continue
+      if (post.metadata?.files && Array.isArray(post.metadata.files)) {
+        for (const file of post.metadata.files) {
+          if (file && file.id && !filesMap.has(file.id)) {
+            filesMap.set(file.id, file)
+          }
+        }
+      }
+    }
+
+    return Array.from(filesMap.values()).sort((a, b) => b.create_at - a.create_at)
+  }
+
+  // Scan earlier messages in channel to discover more historical files
+  async function scanOlderPostsForFiles(channelId: string): Promise<{ addedFilesCount: number; hasMore: boolean }> {
+    if (!channelId) return { addedFilesCount: 0, hasMore: false }
+    const beforeCount = getChannelFiles(channelId).length
+    await loadOlderPosts(channelId)
+    const afterCount = getChannelFiles(channelId).length
+    const hasMore = hasMoreOlderPosts.value[channelId] !== false
+    return {
+      addedFilesCount: Math.max(0, afterCount - beforeCount),
+      hasMore
     }
   }
 
@@ -1203,9 +1241,12 @@ export const useChatStore = defineStore('chat', () => {
     activePostsWithSeparators,
     loadingChannels,
     loadingPosts,
+    hasLoadedChannelPosts,
     loadingOlderPosts,
     hasMoreOlderPosts,
     loadOlderPosts,
+    getChannelFiles,
+    scanOlderPostsForFiles,
     unreadCounts,
     unreadChatsCount,
     firstUnreadPostIds,
