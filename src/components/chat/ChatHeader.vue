@@ -26,7 +26,8 @@ import {
   ChevronUp,
   ChevronDown,
   X,
-  Loader2
+  Loader2,
+  Edit3
 } from 'lucide-vue-next'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
 import AddChannelMembersModal from './AddChannelMembersModal.vue'
@@ -58,6 +59,12 @@ const canDelete = computed(() => {
   if (!channel.value) return false
   if (isSavedMessages.value) return false
   if (isDirect.value) return true
+  return chatStore.canCurrentUserManageChannel(channel.value.id)
+})
+
+const canManageChannel = computed(() => {
+  if (!channel.value) return false
+  if (channel.value.type === 'D' || isSavedMessages.value) return false
   return chatStore.canCurrentUserManageChannel(channel.value.id)
 })
 
@@ -392,6 +399,7 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
       !uiStore.avatarPreview?.isOpen &&
       !uiStore.showSettingsModal &&
       !uiStore.showAccountSettingsModal &&
+      !uiStore.showEditChannelModal &&
       !uiStore.showNewChatModal
     ) {
       e.preventDefault()
@@ -454,6 +462,7 @@ onUnmounted(() => {
             :showOnlineDot="true"
             :isOnline="isOnline"
             :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+            :customAvatarUrl="chatStore.getChannelAvatar(channel)"
           />
         </div>
 
@@ -575,6 +584,16 @@ onUnmounted(() => {
             >
               <PanelRight class="w-4 h-4 text-[#7f91a4]" />
               <span>View Info</span>
+            </button>
+
+            <!-- Edit Channel / Group (When permitted) -->
+            <button
+              v-if="canManageChannel"
+              @click="uiStore.openEditChannel(channel); showMoreMenu = false"
+              class="w-full px-3.5 py-2 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
+            >
+              <Edit3 class="w-4 h-4 text-[#3390ec]" />
+              <span>Edit Channel</span>
             </button>
 
             <!-- Exit Group (For groups) -->

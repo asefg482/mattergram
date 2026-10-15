@@ -42,7 +42,9 @@ import {
   ShieldCheck,
   Crown,
   LogOut,
-  Trash2
+  Trash2,
+  Edit3,
+  Camera
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import TelegramAvatar from '../common/TelegramAvatar.vue'
@@ -109,6 +111,18 @@ const isGroup = computed(() => {
   if (!channel.value) return false
   return channel.value.type !== 'D' && !isSavedMessages.value
 })
+
+const canManageChannel = computed(() => {
+  if (!channel.value) return false
+  if (channel.value.type === 'D' || isSavedMessages.value) return false
+  return chatStore.canCurrentUserManageChannel(channel.value.id)
+})
+
+function openEditChannel() {
+  if (channel.value && canManageChannel.value) {
+    uiStore.openEditChannel(channel.value)
+  }
+}
 
 const canDeleteChat = computed(() => {
   if (!channel.value) return false
@@ -442,12 +456,24 @@ function togglePlayAudio(file: MattermostFileInfo) {
         {{ isDirect ? 'User Info' : 'Channel Info' }}
       </h3>
 
-      <button
-        @click="uiStore.showRightSidebar = false"
-        class="p-1.5 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors"
-      >
-        <X class="w-5 h-5" />
-      </button>
+      <div class="flex items-center gap-1">
+        <!-- Edit Channel/Group Button if user has permission -->
+        <button
+          v-if="canManageChannel"
+          @click="openEditChannel"
+          class="p-1.5 text-[#7f91a4] hover:text-[#3390ec] hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-full transition-colors cursor-pointer"
+          title="Edit Details"
+        >
+          <Edit3 class="w-4 h-4" />
+        </button>
+
+        <button
+          @click="uiStore.showRightSidebar = false"
+          class="p-1.5 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors cursor-pointer"
+        >
+          <X class="w-5 h-5" />
+        </button>
+      </div>
     </div>
 
     <!-- Mode: Info Scrollable Content -->
@@ -471,6 +497,22 @@ function togglePlayAudio(file: MattermostFileInfo) {
             <ZoomIn class="w-7 h-7" />
           </div>
         </div>
+        <!-- Channel Avatar with Camera overlay if canManageChannel -->
+        <div
+          v-else-if="!isDirect && !isSavedMessages && canManageChannel"
+          @click="openEditChannel"
+          class="relative group cursor-pointer mb-3 rounded-full"
+          title="Click to edit channel details and photo"
+        >
+          <TelegramAvatar
+            :name="channel.display_name || channel.name"
+            size="2xl"
+            :customAvatarUrl="chatStore.getChannelAvatar(channel)"
+          />
+          <div class="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+            <Camera class="w-7 h-7" />
+          </div>
+        </div>
         <TelegramAvatar
           v-else
           :userId="channel.dm_user?.id"
@@ -478,6 +520,7 @@ function togglePlayAudio(file: MattermostFileInfo) {
           size="2xl"
           :isSavedMessages="isSavedMessages"
           :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+          :customAvatarUrl="chatStore.getChannelAvatar(channel)"
           class="mb-3"
         />
 
@@ -493,6 +536,16 @@ function togglePlayAudio(file: MattermostFileInfo) {
           <span v-else-if="isPrivate">Private Channel</span>
           <span v-else>Saved Cloud</span>
         </p>
+
+        <!-- Edit Channel Button in Profile Card -->
+        <button
+          v-if="canManageChannel"
+          @click="openEditChannel"
+          class="mt-3 px-3.5 py-1.5 bg-[#3390ec]/10 hover:bg-[#3390ec]/20 text-[#3390ec] rounded-full text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <Edit3 class="w-3.5 h-3.5" />
+          <span>Edit {{ isGroup ? 'Group' : 'Channel' }}</span>
+        </button>
       </div>
 
       <!-- DM Profile Details (If Direct Message) -->

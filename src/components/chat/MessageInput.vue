@@ -105,7 +105,7 @@ function focusInput(force = false) {
     return
   }
   nextTick(() => {
-    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal && !uiStore.showSettingsModal && !uiStore.showAccountSettingsModal) {
+    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal && !uiStore.showSettingsModal && !uiStore.showAccountSettingsModal && !uiStore.showEditChannelModal) {
       if (document.activeElement?.tagName !== 'INPUT') {
         textareaRef.value?.focus()
       }
@@ -113,7 +113,7 @@ function focusInput(force = false) {
   })
   setTimeout(() => {
     if (!force && isMobileDevice()) return
-    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal && !uiStore.showSettingsModal && !uiStore.showAccountSettingsModal) {
+    if (!uiStore.previewFile && !uiStore.mentionModal.isOpen && !uiStore.showNewChatModal && !uiStore.showSettingsModal && !uiStore.showAccountSettingsModal && !uiStore.showEditChannelModal) {
       if (document.activeElement !== textareaRef.value && document.activeElement?.tagName !== 'INPUT') {
         textareaRef.value?.focus()
       }

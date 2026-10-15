@@ -13,6 +13,7 @@ const props = withDefaults(
     showOnlineDot?: boolean
     isOnline?: boolean
     lastPictureUpdate?: number
+    customAvatarUrl?: string
   }>(),
   {
     size: 'md',
@@ -29,7 +30,9 @@ const imageLoaded = ref(props.userId ? loadedAvatarUsers.has(props.userId) : fal
 const imageError = ref(props.userId ? failedAvatarUsers.has(props.userId) : false)
 
 const avatarUrl = computed(() => {
-  if (!props.userId || props.isSavedMessages || imageError.value) return ''
+  if (props.isSavedMessages || imageError.value) return ''
+  if (props.customAvatarUrl) return props.customAvatarUrl
+  if (!props.userId) return ''
   return mmApi.getUserAvatarUrl(props.userId, props.lastPictureUpdate)
 })
 
@@ -45,9 +48,12 @@ function onImgError() {
 
 // Reset state only when user changes or picture timestamp updates
 watch(
-  () => [props.userId, props.lastPictureUpdate],
-  ([newUserId, newLastPic], [oldUserId, oldLastPic]) => {
-    if (props.userId) {
+  () => [props.userId, props.lastPictureUpdate, props.customAvatarUrl],
+  ([newUserId, newLastPic, newCustom], [oldUserId, oldLastPic, oldCustom]) => {
+    if (newCustom !== oldCustom) {
+      imageLoaded.value = false
+      imageError.value = false
+    } else if (props.userId) {
       if (newLastPic !== oldLastPic) {
         failedAvatarUsers.delete(props.userId)
         loadedAvatarUsers.delete(props.userId)

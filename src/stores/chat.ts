@@ -1481,6 +1481,94 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const channelAvatars = ref<Record<string, string>>({})
+
+  function getChannelAvatar(channel?: MattermostChannel | null): string {
+    if (!channel || channel.type === 'D') return ''
+    if (channelAvatars.value[channel.id]) return channelAvatars.value[channel.id]
+    if (channel.props?.avatar_url) return channel.props.avatar_url
+    if (channel.props?.avatar_file_id) return mmApi.getFileDownloadUrl(channel.props.avatar_file_id)
+    if (typeof window !== 'undefined') {
+      const local = localStorage.getItem(`mattergram_channel_avatar_${channel.id}`)
+      if (local) return local
+    }
+    return ''
+  }
+
+  function setChannelAvatar(channelId: string, url: string) {
+    if (!channelId) return
+    channelAvatars.value[channelId] = url
+    channelAvatars.value = { ...channelAvatars.value }
+    if (typeof window !== 'undefined') {
+      if (url) {
+        localStorage.setItem(`mattergram_channel_avatar_${channelId}`, url)
+      } else {
+        localStorage.removeItem(`mattergram_channel_avatar_${channelId}`)
+      }
+    }
+    const ch = channels.value.find((c) => c.id === channelId)
+    if (ch) {
+      ch.props = { ...(ch.props || {}), avatar_url: url }
+    }
+  }
+
+  async function updateChannel(
+    channelId: string,
+    payload: {
+      display_name?: string
+      name?: string
+      purpose?: string
+      header?: string
+      avatarFile?: File | null
+      removeAvatar?: boolean
+    }
+  ): Promise<MattermostChannel> {
+    let avatarUrl = ''
+    if (payload.avatarFile) {
+      const fileInfo = await mmApi.uploadFile(channelId, payload.avatarFile)
+      if (fileInfo?.id) {
+        avatarUrl = mmApi.getFileDownloadUrl(fileInfo.id)
+        setChannelAvatar(channelId, avatarUrl)
+      }
+    } else if (payload.removeAvatar) {
+      setChannelAvatar(channelId, '')
+    }
+
+    const patch: any = {}
+    if (payload.display_name !== undefined) patch.display_name = payload.display_name
+    if (payload.name !== undefined) patch.name = payload.name
+    if (payload.purpose !== undefined) patch.purpose = payload.purpose
+    if (payload.header !== undefined) patch.header = payload.header
+
+    const ch = channels.value.find((c) => c.id === channelId)
+    if (avatarUrl) {
+      patch.props = { ...(ch?.props || {}), avatar_url: avatarUrl }
+    } else if (payload.removeAvatar) {
+      const updatedProps = { ...(ch?.props || {}) }
+      delete updatedProps.avatar_url
+      delete updatedProps.avatar_file_id
+      patch.props = updatedProps
+    }
+
+    const updated = await mmApi.patchChannel(channelId, patch)
+
+    const idx = channels.value.findIndex((c) => c.id === channelId)
+    if (idx !== -1) {
+      channels.value[idx] = {
+        ...channels.value[idx],
+        ...updated,
+        props: {
+          ...(channels.value[idx].props || {}),
+          ...(updated.props || {}),
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {})
+        }
+      }
+      channels.value = [...channels.value]
+    }
+
+    return updated
+  }
+
   async function setChannelMemberAdmin(channelId: string, userId: string, isAdmin: boolean): Promise<void> {
     await mmApi.setChannelMemberAdmin(channelId, userId, isAdmin)
     await fetchChannelMembers(channelId)
@@ -1680,6 +1768,9 @@ export const useChatStore = defineStore('chat', () => {
     removeMemberFromChannel,
     leaveChannel,
     deleteChannel,
+    getChannelAvatar,
+    setChannelAvatar,
+    updateChannel,
     setChannelMemberAdmin,
     getCurrentUserChannelMember,
     canCurrentUserManageChannel,

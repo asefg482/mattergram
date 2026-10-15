@@ -12,6 +12,7 @@ import ChatInfoDrawer from '../components/info/ChatInfoDrawer.vue'
 import HashtagDrawer from '../components/chat/HashtagDrawer.vue'
 import SettingsModal from '../components/settings/SettingsModal.vue'
 import AccountSettingsModal from '../components/settings/AccountSettingsModal.vue'
+import EditChannelModal from '../components/chat/EditChannelModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -123,5 +124,8 @@ onMounted(async () => {
 
     <!-- Account Settings Modal -->
     <AccountSettingsModal />
+
+    <!-- Edit Channel Modal -->
+    <EditChannelModal />
   </div>
 </template>

@@ -56,6 +56,7 @@ export interface MattermostChannel {
   last_post_at: number
   total_msg_count: number
   creator_id: string
+  props?: Record<string, any>
   // Virtual fields for Telegram UI
   dm_user?: MattermostUser
   unread_count?: number

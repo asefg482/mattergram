@@ -152,6 +152,7 @@ const avatarBg = computed(() => {
       :showOnlineDot="true"
       :isOnline="isOnline"
       :lastPictureUpdate="(channel.dm_user as any)?.last_picture_update"
+      :customAvatarUrl="chatStore.getChannelAvatar(channel)"
     />
 
     <!-- Chat Details -->

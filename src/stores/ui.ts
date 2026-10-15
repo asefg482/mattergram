@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { MattermostPost, MattermostFileInfo, MattermostUser } from '../types/mattermost'
+import type { MattermostPost, MattermostFileInfo, MattermostUser, MattermostChannel } from '../types/mattermost'
 import { THEME_PRESETS, ANIMATION_PRESETS, getThemeById, getAnimationById, type ThemePreset, type AnimationPreset } from '../utils/themes'
 
 export interface MentionModalState {
@@ -97,6 +97,8 @@ export const useUiStore = defineStore('ui', () => {
   const showSettingsModal = ref(false)
   const showAccountSettingsModal = ref(false)
   const showNewChatModal = ref(false)
+  const showEditChannelModal = ref(false)
+  const editingChannel = ref<MattermostChannel | null>(null)
   const previewFile = ref<MattermostFileInfo | null>(null)
   const isMobileSidebarOpen = ref(true)
 
@@ -299,6 +301,16 @@ export const useUiStore = defineStore('ui', () => {
     showRightSidebar.value = true
   }
 
+  function openEditChannel(channel: MattermostChannel) {
+    editingChannel.value = channel
+    showEditChannelModal.value = true
+  }
+
+  function closeEditChannel() {
+    showEditChannelModal.value = false
+    editingChannel.value = null
+  }
+
   // Initialize theme on start
   if (theme.value === 'dark') {
     document.documentElement.classList.add('dark')
@@ -323,6 +335,10 @@ export const useUiStore = defineStore('ui', () => {
     showSettingsModal,
     showAccountSettingsModal,
     showNewChatModal,
+    showEditChannelModal,
+    editingChannel,
+    openEditChannel,
+    closeEditChannel,
     previewFile,
     isMobileSidebarOpen,
     sidebarWidth,

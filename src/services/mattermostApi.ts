@@ -298,6 +298,22 @@ class MattermostApiService {
     })
   }
 
+  public async patchChannel(
+    channelId: string,
+    patch: Partial<{
+      name: string
+      display_name: string
+      purpose: string
+      header: string
+      props: Record<string, any>
+    }>
+  ): Promise<MattermostChannel> {
+    return this.request<MattermostChannel>(`/api/v4/channels/${channelId}/patch`, {
+      method: 'PUT',
+      body: JSON.stringify(patch)
+    })
+  }
+
   public async searchChannels(teamId: string, term: string): Promise<MattermostChannel[]> {
     return this.request<MattermostChannel[]>(`/api/v4/teams/${teamId}/channels/search`, {
       method: 'POST',
