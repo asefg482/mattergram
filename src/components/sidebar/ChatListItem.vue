@@ -115,6 +115,58 @@ const avatarInitials = computed(() => {
 const avatarBg = computed(() => {
   return getAvatarGradient(props.channel.id)
 })
+
+// Touch support for mobile long-press context menu
+let touchStartX = 0
+let touchStartY = 0
+let touchMoved = false
+let longPressTimer: any = null
+let didLongPress = false
+
+function handleTouchStart(e: TouchEvent) {
+  if (e.touches.length === 1) {
+    touchStartX = e.touches[0].clientX
+    touchStartY = e.touches[0].clientY
+    touchMoved = false
+    didLongPress = false
+
+    clearTimeout(longPressTimer)
+    longPressTimer = setTimeout(() => {
+      if (!touchMoved) {
+        didLongPress = true
+        const fakeMouseEvent = new MouseEvent('contextmenu', {
+          clientX: touchStartX,
+          clientY: touchStartY,
+          bubbles: true
+        })
+        emit('contextmenu', fakeMouseEvent)
+      }
+    }, 450)
+  }
+}
+
+function handleTouchMove(e: TouchEvent) {
+  if (e.touches.length === 1) {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX)
+    const dy = Math.abs(e.touches[0].clientY - touchStartY)
+    if (dx > 8 || dy > 8) {
+      touchMoved = true
+      clearTimeout(longPressTimer)
+    }
+  }
+}
+
+function handleTouchEnd() {
+  clearTimeout(longPressTimer)
+}
+
+function handleClick(e: MouseEvent) {
+  if (didLongPress) {
+    didLongPress = false
+    e.preventDefault()
+    e.stopPropagation()
+  }
+}
 </script>
 
 <template>
@@ -125,6 +177,11 @@ const avatarBg = computed(() => {
         ? 'bg-[#3390ec] dark:bg-[#2b5278] text-white'
         : 'hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-[#111827] dark:text-[#f5f5f5]'
     ]"
+    @click="handleClick"
+    @touchstart="handleTouchStart"
+    @touchmove="handleTouchMove"
+    @touchend="handleTouchEnd"
+    @touchcancel="handleTouchEnd"
     @contextmenu.prevent="emit('contextmenu', $event)"
   >
     <!-- Avatar with Online Indicator -->

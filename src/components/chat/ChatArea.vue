@@ -15,7 +15,7 @@ import MessageContextMenu from './MessageContextMenu.vue'
 import MessageViewersModal from './MessageViewersModal.vue'
 import { formatDateSeparator, isDifferentDay } from '../../utils/formatters'
 import { getSelectedTextForPost } from '../../utils/selection'
-import type { MattermostPost } from '../../types/mattermost'
+import type { MattermostPost, MattermostChannel } from '../../types/mattermost'
 import { MessageSquare, ArrowDown, Loader2, UploadCloud } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
@@ -121,8 +121,36 @@ function onMessageContextMenu(e: MouseEvent, post: MattermostPost) {
   showContextMenu.value = true
 }
 
-const channel = computed(() => chatStore.activeChannel)
-const posts = computed(() => chatStore.currentPosts)
+const lastActiveChannel = ref<MattermostChannel | null>(null)
+const lastChannelPosts = ref<MattermostPost[]>([])
+
+watch(
+  () => chatStore.activeChannel,
+  (newChannel) => {
+    if (newChannel) {
+      lastActiveChannel.value = newChannel
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => chatStore.currentPosts,
+  (currentPosts) => {
+    if (chatStore.activeChannelId && currentPosts && currentPosts.length > 0) {
+      lastChannelPosts.value = currentPosts
+    }
+  },
+  { immediate: true }
+)
+
+const channel = computed(() => chatStore.activeChannel || lastActiveChannel.value)
+const posts = computed(() => {
+  if (chatStore.activeChannelId) {
+    return chatStore.currentPosts
+  }
+  return lastChannelPosts.value.length > 0 ? lastChannelPosts.value : chatStore.currentPosts
+})
 const isChatLoading = computed(() => {
   const id = chatStore.activeChannelId
   if (!id) return false

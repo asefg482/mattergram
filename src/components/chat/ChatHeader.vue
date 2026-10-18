@@ -199,8 +199,12 @@ function handleAvatarClick() {
 
 function goBackMobile() {
   uiStore.isMobileSidebarOpen = true
-  chatStore.activeChannelId = null
   router.push('/')
+  setTimeout(() => {
+    if (uiStore.isMobileSidebarOpen) {
+      chatStore.activeChannelId = null
+    }
+  }, 320)
 }
 
 function toggleMute() {

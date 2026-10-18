@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
@@ -46,12 +46,25 @@ async function syncRouteWithChat() {
       await chatStore.jumpToPost(targetId, postParam)
     }
   } else if (!route.path.includes('/settings')) {
-    chatStore.activeChannelId = null
     if (window.innerWidth < 768) {
       uiStore.isMobileSidebarOpen = true
+      // Delay clearing active channel so mobile slide-out animation stays smooth without flashing empty state
+      setTimeout(() => {
+        if (uiStore.isMobileSidebarOpen) {
+          chatStore.activeChannelId = null
+        }
+      }, 320)
+    } else {
+      chatStore.activeChannelId = null
     }
   }
 }
+
+const isChatOpenMobile = computed(() => {
+  return !uiStore.isMobileSidebarOpen && !!chatStore.activeChannelId
+})
+
+const isTransitionReady = ref(false)
 
 // Watch route changes (e.g. browser back/forward, manual navigation, or shared post links)
 watch(
@@ -92,6 +105,10 @@ onMounted(async () => {
   chatStore.initWs()
   usersStore.initWs()
   await syncRouteWithChat()
+  // Enable transitions after initial mount to avoid flickering on first page load
+  setTimeout(() => {
+    isTransitionReady.value = true
+  }, 100)
 })
 </script>
 
@@ -99,18 +116,24 @@ onMounted(async () => {
   <div class="flex-1 h-full flex overflow-hidden relative">
     <!-- Left Sidebar (Chat List & Drawer) -->
     <Sidebar
-      :class="{
-        'hidden md:flex': !uiStore.isMobileSidebarOpen && chatStore.activeChannelId,
-        'flex': uiStore.isMobileSidebarOpen || !chatStore.activeChannelId
-      }"
+      class="w-full h-full absolute inset-0 md:relative md:inset-auto md:w-auto md:translate-x-0 md:opacity-100 md:pointer-events-auto"
+      :class="[
+        isTransitionReady ? 'transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:transition-none' : 'duration-0',
+        isChatOpenMobile
+          ? '-translate-x-1/4 opacity-75 pointer-events-none'
+          : 'translate-x-0 opacity-100 pointer-events-auto z-10'
+      ]"
     />
 
     <!-- Main Chat Area -->
     <ChatArea
-      :class="{
-        'hidden md:flex': uiStore.isMobileSidebarOpen && !chatStore.activeChannelId,
-        'flex': !uiStore.isMobileSidebarOpen || chatStore.activeChannelId
-      }"
+      class="w-full h-full absolute inset-0 md:relative md:inset-auto md:flex-1 md:translate-x-0 md:opacity-100 md:pointer-events-auto md:shadow-none"
+      :class="[
+        isTransitionReady ? 'transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:transition-none' : 'duration-0',
+        isChatOpenMobile
+          ? 'translate-x-0 pointer-events-auto shadow-[-12px_0_30px_rgba(0,0,0,0.22)] z-20'
+          : 'translate-x-full pointer-events-none z-0'
+      ]"
     />
 
     <!-- Right Chat Info Drawer -->
