@@ -331,21 +331,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    v-if="isOpen && post"
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 select-none"
-    style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
-  >
-    <!-- Backdrop -->
-    <div
-      class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
-      @click="emit('close')"
-    ></div>
+  <Teleport to="body">
+    <Transition name="tg-modal">
+      <div
+        v-if="isOpen && post"
+        class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 select-none"
+        style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
+      >
+        <!-- Backdrop -->
+        <div
+          class="absolute inset-0 bg-black/60 backdrop-blur-xs"
+          @click="emit('close')"
+        ></div>
 
-    <!-- Modal Box -->
-    <div
-      class="relative w-full max-w-md bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
-    >
+        <!-- Modal Box -->
+        <div
+          class="tg-modal-box relative w-full max-w-md bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] z-10"
+        >
       <!-- Header -->
       <div class="px-4 py-3 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -608,4 +610,6 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+  </Transition>
+</Teleport>
 </template>

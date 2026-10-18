@@ -192,16 +192,18 @@ function selectRadiusPreset(val: number) {
 </script>
 
 <template>
-  <div
-    v-if="uiStore.showSettingsModal"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
-  >
-    <!-- Backdrop -->
-    <div @click="uiStore.showSettingsModal = false" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
+  <Teleport to="body">
+    <Transition name="tg-modal">
+      <div
+        v-if="uiStore.showSettingsModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+      >
+        <!-- Backdrop -->
+        <div @click="uiStore.showSettingsModal = false" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
 
-    <!-- Modal Box -->
-    <div class="relative w-full max-w-md bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Modal Box -->
+        <div class="tg-modal-box relative w-full max-w-md bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
         <h2 class="text-base font-bold text-gray-900 dark:text-white">Settings</h2>
@@ -742,4 +744,6 @@ function selectRadiusPreset(val: number) {
       </div>
     </div>
   </div>
+  </Transition>
+</Teleport>
 </template>

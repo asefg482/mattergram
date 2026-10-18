@@ -420,41 +420,51 @@ function togglePlayAudio(file: MattermostFileInfo) {
 </script>
 
 <template>
-  <div
-    v-if="uiStore.showRightSidebar && channel"
-    class="fixed inset-0 z-40 md:static md:inset-auto md:z-30 w-full md:w-80 lg:w-88 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none animate-in slide-in-from-right duration-200"
-  >
-    <!-- Header -->
+  <Transition name="tg-drawer">
     <div
-      class="px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between"
-      style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
+      v-if="uiStore.showRightSidebar && channel"
+      class="tg-drawer-panel fixed inset-0 z-40 md:static md:inset-auto md:z-30 w-full md:w-80 lg:w-88 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none overflow-hidden"
     >
-      <!-- Mode: Files Header -->
-      <div v-if="uiStore.rightSidebarTab === 'files'" class="flex items-center gap-2 min-w-0">
-        <button
-          @click="uiStore.rightSidebarTab = 'info'"
-          class="p-1.5 -ml-1 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors"
-          title="Back to info"
-        >
-          <ArrowLeft class="w-4 h-4" />
-        </button>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1.5">
-            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
-              Shared Files
-            </h3>
-            <Loader2 v-if="isScanningAll" class="w-3.5 h-3.5 text-[#3390ec] animate-spin shrink-0" />
+      <!-- Header -->
+      <div
+        class="px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between"
+        style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
+      >
+        <!-- Mode: Files Header -->
+        <div v-if="uiStore.rightSidebarTab === 'files'" class="flex items-center gap-2 min-w-0">
+          <button
+            @click="uiStore.rightSidebarTab = 'info'"
+            class="p-1.5 -ml-1 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors cursor-pointer"
+            title="Back to info"
+          >
+            <ArrowLeft class="w-4 h-4" />
+          </button>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+                Shared Files
+              </h3>
+              <Loader2 v-if="isScanningAll" class="w-3.5 h-3.5 text-[#3390ec] animate-spin shrink-0" />
+            </div>
+            <p class="text-[11px] text-[#7f91a4]">
+              {{ isScanningAll ? `Scanning history... (${allFiles.length})` : `${allFiles.length} file${allFiles.length === 1 ? '' : 's'}` }}
+            </p>
           </div>
-          <p class="text-[11px] text-[#7f91a4]">
-            {{ isScanningAll ? `Scanning history... (${allFiles.length})` : `${allFiles.length} file${allFiles.length === 1 ? '' : 's'}` }}
-          </p>
         </div>
-      </div>
 
-      <!-- Mode: Info Header -->
-      <h3 v-else class="text-sm font-bold text-gray-900 dark:text-white">
-        {{ isDirect ? 'User Info' : 'Channel Info' }}
-      </h3>
+        <!-- Mode: Info Header -->
+        <div v-else class="flex items-center gap-2 min-w-0">
+          <button
+            @click="uiStore.showRightSidebar = false"
+            class="md:hidden p-1.5 -ml-1 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors cursor-pointer"
+            title="Back"
+          >
+            <ArrowLeft class="w-5 h-5" />
+          </button>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+            {{ isDirect ? 'User Info' : 'Channel Info' }}
+          </h3>
+        </div>
 
       <div class="flex items-center gap-1">
         <!-- Edit Channel/Group Button if user has permission -->
@@ -1236,4 +1246,5 @@ function togglePlayAudio(file: MattermostFileInfo) {
       @updated="loadChannelMembers"
     />
   </div>
+  </Transition>
 </template>

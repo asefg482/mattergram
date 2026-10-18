@@ -224,28 +224,36 @@ function canDelete(post: MattermostPost): boolean {
 </script>
 
 <template>
-  <div
-    v-if="uiStore.showHashtagDrawer"
-    class="fixed inset-0 z-40 md:static md:inset-auto md:z-30 w-full md:w-84 lg:w-96 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none animate-in slide-in-from-right duration-200"
-  >
-    <!-- Header -->
+  <Transition name="tg-drawer">
     <div
-      class="px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between"
-      style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
+      v-if="uiStore.showHashtagDrawer"
+      class="tg-drawer-panel fixed inset-0 z-40 md:static md:inset-auto md:z-30 w-full md:w-84 lg:w-96 h-full bg-white dark:bg-[#17212b] border-l border-[#dfe1e5] dark:border-[#101921] flex flex-col shrink-0 select-none overflow-hidden"
     >
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="w-8 h-8 rounded-xl bg-[#3390ec]/15 text-[#3390ec] flex items-center justify-center shrink-0">
-          <Hash class="w-4 h-4" />
+      <!-- Header -->
+      <div
+        class="px-4 border-b border-[#dfe1e5] dark:border-[#101921] flex items-center justify-between"
+        style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(3.5rem + env(safe-area-inset-top, 0px));"
+      >
+        <div class="flex items-center gap-2 min-w-0">
+          <button
+            @click="uiStore.showHashtagDrawer = false"
+            class="md:hidden p-1.5 -ml-1 text-[#7f91a4] hover:text-gray-900 dark:hover:text-white rounded-full transition-colors cursor-pointer"
+            title="Back"
+          >
+            <ArrowLeft class="w-5 h-5" />
+          </button>
+          <div class="w-8 h-8 rounded-xl bg-[#3390ec]/15 text-[#3390ec] flex items-center justify-center shrink-0">
+            <Hash class="w-4 h-4" />
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
+              #{{ currentTag }}
+            </h3>
+            <p class="text-[11px] text-[#7f91a4]">
+              {{ posts.length }} message{{ posts.length === 1 ? '' : 's' }} found
+            </p>
+          </div>
         </div>
-        <div class="min-w-0">
-          <h3 class="text-sm font-bold text-gray-900 dark:text-white truncate">
-            #{{ currentTag }}
-          </h3>
-          <p class="text-[11px] text-[#7f91a4]">
-            {{ posts.length }} message{{ posts.length === 1 ? '' : 's' }} found
-          </p>
-        </div>
-      </div>
 
       <button
         @click="uiStore.closeHashtagSearch()"
@@ -368,61 +376,70 @@ function canDelete(post: MattermostPost): boolean {
                   <MoreVertical class="w-3.5 h-3.5" />
                 </button>
 
-                <!-- Dropdown Menu -->
+                <!-- Backdrop click catcher -->
                 <div
                   v-if="activeMenuPostId === post.id"
-                  class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-xl shadow-xl z-50 py-1 text-xs select-none animate-in fade-in zoom-in-95 duration-100"
-                >
-                  <button
-                    @click="handleJumpToPost(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
-                  >
-                    <ArrowUpRight class="w-3.5 h-3.5 text-[#3390ec]" />
-                    <span>View in chat</span>
-                  </button>
+                  @click="activeMenuPostId = null"
+                  class="fixed inset-0 z-40"
+                ></div>
 
-                  <button
-                    @click="handleOpenThread(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
+                <!-- Dropdown Menu -->
+                <Transition name="tg-dropdown">
+                  <div
+                    v-if="activeMenuPostId === post.id"
+                    class="tg-dropdown absolute right-0 top-full mt-1 w-44 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-xl shadow-xl z-50 py-1 text-xs select-none overflow-hidden"
                   >
-                    <MessageSquareText class="w-3.5 h-3.5 text-[#3390ec]" />
-                    <span>Open thread</span>
-                  </button>
+                    <button
+                      @click="handleJumpToPost(post); activeMenuPostId = null"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                    >
+                      <ArrowUpRight class="w-3.5 h-3.5 text-[#3390ec]" />
+                      <span>View in chat</span>
+                    </button>
 
-                  <button
-                    @click="handleReply(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
-                  >
-                    <CornerUpLeft class="w-3.5 h-3.5 text-[#3390ec]" />
-                    <span>Reply</span>
-                  </button>
+                    <button
+                      @click="handleOpenThread(post); activeMenuPostId = null"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                    >
+                      <MessageSquareText class="w-3.5 h-3.5 text-[#3390ec]" />
+                      <span>Open thread</span>
+                    </button>
 
-                  <button
-                    @click="copyPostText(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
-                  >
-                    <Check v-if="copiedPostId === post.id" class="w-3.5 h-3.5 text-emerald-400" />
-                    <Copy v-else class="w-3.5 h-3.5 text-[#7f91a4]" />
-                    <span>{{ copiedPostId === post.id ? 'Copied!' : 'Copy text' }}</span>
-                  </button>
+                    <button
+                      @click="handleReply(post); activeMenuPostId = null"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                    >
+                      <CornerUpLeft class="w-3.5 h-3.5 text-[#3390ec]" />
+                      <span>Reply</span>
+                    </button>
 
-                  <button
-                    @click="handleTogglePin(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
-                  >
-                    <Pin class="w-3.5 h-3.5 text-[#7f91a4]" />
-                    <span>{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
-                  </button>
+                    <button
+                      @click="copyPostText(post); activeMenuPostId = null"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                    >
+                      <Check v-if="copiedPostId === post.id" class="w-3.5 h-3.5 text-emerald-400" />
+                      <Copy v-else class="w-3.5 h-3.5 text-[#7f91a4]" />
+                      <span>{{ copiedPostId === post.id ? 'Copied!' : 'Copy text' }}</span>
+                    </button>
 
-                  <button
-                    v-if="canDelete(post)"
-                    @click="handleDelete(post)"
-                    class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-rose-500/10 text-left text-rose-500"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" />
-                    <span>Delete</span>
-                  </button>
-                </div>
+                    <button
+                      @click="handleTogglePin(post); activeMenuPostId = null"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                    >
+                      <Pin class="w-3.5 h-3.5 text-[#7f91a4]" />
+                      <span>{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
+                    </button>
+
+                    <button
+                      v-if="canDelete(post)"
+                      @click="handleDelete(post); activeMenuPostId = null"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-rose-500/10 hover:translate-x-0.5 transition-all duration-150 text-left text-rose-500"
+                    >
+                      <Trash2 class="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </Transition>
               </div>
             </div>
           </div>
@@ -556,4 +573,5 @@ function canDelete(post: MattermostPost): boolean {
       </template>
     </div>
   </div>
+  </Transition>
 </template>

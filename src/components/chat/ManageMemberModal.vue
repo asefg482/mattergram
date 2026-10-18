@@ -145,14 +145,20 @@ function handleOpenProfile() {
 </script>
 
 <template>
-  <div
-    v-if="isOpen && user && channel"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200"
-    @click.self="emit('close')"
-  >
-    <div
-      class="bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
-    >
+  <Teleport to="body">
+    <Transition name="tg-modal">
+      <div
+        v-if="isOpen && user && channel"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+      >
+        <!-- Backdrop -->
+        <div @click="emit('close')" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
+
+        <!-- Modal Box -->
+        <div
+          class="tg-modal-box relative bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[85vh] overflow-hidden z-10"
+        >
       <!-- Header -->
       <div class="p-4 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
         <h3 class="font-bold text-sm text-[#111827] dark:text-white leading-tight">
@@ -342,4 +348,6 @@ function handleOpenProfile() {
       </div>
     </div>
   </div>
+  </Transition>
+</Teleport>
 </template>

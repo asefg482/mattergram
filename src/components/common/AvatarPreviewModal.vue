@@ -159,12 +159,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    v-if="preview.isOpen"
-    class="fixed inset-0 z-50 flex flex-col items-center justify-between p-2 sm:p-4 bg-black/90 backdrop-blur-md select-none animate-in fade-in duration-200"
-    style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));"
-    @click.self="handleClose"
-  >
+  <Teleport to="body">
+    <Transition name="tg-media-modal">
+      <div
+        v-if="preview.isOpen"
+        class="fixed inset-0 z-50 flex flex-col items-center justify-between p-2 sm:p-4 bg-black/90 backdrop-blur-md select-none"
+        style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));"
+        @click.self="handleClose"
+      >
     <!-- Top Action Bar -->
     <div class="w-full max-w-5xl flex items-center justify-between text-white z-30 pointer-events-none px-2 py-1">
       <div class="flex items-center gap-2 pointer-events-auto bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs">
@@ -253,7 +255,7 @@ onUnmounted(() => {
     >
       <div
         @dblclick="handleDoubleClick"
-        class="relative flex items-center justify-center select-none"
+        class="tg-media-box relative flex items-center justify-center select-none"
         :style="{
           transform: `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`,
           transition: isDragging ? 'none' : 'transform 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -264,7 +266,7 @@ onUnmounted(() => {
           :src="preview.url"
           :alt="preview.name"
           draggable="false"
-          class="max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain rounded-3xl shadow-2xl ring-1 ring-white/10 animate-in zoom-in-90 fade-in duration-250 ease-out pointer-events-none"
+          class="max-w-[90vw] max-h-[80vh] w-auto h-auto object-contain rounded-3xl shadow-2xl ring-1 ring-white/10 pointer-events-none"
         />
       </div>
     </div>
@@ -276,4 +278,6 @@ onUnmounted(() => {
       </span>
     </div>
   </div>
+    </Transition>
+  </Teleport>
 </template>

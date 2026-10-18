@@ -223,11 +223,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    v-if="file"
-    class="fixed inset-0 z-50 flex flex-col items-center justify-between p-2 sm:p-4 bg-black/90 backdrop-blur-md select-none animate-in fade-in duration-200"
-    @click.self="uiStore.closeFilePreview"
-  >
+  <Teleport to="body">
+    <Transition name="tg-media-modal">
+      <div
+        v-if="file"
+        class="fixed inset-0 z-50 flex flex-col items-center justify-between p-2 sm:p-4 bg-black/90 backdrop-blur-md select-none"
+        @click.self="uiStore.closeFilePreview"
+      >
     <!-- Top Action Bar -->
     <div class="w-full max-w-6xl flex items-center justify-between text-white z-30 pointer-events-none px-2 py-1">
       <!-- File Name & Info -->
@@ -315,7 +317,7 @@ onUnmounted(() => {
       <div
         v-if="isImage"
         @dblclick="handleDoubleClick"
-        class="relative flex items-center justify-center select-none"
+        class="tg-media-box relative flex items-center justify-center select-none"
         :style="{
           transform: `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`,
           transition: isDragging ? 'none' : 'transform 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -326,12 +328,12 @@ onUnmounted(() => {
           :src="fileUrl"
           :alt="file.name"
           draggable="false"
-          class="max-w-[92vw] max-h-[80vh] w-auto h-auto object-contain rounded-2xl shadow-2xl ring-1 ring-white/10 animate-in zoom-in-90 fade-in duration-250 ease-out pointer-events-none"
+          class="max-w-[92vw] max-h-[80vh] w-auto h-auto object-contain rounded-2xl shadow-2xl ring-1 ring-white/10 pointer-events-none"
         />
       </div>
 
       <!-- Video Preview Player -->
-      <div v-else-if="isVideo && file" class="max-w-5xl xl:max-w-6xl w-full max-h-[86vh] flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-200">
+      <div v-else-if="isVideo && file" class="tg-media-box max-w-5xl xl:max-w-6xl w-full max-h-[86vh] flex flex-col items-center justify-center">
         <TelegramVideoPlayer
           :src="fileUrl"
           :name="file.name"
@@ -346,7 +348,7 @@ onUnmounted(() => {
       <!-- Generic Document Preview Card -->
       <div
         v-else
-        class="bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm animate-in zoom-in-95 fade-in duration-200"
+        class="tg-media-box bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm"
       >
         <div class="w-16 h-16 rounded-2xl bg-[#2481cc]/20 flex items-center justify-center text-[#2481cc] mb-4">
           <FileText class="w-8 h-8" />
@@ -372,4 +374,6 @@ onUnmounted(() => {
       </span>
     </div>
   </div>
+    </Transition>
+  </Teleport>
 </template>

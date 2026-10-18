@@ -101,16 +101,17 @@ async function handleCreateChannel() {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="isOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
-    >
-    <!-- Backdrop -->
-    <div @click="emit('close')" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
+    <Transition name="tg-modal">
+      <div
+        v-if="isOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+      >
+        <!-- Backdrop -->
+        <div @click="emit('close')" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
 
-    <!-- Modal Content -->
-    <div class="relative w-full max-w-md bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[85vh]">
+        <!-- Modal Content -->
+        <div class="tg-modal-box relative w-full max-w-md bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[85vh]">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between">
         <h2 class="text-base font-bold text-gray-900 dark:text-white">
@@ -265,5 +266,6 @@ async function handleCreateChannel() {
       </form>
     </div>
   </div>
+  </Transition>
 </Teleport>
 </template>

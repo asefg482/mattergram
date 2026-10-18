@@ -169,21 +169,23 @@ async function handleSave() {
 </script>
 
 <template>
-  <div
-    v-if="uiStore.showEditChannelModal && channel"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
-  >
-    <!-- Backdrop -->
-    <div
-      @click="closeModal"
-      class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-    ></div>
+  <Teleport to="body">
+    <Transition name="tg-modal">
+      <div
+        v-if="uiStore.showEditChannelModal && channel"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+      >
+        <!-- Backdrop -->
+        <div
+          @click="closeModal"
+          class="absolute inset-0 bg-black/60 backdrop-blur-xs"
+        ></div>
 
-    <!-- Modal Box -->
-    <div
-      class="relative w-full max-w-lg bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[90vh] z-10"
-    >
+        <!-- Modal Box -->
+        <div
+          class="tg-modal-box relative w-full max-w-lg bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] overflow-hidden flex flex-col max-h-[90vh] z-10"
+        >
       <!-- Header -->
       <div class="px-5 py-4 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between shrink-0 bg-white dark:bg-[#17212b]">
         <div class="flex items-center gap-2.5">
@@ -376,4 +378,6 @@ async function handleSave() {
       </div>
     </div>
   </div>
+  </Transition>
+</Teleport>
 </template>

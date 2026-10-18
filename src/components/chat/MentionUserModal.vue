@@ -70,14 +70,20 @@ async function startChat() {
 </script>
 
 <template>
-  <div
-    v-if="modal.isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none animate-in fade-in duration-150"
-    @click.self="close"
-  >
-    <div
-      class="w-full max-w-sm bg-white dark:bg-[#17212b] text-[#111827] dark:text-[#f5f5f5] rounded-3xl p-6 shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] relative animate-in zoom-in-95 duration-150"
-    >
+  <Teleport to="body">
+    <Transition name="tg-modal">
+      <div
+        v-if="modal.isOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+      >
+        <!-- Backdrop -->
+        <div @click="close" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
+
+        <!-- Modal Box -->
+        <div
+          class="tg-modal-box relative w-full max-w-sm bg-white dark:bg-[#17212b] text-[#111827] dark:text-[#f5f5f5] rounded-3xl p-6 shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] z-10"
+        >
       <!-- Close Button -->
       <button
         @click="close"
@@ -247,4 +253,6 @@ async function startChat() {
       </div>
     </div>
   </div>
+    </Transition>
+  </Teleport>
 </template>

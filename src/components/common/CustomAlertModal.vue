@@ -57,7 +57,7 @@ onUnmounted(() => {
       >
         <div
           v-if="alertStore.isOpen"
-          class="relative w-full max-w-sm bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden p-6 text-left flex flex-col gap-4 animate-in"
+          class="tg-modal-box relative w-full max-w-sm bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden p-6 text-left flex flex-col gap-4"
         >
           <!-- Top Row: Icon & Close Button -->
           <div class="flex items-start justify-between gap-3">
