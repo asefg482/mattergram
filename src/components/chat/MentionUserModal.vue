@@ -10,6 +10,7 @@ import {
   UserX,
   Loader2,
   X,
+  ArrowLeft,
   Radio,
   Send,
   ZoomIn,
@@ -74,20 +75,39 @@ async function startChat() {
     <Transition name="tg-modal">
       <div
         v-if="modal.isOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
-        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+        class="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 select-none"
+        style="padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);"
       >
-        <!-- Backdrop -->
-        <div @click="close" class="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
+        <!-- Backdrop (visible on desktop) -->
+        <div @click="close" class="hidden sm:block absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
 
-        <!-- Modal Box -->
+        <!-- Modal Box / Mobile Screen -->
         <div
-          class="tg-modal-box relative w-full max-w-sm bg-white dark:bg-[#17212b] text-[#111827] dark:text-[#f5f5f5] rounded-3xl p-6 shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] z-10"
+          class="tg-modal-box relative w-full h-full sm:h-auto sm:max-w-sm bg-white dark:bg-[#17212b] text-[#111827] dark:text-[#f5f5f5] rounded-none sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-0 sm:border border-[#dfe1e5] dark:border-[#202b36] z-10 flex flex-col justify-center sm:justify-start overflow-y-auto"
         >
-      <!-- Close Button -->
+      <!-- Mobile Top Navigation Bar -->
+      <div class="sm:hidden flex items-center justify-between pb-3 border-b border-[#dfe1e5] dark:border-[#202b36] mb-4 shrink-0">
+        <button
+          @click="close"
+          class="p-1.5 -ml-1 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-full transition-colors cursor-pointer"
+          title="Back"
+        >
+          <ArrowLeft class="w-5 h-5" />
+        </button>
+        <span class="text-sm font-bold text-gray-900 dark:text-white">User Info</span>
+        <button
+          @click="close"
+          class="p-1.5 -mr-1 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-full transition-colors cursor-pointer"
+          title="Close"
+        >
+          <X class="w-5 h-5" />
+        </button>
+      </div>
+
+      <!-- Desktop Close Button -->
       <button
         @click="close"
-        class="absolute top-4 right-4 p-1.5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#202b36] transition-colors"
+        class="hidden sm:block absolute top-4 right-4 p-1.5 text-[#7f91a4] hover:text-[#111827] dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-[#202b36] transition-colors cursor-pointer"
       >
         <X class="w-5 h-5" />
       </button>

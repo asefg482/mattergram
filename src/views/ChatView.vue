@@ -130,7 +130,8 @@ onMounted(async () => {
       class="tg-mobile-chat-panel flex flex-col"
       :class="[
         !isTransitionReady ? 'tg-nav-no-transition' : '',
-        isChatOpenMobile ? 'is-open' : ''
+        isChatOpenMobile ? 'is-open' : '',
+        uiStore.showRightSidebar ? 'is-shifted-left' : ''
       ]"
     >
       <ChatArea />

@@ -321,6 +321,38 @@ input, textarea, button, select {
   }
 }
 
+@media (max-width: 639px) {
+  .tg-modal-enter-active .tg-modal-box.rounded-none {
+    animation: tgMobileScreenEnter 0.28s cubic-bezier(0.25, 1, 0.5, 1) both;
+  }
+
+  .tg-modal-leave-active .tg-modal-box.rounded-none {
+    animation: tgMobileScreenLeave 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes tgMobileScreenEnter {
+    0% {
+      opacity: 0;
+      transform: translate3d(100%, 0, 0);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes tgMobileScreenLeave {
+    0% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(100%, 0, 0);
+    }
+  }
+}
+
 /* Telegram Full-Screen Media / Image Preview Transition */
 .tg-media-modal-enter-active {
   transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1);
@@ -389,49 +421,54 @@ input, textarea, button, select {
 }
 
 /* Telegram Right Drawer Transition (ChatInfoDrawer & HashtagDrawer) */
-.tg-drawer-enter-active,
-.tg-drawer-leave-active {
-  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+.tg-drawer-enter-active {
+  transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
   will-change: transform, opacity;
+}
+
+.tg-drawer-leave-active {
+  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.tg-drawer-enter-from,
+.tg-drawer-leave-to {
+  transform: translate3d(100%, 0, 0) !important;
+  opacity: 0;
+}
+
+.tg-drawer-enter-to,
+.tg-drawer-leave-from {
+  transform: translate3d(0, 0, 0) !important;
+  opacity: 1;
 }
 
 @media (max-width: 767px) {
   .tg-drawer-panel {
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.25);
-  }
-
-  .tg-drawer-enter-from,
-  .tg-drawer-leave-to {
-    transform: translate3d(100%, 0, 0) !important;
-    opacity: 0;
-  }
-
-  .tg-drawer-enter-to,
-  .tg-drawer-leave-from {
-    transform: translate3d(0, 0, 0) !important;
-    opacity: 1;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: var(--tg-viewport-height, 100dvh) !important;
+    max-height: var(--tg-viewport-height, 100dvh) !important;
+    z-index: 40 !important;
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.35) !important;
   }
 }
 
 @media (min-width: 768px) {
-  .tg-drawer-enter-active,
-  .tg-drawer-leave-active {
-    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), margin-right 0.26s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform, opacity, margin-right;
-  }
-
-  .tg-drawer-enter-from,
-  .tg-drawer-leave-to {
-    transform: translate3d(24px, 0, 0);
-    opacity: 0;
-    margin-right: -22rem;
-  }
-
-  .tg-drawer-enter-to,
-  .tg-drawer-leave-from {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
-    margin-right: 0;
+  .tg-drawer-panel {
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    width: 22rem !important;
+    max-width: 90vw !important;
+    height: 100% !important;
+    z-index: 30 !important;
+    box-shadow: -8px 0 28px rgba(0, 0, 0, 0.16) !important;
   }
 }
 
@@ -570,6 +607,12 @@ input, textarea, button, select {
     transform: translate3d(0, 0, 0) !important;
     pointer-events: auto !important;
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .tg-mobile-chat-panel.is-shifted-left {
+    transform: translate3d(-20%, 0, 0) !important;
+    opacity: 0.75 !important;
+    pointer-events: none !important;
   }
 
   .tg-nav-no-transition,
