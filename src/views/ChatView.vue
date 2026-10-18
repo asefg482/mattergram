@@ -115,26 +115,26 @@ onMounted(async () => {
 <template>
   <div class="flex-1 h-full flex overflow-hidden relative">
     <!-- Left Sidebar (Chat List & Drawer) -->
-    <Sidebar
-      class="w-full h-full absolute inset-0 md:relative md:inset-auto md:w-auto md:translate-x-0 md:opacity-100 md:pointer-events-auto"
+    <div
+      class="tg-mobile-sidebar-panel flex flex-col"
       :class="[
-        isTransitionReady ? 'transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:transition-none' : 'duration-0',
-        isChatOpenMobile
-          ? '-translate-x-1/4 opacity-75 pointer-events-none'
-          : 'translate-x-0 opacity-100 pointer-events-auto z-10'
+        !isTransitionReady ? 'tg-nav-no-transition' : '',
+        isChatOpenMobile ? 'is-shifted' : ''
       ]"
-    />
+    >
+      <Sidebar />
+    </div>
 
     <!-- Main Chat Area -->
-    <ChatArea
-      class="w-full h-full absolute inset-0 md:relative md:inset-auto md:flex-1 md:translate-x-0 md:opacity-100 md:pointer-events-auto md:shadow-none"
+    <div
+      class="tg-mobile-chat-panel flex flex-col"
       :class="[
-        isTransitionReady ? 'transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:transition-none' : 'duration-0',
-        isChatOpenMobile
-          ? 'translate-x-0 pointer-events-auto shadow-[-12px_0_30px_rgba(0,0,0,0.22)] z-20'
-          : 'translate-x-full pointer-events-none z-0'
+        !isTransitionReady ? 'tg-nav-no-transition' : '',
+        isChatOpenMobile ? 'is-open' : ''
       ]"
-    />
+    >
+      <ChatArea />
+    </div>
 
     <!-- Right Chat Info Drawer -->
     <ChatInfoDrawer />
