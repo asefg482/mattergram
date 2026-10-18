@@ -553,7 +553,7 @@ defineExpose({
 
 <template>
   <div
-    class="px-3 pt-1 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#101921] relative z-20"
+    class="tg-chat-input-bar px-3 pt-1 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#101921] relative z-20"
     style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
   >
     <!-- Telegram Mention Autocomplete Popover -->

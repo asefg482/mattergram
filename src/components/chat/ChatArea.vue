@@ -515,12 +515,23 @@ onMounted(() => {
     }
   }, 6000)
 
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize)
+  }
+  window.addEventListener('resize', handleViewportResize)
   window.addEventListener('focus', onWindowFocus)
   window.addEventListener('dragend', onWindowDragEnd)
   window.addEventListener('dragleave', onWindowDragLeave)
   window.addEventListener('dragover', preventWindowDragOver)
   window.addEventListener('drop', preventWindowDrop)
 })
+
+function handleViewportResize() {
+  if (currentScrollAnimation || isPrependingOlderPosts.value) return
+  if (!showScrollBottom.value) {
+    performInstantScrollToBottom()
+  }
+}
 
 function onWindowFocus() {
   if (chatStore.activeChannelId && !document.hidden) {
@@ -530,6 +541,10 @@ function onWindowFocus() {
 }
 
 onUnmounted(() => {
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize)
+  }
+  window.removeEventListener('resize', handleViewportResize)
   resizeObserver?.disconnect()
   if (viewersRefreshInterval) {
     clearInterval(viewersRefreshInterval)

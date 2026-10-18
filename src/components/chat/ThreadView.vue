@@ -229,8 +229,19 @@ function onKeyDown(e: KeyboardEvent) {
   }
 }
 
+function handleViewportResize() {
+  if (currentScrollAnimation) return
+  if (!showScrollBottom.value) {
+    performInstantScrollToBottom()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize)
+  }
+  window.addEventListener('resize', handleViewportResize)
   nextTick(() => {
     performInstantScrollToBottom()
     if (window.innerWidth >= 768) {
@@ -241,6 +252,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeyDown)
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize)
+  }
+  window.removeEventListener('resize', handleViewportResize)
   if (currentScrollAnimation) {
     cancelAnimationFrame(currentScrollAnimation)
   }

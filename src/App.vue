@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import NotificationToast from './components/common/NotificationToast.vue'
 import MentionUserModal from './components/chat/MentionUserModal.vue'
 import AvatarPreviewModal from './components/common/AvatarPreviewModal.vue'
@@ -11,8 +11,92 @@ import { Loader2 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 
+let cleanupViewport: (() => void) | null = null
+
+function setupVisualViewport() {
+  if (typeof window === 'undefined') return () => {}
+
+  function update() {
+    const vv = window.visualViewport
+    const h = vv ? Math.round(vv.height) : window.innerHeight
+    const top = vv ? Math.round(vv.offsetTop) : 0
+
+    document.documentElement.style.setProperty('--tg-viewport-height', `${h}px`)
+    document.documentElement.style.setProperty('--tg-viewport-top', `${top}px`)
+
+    const isMobile = window.innerWidth < 768
+    const screenHeight = window.screen?.height || window.innerHeight
+    const isKeyboardOpen = isMobile && h < screenHeight - 120
+    document.documentElement.classList.toggle('keyboard-open', isKeyboardOpen)
+
+    if (window.scrollY > 0 || window.scrollX > 0) {
+      window.scrollTo(0, 0)
+    }
+    if (document.documentElement.scrollTop > 0) {
+      document.documentElement.scrollTop = 0
+    }
+    if (document.body.scrollTop > 0) {
+      document.body.scrollTop = 0
+    }
+  }
+
+  update()
+
+  const vv = window.visualViewport
+  if (vv) {
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+  }
+  window.addEventListener('resize', update)
+  window.addEventListener('scroll', update)
+
+  const onOrientationChange = () => {
+    setTimeout(update, 100)
+    setTimeout(update, 300)
+  }
+  window.addEventListener('orientationchange', onOrientationChange)
+
+  const onFocusIn = (e: FocusEvent) => {
+    const target = e.target as HTMLElement | null
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+      if (window.scrollY > 0) window.scrollTo(0, 0)
+      if (document.documentElement.scrollTop > 0) document.documentElement.scrollTop = 0
+      if (document.body.scrollTop > 0) document.body.scrollTop = 0
+      setTimeout(update, 50)
+      setTimeout(update, 150)
+      setTimeout(update, 300)
+    }
+  }
+
+  const onFocusOut = () => {
+    if (window.scrollY > 0) window.scrollTo(0, 0)
+    setTimeout(update, 100)
+    setTimeout(update, 250)
+  }
+
+  document.addEventListener('focusin', onFocusIn)
+  document.addEventListener('focusout', onFocusOut)
+
+  return () => {
+    if (vv) {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+    window.removeEventListener('resize', update)
+    window.removeEventListener('scroll', update)
+    window.removeEventListener('orientationchange', onOrientationChange)
+    document.removeEventListener('focusin', onFocusIn)
+    document.removeEventListener('focusout', onFocusOut)
+  }
+}
+
 onMounted(() => {
   notificationService.autoRequestPermissionOnFirstOpen()
+  cleanupViewport = setupVisualViewport()
+})
+
+onUnmounted(() => {
+  cleanupViewport?.()
 })
 </script>
 
