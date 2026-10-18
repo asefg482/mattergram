@@ -529,9 +529,14 @@ onUnmounted(() => {
         <div class="relative">
           <button
             @click="showMoreMenu = !showMoreMenu"
-            class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-colors cursor-pointer"
+            class="p-2 text-[#7f91a4] hover:text-[#111827] dark:hover:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-full transition-all duration-200 cursor-pointer"
+            :class="{ 'text-[#3390ec] bg-[#3390ec]/15 dark:bg-[#3390ec]/20': showMoreMenu }"
+            title="More options"
           >
-            <MoreVertical class="w-4 h-4" />
+            <MoreVertical
+              class="w-4 h-4 transition-transform duration-200"
+              :class="{ 'rotate-90 text-[#3390ec]': showMoreMenu }"
+            />
           </button>
 
           <!-- Backdrop click catcher -->
@@ -549,24 +554,24 @@ onUnmounted(() => {
             >
               <button
                 @click="toggleMute(); showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
               >
-                <VolumeX v-if="channel.is_muted" class="w-4 h-4 text-[#7f91a4]" />
-                <Volume2 v-else class="w-4 h-4 text-[#7f91a4]" />
-                <span class="font-medium">{{ channel.is_muted ? 'Unmute' : 'Mute Notifications' }}</span>
+                <VolumeX v-if="channel.is_muted" class="w-4 h-4 text-[#7f91a4] shrink-0" />
+                <Volume2 v-else class="w-4 h-4 text-[#7f91a4] shrink-0" />
+                <span class="font-medium truncate">{{ channel.is_muted ? 'Unmute' : 'Mute Notifications' }}</span>
               </button>
 
               <button
                 @click="uiStore.openChatFiles(); showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center justify-between text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center justify-between text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
               >
-                <div class="flex items-center gap-2.5">
-                  <FolderOpen class="w-4 h-4 text-[#7f91a4]" />
-                  <span class="font-medium">Shared Files</span>
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <FolderOpen class="w-4 h-4 text-[#7f91a4] shrink-0" />
+                  <span class="font-medium truncate">Shared Files</span>
                 </div>
                 <span
                   v-if="filesCount > 0"
-                  class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#3390ec]/20 text-[#3390ec] font-bold"
+                  class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#3390ec]/20 text-[#3390ec] font-bold shrink-0"
                 >
                   {{ filesCount }}
                 </span>
@@ -576,48 +581,48 @@ onUnmounted(() => {
               <button
                 v-if="!isDirect && !isSavedMessages && canAddMembers"
                 @click="showAddMemberModal = true; showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
               >
-                <UserPlus class="w-4 h-4 text-[#3390ec]" />
-                <span class="font-medium">Add Member</span>
+                <UserPlus class="w-4 h-4 text-[#3390ec] shrink-0" />
+                <span class="font-medium truncate">Add Member</span>
               </button>
 
               <button
                 @click="uiStore.openChatInfo(); showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
               >
-                <PanelRight class="w-4 h-4 text-[#7f91a4]" />
-                <span class="font-medium">View Info</span>
+                <PanelRight class="w-4 h-4 text-[#7f91a4] shrink-0" />
+                <span class="font-medium truncate">View Info</span>
               </button>
 
               <!-- Edit Channel / Group (When permitted) -->
               <button
                 v-if="canManageChannel"
                 @click="uiStore.openEditChannel(channel); showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center gap-2.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left cursor-pointer"
               >
-                <Edit3 class="w-4 h-4 text-[#3390ec]" />
-                <span class="font-medium">Edit Channel</span>
+                <Edit3 class="w-4 h-4 text-[#3390ec] shrink-0" />
+                <span class="font-medium truncate">Edit Channel</span>
               </button>
 
               <!-- Exit Group (For groups) -->
               <button
                 v-if="!isDirect && !isSavedMessages"
                 @click="handleExitGroup(); showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-red-500 hover:bg-red-500/10 hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center gap-2.5 text-red-500 hover:bg-red-500/10 text-left cursor-pointer"
               >
-                <LogOut class="w-4 h-4 text-red-500" />
-                <span class="font-medium">Exit</span>
+                <LogOut class="w-4 h-4 text-red-500 shrink-0" />
+                <span class="font-medium truncate">Exit</span>
               </button>
 
               <!-- Delete Chat / Channel -->
               <button
                 v-if="canDelete"
                 @click="handleDeleteChat(); showMoreMenu = false"
-                class="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-red-500 hover:bg-red-500/10 hover:translate-x-0.5 transition-all duration-150 text-left cursor-pointer"
+                class="tg-dropdown-item w-full px-3.5 py-2.5 flex items-center gap-2.5 text-red-500 hover:bg-red-500/10 text-left cursor-pointer"
               >
-                <Trash2 class="w-4 h-4 text-red-500" />
-                <span class="font-medium">{{ isDirect ? 'Delete Chat' : 'Delete Channel' }}</span>
+                <Trash2 class="w-4 h-4 text-red-500 shrink-0" />
+                <span class="font-medium truncate">{{ isDirect ? 'Delete Chat' : 'Delete Channel' }}</span>
               </button>
             </div>
           </Transition>

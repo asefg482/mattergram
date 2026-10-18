@@ -391,52 +391,52 @@ function canDelete(post: MattermostPost): boolean {
                   >
                     <button
                       @click="handleJumpToPost(post); activeMenuPostId = null"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                      class="tg-dropdown-item w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
                     >
-                      <ArrowUpRight class="w-3.5 h-3.5 text-[#3390ec]" />
-                      <span>View in chat</span>
+                      <ArrowUpRight class="w-3.5 h-3.5 text-[#3390ec] shrink-0" />
+                      <span class="truncate">View in chat</span>
                     </button>
 
                     <button
                       @click="handleOpenThread(post); activeMenuPostId = null"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                      class="tg-dropdown-item w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
                     >
-                      <MessageSquareText class="w-3.5 h-3.5 text-[#3390ec]" />
-                      <span>Open thread</span>
+                      <MessageSquareText class="w-3.5 h-3.5 text-[#3390ec] shrink-0" />
+                      <span class="truncate">Open thread</span>
                     </button>
 
                     <button
                       @click="handleReply(post); activeMenuPostId = null"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                      class="tg-dropdown-item w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
                     >
-                      <CornerUpLeft class="w-3.5 h-3.5 text-[#3390ec]" />
-                      <span>Reply</span>
+                      <CornerUpLeft class="w-3.5 h-3.5 text-[#3390ec] shrink-0" />
+                      <span class="truncate">Reply</span>
                     </button>
 
                     <button
                       @click="copyPostText(post); activeMenuPostId = null"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                      class="tg-dropdown-item w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
                     >
-                      <Check v-if="copiedPostId === post.id" class="w-3.5 h-3.5 text-emerald-400" />
-                      <Copy v-else class="w-3.5 h-3.5 text-[#7f91a4]" />
-                      <span>{{ copiedPostId === post.id ? 'Copied!' : 'Copy text' }}</span>
+                      <Check v-if="copiedPostId === post.id" class="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <Copy v-else class="w-3.5 h-3.5 text-[#7f91a4] shrink-0" />
+                      <span class="truncate">{{ copiedPostId === post.id ? 'Copied!' : 'Copy text' }}</span>
                     </button>
 
                     <button
                       @click="handleTogglePin(post); activeMenuPostId = null"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:translate-x-0.5 transition-all duration-150 text-left text-gray-800 dark:text-white"
+                      class="tg-dropdown-item w-full px-3 py-1.5 flex items-center gap-2 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left text-gray-800 dark:text-white"
                     >
-                      <Pin class="w-3.5 h-3.5 text-[#7f91a4]" />
-                      <span>{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
+                      <Pin class="w-3.5 h-3.5 text-[#7f91a4] shrink-0" />
+                      <span class="truncate">{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
                     </button>
 
                     <button
                       v-if="canDelete(post)"
                       @click="handleDelete(post); activeMenuPostId = null"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 hover:bg-rose-500/10 hover:translate-x-0.5 transition-all duration-150 text-left text-rose-500"
+                      class="tg-dropdown-item w-full px-3 py-1.5 flex items-center gap-2 hover:bg-rose-500/10 text-left text-rose-500"
                     >
-                      <Trash2 class="w-3.5 h-3.5" />
-                      <span>Delete</span>
+                      <Trash2 class="w-3.5 h-3.5 shrink-0" />
+                      <span class="truncate">Delete</span>
                     </button>
                   </div>
                 </Transition>

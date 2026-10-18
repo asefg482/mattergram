@@ -420,6 +420,76 @@ input, textarea, button, select {
   transform: scale(0.9) translateY(-6px);
 }
 
+/* Telegram Dropdown Menu Items Staggered Cascade Animation */
+@keyframes tgDropdownItemCascade {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tgDropdownIconPop {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tg-dropdown-item {
+  will-change: transform, opacity;
+  animation: tgDropdownItemCascade 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: background-color 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+}
+
+.tg-dropdown-item:hover {
+  transform: translateX(4px);
+}
+
+.tg-dropdown-item:active {
+  transform: translateX(4px) scale(0.98);
+}
+
+.tg-dropdown-item svg {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: tgDropdownIconPop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tg-dropdown-item:hover svg {
+  transform: scale(1.18);
+}
+
+.tg-dropdown-item:nth-child(1) { animation-delay: 15ms; }
+.tg-dropdown-item:nth-child(1) svg { animation-delay: 25ms; }
+
+.tg-dropdown-item:nth-child(2) { animation-delay: 45ms; }
+.tg-dropdown-item:nth-child(2) svg { animation-delay: 55ms; }
+
+.tg-dropdown-item:nth-child(3) { animation-delay: 75ms; }
+.tg-dropdown-item:nth-child(3) svg { animation-delay: 85ms; }
+
+.tg-dropdown-item:nth-child(4) { animation-delay: 105ms; }
+.tg-dropdown-item:nth-child(4) svg { animation-delay: 115ms; }
+
+.tg-dropdown-item:nth-child(5) { animation-delay: 135ms; }
+.tg-dropdown-item:nth-child(5) svg { animation-delay: 145ms; }
+
+.tg-dropdown-item:nth-child(6) { animation-delay: 165ms; }
+.tg-dropdown-item:nth-child(6) svg { animation-delay: 175ms; }
+
+.tg-dropdown-item:nth-child(7) { animation-delay: 195ms; }
+.tg-dropdown-item:nth-child(7) svg { animation-delay: 205ms; }
+
+.tg-dropdown-item:nth-child(8) { animation-delay: 225ms; }
+.tg-dropdown-item:nth-child(8) svg { animation-delay: 235ms; }
+
 /* Telegram Right Drawer Transition (ChatInfoDrawer & HashtagDrawer) */
 .tg-drawer-enter-active {
   transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
