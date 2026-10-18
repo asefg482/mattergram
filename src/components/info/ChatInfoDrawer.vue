@@ -366,6 +366,16 @@ watch(
   { immediate: true }
 )
 
+// Automatically close User Info / Channel Info drawer when switching chats
+watch(
+  () => chatStore.activeChannelId,
+  (newId, oldId) => {
+    if (oldId && newId !== oldId) {
+      uiStore.showRightSidebar = false
+    }
+  }
+)
+
 function triggerFullScan(force = false) {
   const chId = channel.value?.id
   if (chId) {

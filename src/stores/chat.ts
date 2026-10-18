@@ -294,6 +294,13 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     closeThread()
+
+    // Automatically close User Info / right drawer and mention modal when switching chats
+    const uiStore = useUiStore()
+    uiStore.showRightSidebar = false
+    uiStore.closeMentionModal()
+    uiStore.showHashtagDrawer = false
+
     activeChannelId.value = targetId
     if (!posts.value[targetId] || !hasLoadedChannelPosts.value[targetId]) {
       loadingPosts.value = true

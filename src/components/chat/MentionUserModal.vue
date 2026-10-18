@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '../../stores/ui'
 import { useChatStore } from '../../stores/chat'
@@ -68,6 +68,16 @@ async function startChat() {
     router.push(`/c/${chatStore.activeChannelId}`)
   }
 }
+
+// Close User Info modal when switching chats
+watch(
+  () => chatStore.activeChannelId,
+  (newId, oldId) => {
+    if (oldId && newId !== oldId) {
+      close()
+    }
+  }
+)
 </script>
 
 <template>

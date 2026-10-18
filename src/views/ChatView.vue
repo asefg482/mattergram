@@ -48,6 +48,9 @@ async function syncRouteWithChat() {
   } else if (!route.path.includes('/settings')) {
     if (window.innerWidth < 768) {
       uiStore.isMobileSidebarOpen = true
+      uiStore.showRightSidebar = false
+      uiStore.closeMentionModal()
+      uiStore.showHashtagDrawer = false
       // Delay clearing active channel so mobile slide-out animation stays smooth without flashing empty state
       setTimeout(() => {
         if (uiStore.isMobileSidebarOpen) {
@@ -55,6 +58,9 @@ async function syncRouteWithChat() {
         }
       }, 320)
     } else {
+      uiStore.showRightSidebar = false
+      uiStore.closeMentionModal()
+      uiStore.showHashtagDrawer = false
       chatStore.activeChannelId = null
     }
   }
