@@ -681,9 +681,10 @@ function handleSenderClick() {
       </div>
 
       <!-- Emoji Reactions Pills Below Bubble -->
-      <div
-        v-if="groupedReactions.length > 0"
-        class="flex flex-wrap gap-1 mt-1"
+      <TransitionGroup
+        tag="div"
+        name="tg-reaction-item"
+        class="flex flex-wrap gap-1 mt-1.5"
         :class="isOutgoing ? 'justify-end' : 'justify-start'"
       >
         <div
@@ -695,15 +696,15 @@ function handleSenderClick() {
           <button
             @click="handleQuickReaction(r.rawName || r.emoji)"
             :title="getReactionTooltipTitle(r)"
-            class="px-2 py-0.5 rounded-full text-xs flex items-center gap-1 transition-all border select-none cursor-pointer"
+            class="px-2.5 py-0.5 rounded-full text-xs flex items-center gap-1.5 transition-all duration-200 border select-none cursor-pointer transform active:scale-90 hover:scale-105"
             :class="[
               r.hasReacted
-                ? 'bg-[#3390ec]/20 border-[#3390ec] text-[#3390ec] font-semibold'
+                ? 'bg-[#3390ec]/20 border-[#3390ec] text-[#3390ec] font-semibold shadow-xs'
                 : 'bg-white dark:bg-[#182533] border-[#dfe1e5] dark:border-[#202b36] text-[#7f91a4] hover:border-gray-500'
             ]"
           >
-            <span>{{ r.emoji }}</span>
-            <span class="text-[10px]">{{ r.count }}</span>
+            <span class="text-sm leading-none transition-transform duration-150 group-hover/react:scale-110">{{ r.emoji }}</span>
+            <span class="text-[10px] font-medium transition-all duration-150">{{ r.count }}</span>
           </button>
 
           <!-- Telegram Reactions User List Tooltip / Popover on Hover -->
@@ -772,7 +773,7 @@ function handleSenderClick() {
         >
           <SmilePlus class="w-3.5 h-3.5" />
         </button>
-      </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>

@@ -623,46 +623,50 @@ defineExpose({
     </div>
 
     <!-- Reply Banner Preview -->
-    <div
-      v-if="uiStore.replyingTo"
-      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-[#3390ec] animate-in fade-in duration-150 tg-chat-banner"
-      :style="{ borderRadius: `${Math.min(uiStore.chatRadius, 14)}px` }"
-    >
-      <div class="flex items-center gap-2 min-w-0 pr-2">
-        <Reply class="w-4 h-4 text-[#3390ec] shrink-0" />
-        <div class="min-w-0 text-xs">
-          <div class="font-semibold text-[#3390ec] truncate">
-            {{ usersStore.getUserDisplayName(uiStore.replyingTo.user_id) }}
-          </div>
-          <div class="text-[#7f91a4] truncate text-[11px]">
-            {{ uiStore.replyingTo.message || 'Attachment' }}
+    <Transition name="tg-banner">
+      <div
+        v-if="uiStore.replyingTo"
+        class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-[#3390ec] tg-chat-banner select-none"
+        :style="{ borderRadius: `${Math.min(uiStore.chatRadius, 14)}px` }"
+      >
+        <div class="flex items-center gap-2 min-w-0 pr-2">
+          <Reply class="w-4 h-4 text-[#3390ec] shrink-0" />
+          <div class="min-w-0 text-xs">
+            <div class="font-semibold text-[#3390ec] truncate">
+              {{ usersStore.getUserDisplayName(uiStore.replyingTo.user_id) }}
+            </div>
+            <div class="text-[#7f91a4] truncate text-[11px]">
+              {{ uiStore.replyingTo.message || 'Attachment' }}
+            </div>
           </div>
         </div>
+        <button @click="cancelReply" class="p-1 text-[#7f91a4] hover:text-[#3390ec] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer">
+          <X class="w-4 h-4" />
+        </button>
       </div>
-      <button @click="cancelReply" class="p-1 text-[#7f91a4] hover:text-white rounded-full">
-        <X class="w-4 h-4" />
-      </button>
-    </div>
+    </Transition>
 
     <!-- Edit Banner Preview -->
-    <div
-      v-if="uiStore.editingPost"
-      class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-amber-400 animate-in fade-in duration-150 tg-chat-banner"
-      :style="{ borderRadius: `${Math.min(uiStore.chatRadius, 14)}px` }"
-    >
-      <div class="flex items-center gap-2 min-w-0 pr-2">
-        <Edit2 class="w-4 h-4 text-amber-400 shrink-0" />
-        <div class="min-w-0 text-xs">
-          <div class="font-semibold text-amber-400 truncate">Edit Message</div>
-          <div class="text-[#7f91a4] truncate text-[11px]">
-            {{ uiStore.editingPost.message }}
+    <Transition name="tg-banner">
+      <div
+        v-if="uiStore.editingPost"
+        class="mb-2 px-3 py-1.5 bg-[#f4f4f5] dark:bg-[#242f3d] rounded-xl flex items-center justify-between border-l-4 border-amber-400 tg-chat-banner select-none"
+        :style="{ borderRadius: `${Math.min(uiStore.chatRadius, 14)}px` }"
+      >
+        <div class="flex items-center gap-2 min-w-0 pr-2">
+          <Edit2 class="w-4 h-4 text-amber-400 shrink-0" />
+          <div class="min-w-0 text-xs">
+            <div class="font-semibold text-amber-400 truncate">Edit Message</div>
+            <div class="text-[#7f91a4] truncate text-[11px]">
+              {{ uiStore.editingPost.message }}
+            </div>
           </div>
         </div>
+        <button @click="cancelEdit" class="p-1 text-[#7f91a4] hover:text-amber-400 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer">
+          <X class="w-4 h-4" />
+        </button>
       </div>
-      <button @click="cancelEdit" class="p-1 text-[#7f91a4] hover:text-white rounded-full">
-        <X class="w-4 h-4" />
-      </button>
-    </div>
+    </Transition>
 
     <!-- Attached Files Preview Bar -->
     <div v-if="attachedFiles.length > 0 || isUploading" class="mb-2 flex flex-wrap gap-2">

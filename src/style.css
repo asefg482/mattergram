@@ -260,6 +260,87 @@ input, textarea, button, select {
   animation: tgBackdropFadeIn 0.22s ease-out forwards;
 }
 
+/* Telegram Reaction Pill Animation on Message Bubble */
+@keyframes tgReactionPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) translateY(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.22) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes tgReactionPopOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2) translateY(3px);
+  }
+}
+
+.tg-reaction-item-enter-active {
+  animation: tgReactionPopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tg-reaction-item-leave-active {
+  animation: tgReactionPopOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.tg-reaction-item-move {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Telegram Action Banner (Reply / Edit) Slide Transitions on Chat Box */
+@keyframes tgBannerSlideIn {
+  0% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(10px) scale(0.97);
+    margin-bottom: 0;
+  }
+  100% {
+    opacity: 1;
+    max-height: 80px;
+    transform: translateY(0) scale(1);
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes tgBannerSlideOut {
+  0% {
+    opacity: 1;
+    max-height: 80px;
+    transform: translateY(0) scale(1);
+    margin-bottom: 0.5rem;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px) scale(0.97);
+    margin-bottom: 0;
+  }
+}
+
+.tg-banner-enter-active {
+  overflow: hidden;
+  animation: tgBannerSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tg-banner-leave-active {
+  overflow: hidden;
+  animation: tgBannerSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+
 
 .tg-chat-input-box {
   border-radius: var(--tg-chat-radius, 16px) !important;
