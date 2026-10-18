@@ -121,23 +121,18 @@ onUnmounted(() => {
     <CustomAlertModal />
 
     <!-- Global Logout Loading Overlay -->
-    <transition
-      enter-active-class="transition-opacity duration-200"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-200"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="authStore.isLoggingOut"
-        class="fixed inset-0 z-[100] bg-black/45 backdrop-blur-sm flex flex-col items-center justify-center select-none"
-      >
-        <div class="bg-white dark:bg-[#17212b] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-3.5 min-w-[190px] border border-[#dfe1e5] dark:border-[#101921] animate-in fade-in zoom-in-95 duration-150">
-          <Loader2 class="w-8 h-8 text-[#3390ec] animate-spin" />
-          <span class="text-sm font-medium text-[#111827] dark:text-[#f5f5f5]">Logging out...</span>
+    <Teleport to="body">
+      <Transition name="tg-modal">
+        <div
+          v-if="authStore.isLoggingOut"
+          class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center select-none"
+        >
+          <div class="tg-modal-box bg-white dark:bg-[#17212b] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-3.5 min-w-[190px] border border-[#dfe1e5] dark:border-[#202b36]">
+            <Loader2 class="w-8 h-8 text-[#3390ec] animate-spin" />
+            <span class="text-sm font-medium text-[#111827] dark:text-[#f5f5f5]">Logging out...</span>
+          </div>
         </div>
-      </div>
-    </transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>

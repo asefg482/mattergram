@@ -33,30 +33,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <transition
-    enter-active-class="transition duration-200 ease-out"
-    enter-from-class="opacity-0"
-    enter-to-class="opacity-100"
-    leave-active-class="transition duration-150 ease-in"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
-  >
-    <div
-      v-if="alertStore.isOpen"
-      class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-none"
-      style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
-      @click.self="alertStore.handleCancel"
-    >
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 scale-95 translate-y-2"
-        enter-to-class="opacity-100 scale-100 translate-y-0"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 scale-100 translate-y-0"
-        leave-to-class="opacity-0 scale-95 translate-y-2"
+  <Teleport to="body">
+    <Transition name="tg-modal">
+      <div
+        v-if="alertStore.isOpen"
+        class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+        @click.self="alertStore.handleCancel"
       >
         <div
-          v-if="alertStore.isOpen"
           class="tg-modal-box relative w-full max-w-sm bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden p-6 text-left flex flex-col gap-4"
         >
           <!-- Top Row: Icon & Close Button -->
@@ -125,7 +110,7 @@ onUnmounted(() => {
             </button>
           </div>
         </div>
-      </transition>
-    </div>
-  </transition>
+      </div>
+    </Transition>
+  </Teleport>
 </template>

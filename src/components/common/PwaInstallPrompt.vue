@@ -73,57 +73,53 @@ function closeIOSModal() {
   </transition>
 
   <!-- iOS Safari Add to Home Screen Instructions Modal -->
-  <transition
-    enter-active-class="transition duration-200 ease-out"
-    enter-from-class="opacity-0"
-    enter-to-class="opacity-100"
-    leave-active-class="transition duration-150 ease-in"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
-  >
-    <div
-      v-if="pwaService.showIOSModal.value"
-      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 select-none"
-      @click="closeIOSModal"
-    >
+  <Teleport to="body">
+    <Transition name="tg-modal">
       <div
-        class="bg-white dark:bg-[#17212b] rounded-2xl w-full max-w-sm p-5 shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col gap-4 text-center animate-in zoom-in-95 duration-150"
-        @click.stop
+        v-if="pwaService.showIOSModal.value"
+        class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 select-none"
+        style="padding-top: calc(1rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));"
+        @click="closeIOSModal"
       >
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#229ed9] to-[#2aabee] mx-auto flex items-center justify-center text-white shadow-lg">
-          <Smartphone class="w-6 h-6" />
-        </div>
-
-        <div>
-          <h3 class="text-base font-bold text-[#111827] dark:text-white">Install on iPhone / iPad</h3>
-          <p class="text-xs text-[#7f91a4] mt-1">
-            Install Mattergram on your home screen in 2 quick steps:
-          </p>
-        </div>
-
-        <div class="space-y-2.5 text-left text-xs bg-black/5 dark:bg-white/5 p-3.5 rounded-xl border border-black/5 dark:border-white/5">
-          <div class="flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5]">
-            <div class="w-7 h-7 rounded-lg bg-blue-500/15 text-[#3390ec] flex items-center justify-center shrink-0">
-              <Share2 class="w-4 h-4" />
-            </div>
-            <span>1. Tap the <strong>Share</strong> button in Safari's toolbar.</span>
-          </div>
-
-          <div class="flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5]">
-            <div class="w-7 h-7 rounded-lg bg-blue-500/15 text-[#3390ec] flex items-center justify-center shrink-0">
-              <PlusSquare class="w-4 h-4" />
-            </div>
-            <span>2. Scroll down and select <strong>Add to Home Screen</strong>.</span>
-          </div>
-        </div>
-
-        <button
-          @click="closeIOSModal"
-          class="w-full py-2.5 bg-[#3390ec] hover:bg-[#2883de] text-white rounded-xl text-xs font-semibold shadow-md transition-colors"
+        <div
+          class="tg-modal-box bg-white dark:bg-[#17212b] rounded-2xl w-full max-w-sm p-5 shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col gap-4 text-center"
+          @click.stop
         >
-          Got it
-        </button>
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#229ed9] to-[#2aabee] mx-auto flex items-center justify-center text-white shadow-lg">
+            <Smartphone class="w-6 h-6" />
+          </div>
+
+          <div>
+            <h3 class="text-base font-bold text-[#111827] dark:text-white">Install on iPhone / iPad</h3>
+            <p class="text-xs text-[#7f91a4] mt-1">
+              Install Mattergram on your home screen in 2 quick steps:
+            </p>
+          </div>
+
+          <div class="space-y-2.5 text-left text-xs bg-black/5 dark:bg-white/5 p-3.5 rounded-xl border border-black/5 dark:border-white/5">
+            <div class="flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5]">
+              <div class="w-7 h-7 rounded-lg bg-blue-500/15 text-[#3390ec] flex items-center justify-center shrink-0">
+                <Share2 class="w-4 h-4" />
+              </div>
+              <span>1. Tap the <strong>Share</strong> button in Safari's toolbar.</span>
+            </div>
+
+            <div class="flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5]">
+              <div class="w-7 h-7 rounded-lg bg-blue-500/15 text-[#3390ec] flex items-center justify-center shrink-0">
+                <PlusSquare class="w-4 h-4" />
+              </div>
+              <span>2. Scroll down and select <strong>Add to Home Screen</strong>.</span>
+            </div>
+          </div>
+
+          <button
+            @click="closeIOSModal"
+            class="w-full py-2.5 bg-[#3390ec] hover:bg-[#2883de] text-white rounded-xl text-xs font-semibold shadow-md transition-colors"
+          >
+            Got it
+          </button>
+        </div>
       </div>
-    </div>
-  </transition>
+    </Transition>
+  </Teleport>
 </template>
