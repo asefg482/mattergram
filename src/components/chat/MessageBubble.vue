@@ -225,32 +225,6 @@ function handleReply() {
   showMenu.value = false
 }
 
-function flashBubble() {
-  const el = document.getElementById(`msg-${props.post.id}`)
-  if (el) {
-    el.classList.add('bg-[#3390ec]/15')
-    setTimeout(() => el.classList.remove('bg-[#3390ec]/15'), 400)
-  }
-}
-
-function handleBubbleDoubleClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
-  if (!target) return
-
-  // Do not reply if user clicked on interactive or special elements
-  if (
-    target.closest('a, button, input, textarea, video, audio, [data-mention], .tg-spoiler, [data-no-bubble-reply]')
-  ) {
-    return
-  }
-
-  // Clear any word selection caused by the browser's native double-click
-  window.getSelection()?.removeAllRanges()
-
-  flashBubble()
-  handleReply()
-}
-
 // Mobile tap & hold context menu support
 let touchStartX = 0
 let touchStartY = 0
@@ -510,7 +484,6 @@ function handleSenderClick() {
       <!-- Message Bubble -->
       <div
         @click="handleBubbleClick"
-        @dblclick="handleBubbleDoubleClick"
         @touchstart.passive="handleBubbleTouchStart"
         @touchmove.passive="handleBubbleTouchMove"
         @touchend="handleBubbleTouchEnd"
