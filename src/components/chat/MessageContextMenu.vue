@@ -63,11 +63,15 @@ const showReactionPicker = ref(false)
 
 function adjustPosition() {
   const el = menuRef.value
-  const menuWidth = el?.offsetWidth || 208
-  const menuHeight = el?.offsetHeight || 260
-  const padding = 8
-  const safeTop = 56
-  const safeBottom = 60
+  const isMob = isMobile.value
+  const menuWidth = el?.offsetWidth || (isMob ? 268 : 208)
+  const menuHeight = el?.offsetHeight || (isMob ? 380 : 280)
+  const padding = isMob ? 10 : 8
+  const safeTop = isMob ? 60 : 56
+  const safeBottom = isMob ? 65 : 60
+
+  const winW = typeof window !== 'undefined' ? window.innerWidth : 1000
+  const winH = typeof window !== 'undefined' ? window.innerHeight : 800
 
   let x = props.position.x + 2
   let y = props.position.y + 2
@@ -75,7 +79,7 @@ function adjustPosition() {
   let originY = 'top'
 
   // If menu overflows right side, flip to left of cursor
-  if (props.position.x + menuWidth + padding > window.innerWidth) {
+  if (props.position.x + menuWidth + padding > winW) {
     x = props.position.x - menuWidth - 2
     originX = 'right'
     if (x < padding) {
@@ -85,7 +89,7 @@ function adjustPosition() {
   }
 
   // If menu overflows bottom side, flip to above cursor
-  if (props.position.y + menuHeight + safeBottom > window.innerHeight) {
+  if (props.position.y + menuHeight + safeBottom > winH) {
     y = props.position.y - menuHeight - 2
     originY = 'bottom'
     if (y < safeTop) {
@@ -95,8 +99,8 @@ function adjustPosition() {
   }
 
   // Ensure within viewport bounds
-  x = Math.max(padding, Math.min(x, window.innerWidth - menuWidth - padding))
-  y = Math.max(safeTop, Math.min(y, window.innerHeight - menuHeight - safeBottom))
+  x = Math.max(padding, Math.min(x, winW - menuWidth - padding))
+  y = Math.max(safeTop, Math.min(y, winH - menuHeight - safeBottom))
 
   transformOrigin.value = `${originY} ${originX}`
   adjustedX.value = Math.round(x)
@@ -108,12 +112,12 @@ const pickerStyle = computed(() => {
   const winH = typeof window !== 'undefined' ? window.innerHeight : 800
 
   // Mobile centered positioning for reaction picker
-  if (winW < 640) {
+  if (winW < 768) {
     return {
       left: '50%',
       top: '50%',
       transform: 'translate(-50%, -50%)',
-      maxWidth: 'calc(100vw - 32px)'
+      maxWidth: 'calc(100vw - 24px)'
     }
   }
 
@@ -316,201 +320,92 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isOpen && post" class="fixed inset-0 z-50 select-none">
-      <!-- Backdrop to capture outside clicks with smooth Telegram fade on mobile -->
+    <div v-if="isOpen && post" class="fixed inset-0 z-50 pointer-events-none select-none">
+      <!-- Backdrop to capture outside clicks with gentle blur on mobile -->
       <div
-        class="fixed inset-0 transition-opacity"
-        :class="isMobile ? 'bg-black/45 dark:bg-black/65 backdrop-blur-[2px] tg-mobile-backdrop' : 'bg-transparent'"
+        class="fixed inset-0 transition-opacity pointer-events-auto"
+        :class="isMobile ? 'bg-black/35 dark:bg-black/55 backdrop-blur-[1.5px] tg-mobile-backdrop' : 'bg-transparent'"
         @click="emit('close')"
         @contextmenu.prevent="emit('close')"
       ></div>
 
-      <!-- Mobile Action Sheet (on screens < 768px) with slide-up spring animation -->
+      <!-- Telegram Floating Context Menu (Identical structure on mobile & desktop, with touch-friendly sizing on mobile) -->
       <div
-        v-if="isMobile"
         ref="menuRef"
-        class="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-[#17212b] border-t border-[#dfe1e5] dark:border-[#202b36] rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.25)] overflow-hidden tg-mobile-action-sheet pointer-events-auto"
-        style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); max-height: 85vh;"
-      >
-        <!-- Grab / drag pill indicator -->
-        <div class="pt-2.5 pb-1 flex justify-center">
-          <div class="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-        </div>
-
-        <!-- Quick Reactions Row (Mobile) -->
-        <div class="px-3 py-2 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
-          <button
-            v-for="emoji in quickEmojis"
-            :key="emoji"
-            @click="handleReaction(emoji)"
-            class="w-10 h-10 shrink-0 flex items-center justify-center text-xl rounded-xl bg-gray-100 dark:bg-[#202b36] active:scale-90 transition-transform cursor-pointer"
-            :title="`React with ${emoji}`"
-          >
-            {{ emoji }}
-          </button>
-          <!-- More Reactions Button -->
-          <button
-            @click="showReactionPicker = !showReactionPicker"
-            class="w-10 h-10 shrink-0 flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] bg-gray-100 dark:bg-[#202b36] rounded-xl active:scale-90 transition-all cursor-pointer"
-            title="More reactions..."
-          >
-            <SmilePlus class="w-5 h-5" />
-          </button>
-        </div>
-
-        <!-- Action Items List (Mobile) -->
-        <div class="px-2 py-1.5 overflow-y-auto no-scrollbar space-y-0.5" style="max-height: calc(85vh - 120px);">
-          <!-- Reply -->
-          <button
-            @click="handleReply"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Reply class="w-5 h-5 text-[#3390ec] shrink-0" />
-            <span class="text-sm font-medium">Reply</span>
-          </button>
-
-          <!-- View Thread -->
-          <button
-            @click="handleViewThread"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <MessageSquareText class="w-5 h-5 text-[#3390ec] shrink-0" />
-            <span class="flex-1 text-sm font-medium">View Thread</span>
-            <span
-              v-if="threadRepliesCount > 0"
-              class="text-xs font-bold px-2 py-0.5 rounded-full bg-[#3390ec]/15 text-[#3390ec]"
-            >
-              {{ threadRepliesCount }}
-            </span>
-          </button>
-
-          <!-- Viewers -->
-          <button
-            @click="handleViewers"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Eye class="w-5 h-5 text-[#3390ec] shrink-0" />
-            <span class="text-sm font-medium">Viewers</span>
-          </button>
-
-          <!-- Edit (if outgoing) -->
-          <button
-            v-if="canEdit"
-            @click="handleEdit"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Edit2 class="w-5 h-5 text-amber-500 shrink-0" />
-            <span class="text-sm font-medium">Edit</span>
-          </button>
-
-          <!-- Copy Selected Text (only if text is selected) -->
-          <button
-            v-if="hasSelectedText"
-            @click="handleCopySelectedText"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Copy class="w-5 h-5 text-[#3390ec] shrink-0" />
-            <span class="text-sm font-medium">Copy Selected Text</span>
-          </button>
-
-          <!-- Copy Text -->
-          <button
-            v-if="post.message"
-            @click="handleCopy"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Copy class="w-5 h-5 text-[#7f91a4] shrink-0" />
-            <span class="text-sm font-medium">Copy Text</span>
-          </button>
-
-          <!-- Copy Link -->
-          <button
-            @click="handleCopyLink"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Link class="w-5 h-5 text-[#3390ec] shrink-0" />
-            <span class="text-sm font-medium">Copy Link</span>
-          </button>
-
-          <!-- Pin / Unpin -->
-          <button
-            @click="handleTogglePin"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-[#111827] dark:text-[#f5f5f5] hover:bg-gray-100 dark:hover:bg-[#202b36] active:bg-gray-200 dark:active:bg-[#242f3d] rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Pin class="w-5 h-5 text-[#7f91a4] shrink-0" />
-            <span class="text-sm font-medium">{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
-          </button>
-
-          <!-- Delete (if allowed) -->
-          <button
-            v-if="canDelete"
-            @click="handleDelete"
-            class="w-full px-3.5 py-3 flex items-center gap-3.5 text-red-500 hover:bg-red-500/10 active:bg-red-500/20 rounded-xl text-left transition-colors cursor-pointer"
-          >
-            <Trash2 class="w-5 h-5 text-red-500 shrink-0" />
-            <span class="text-sm font-medium">Delete</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Telegram Desktop Context Menu (>= 768px) -->
-      <div
-        v-else
-        ref="menuRef"
-        class="fixed pointer-events-auto w-52 bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] rounded-2xl shadow-2xl overflow-hidden z-50 select-none tg-context-menu py-1.5"
-        :style="{ left: `${adjustedX}px`, top: `${adjustedY}px`, transformOrigin: transformOrigin, borderRadius: `${uiStore.menuRadius}px` }"
+        class="fixed pointer-events-auto bg-white dark:bg-[#17212b] border border-[#dfe1e5] dark:border-[#202b36] shadow-2xl overflow-hidden z-50 select-none tg-context-menu"
+        :class="isMobile ? 'w-[268px] py-2' : 'w-52 py-1.5'"
+        :style="{
+          left: `${adjustedX}px`,
+          top: `${adjustedY}px`,
+          transformOrigin: transformOrigin,
+          borderRadius: isMobile ? '20px' : `${uiStore.menuRadius}px`,
+          maxHeight: 'calc(var(--tg-viewport-height, 100vh) - 120px)'
+        }"
       >
         <!-- Quick Reactions Row -->
-        <div class="px-2 py-1.5 border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between gap-0.5 overflow-x-auto no-scrollbar">
+        <div
+          class="border-b border-[#dfe1e5] dark:border-[#202b36] flex items-center justify-between no-scrollbar overflow-x-auto"
+          :class="isMobile ? 'px-2.5 py-2 gap-1.5' : 'px-2 py-1.5 gap-0.5'"
+        >
           <button
             v-for="emoji in quickEmojis"
             :key="emoji"
             @click="handleReaction(emoji)"
-            class="w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] hover:scale-125 transition-transform cursor-pointer"
+            class="flex items-center justify-center rounded-xl hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] transition-transform cursor-pointer shrink-0"
+            :class="isMobile ? 'w-9 h-9 text-2xl active:scale-125' : 'w-7 h-7 text-sm hover:scale-125'"
             :title="`React with ${emoji}`"
           >
             {{ emoji }}
           </button>
-          <!-- More Reactions Button -->
+
+          <!-- More Reactions Button (+) -->
           <button
             @click="showReactionPicker = !showReactionPicker"
-            class="w-7 h-7 flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-lg transition-colors cursor-pointer"
+            class="flex items-center justify-center text-[#7f91a4] hover:text-[#3390ec] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] rounded-xl transition-all cursor-pointer shrink-0"
+            :class="isMobile ? 'w-9 h-9 text-[#3390ec] active:scale-90' : 'w-7 h-7'"
             title="More reactions..."
           >
-            <SmilePlus class="w-4 h-4" />
+            <SmilePlus :class="isMobile ? 'w-5 h-5' : 'w-4 h-4'" />
           </button>
         </div>
 
-        <!-- Action Items -->
-        <div class="py-1 text-xs">
+        <!-- Action Items List -->
+        <div
+          class="overflow-y-auto no-scrollbar"
+          :class="isMobile ? 'py-1 text-sm' : 'py-1 text-xs'"
+        >
           <!-- Add Reaction Item -->
           <button
             @click="showReactionPicker = !showReactionPicker"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <SmilePlus class="w-4 h-4 text-[#3390ec]" />
-            <span>Add Reaction...</span>
+            <SmilePlus :class="isMobile ? 'w-5 h-5 text-[#3390ec]' : 'w-4 h-4 text-[#3390ec]'" />
+            <span class="font-medium">Add Reaction...</span>
           </button>
 
           <!-- Reply -->
           <button
             @click="handleReply"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Reply class="w-4 h-4 text-[#3390ec]" />
-            <span>Reply</span>
+            <Reply :class="isMobile ? 'w-5 h-5 text-[#3390ec]' : 'w-4 h-4 text-[#3390ec]'" />
+            <span class="font-medium">Reply</span>
           </button>
 
           <!-- View Thread -->
           <button
             @click="handleViewThread"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer group/th"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer group/th"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <MessageSquareText class="w-4 h-4 text-[#3390ec]" />
-            <span class="flex-1">View Thread</span>
+            <MessageSquareText :class="isMobile ? 'w-5 h-5 text-[#3390ec]' : 'w-4 h-4 text-[#3390ec]'" />
+            <span class="flex-1 font-medium">View Thread</span>
             <span
               v-if="threadRepliesCount > 0"
-              class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#3390ec]/15 text-[#3390ec] group-hover/th:bg-[#3390ec] group-hover/th:text-white transition-colors"
+              class="font-bold rounded-full bg-[#3390ec]/15 text-[#3390ec] group-hover/th:bg-[#3390ec] group-hover/th:text-white transition-colors"
+              :class="isMobile ? 'text-xs px-2 py-0.5' : 'text-[10px] px-1.5 py-0.5'"
             >
               {{ threadRepliesCount }}
             </span>
@@ -519,68 +414,75 @@ onUnmounted(() => {
           <!-- Viewers -->
           <button
             @click="handleViewers"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Eye class="w-4 h-4 text-[#3390ec]" />
-            <span>Viewers</span>
+            <Eye :class="isMobile ? 'w-5 h-5 text-[#3390ec]' : 'w-4 h-4 text-[#3390ec]'" />
+            <span class="font-medium">Viewers</span>
           </button>
 
           <!-- Edit (if outgoing) -->
           <button
             v-if="canEdit"
             @click="handleEdit"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Edit2 class="w-4 h-4 text-amber-400" />
-            <span>Edit</span>
+            <Edit2 :class="isMobile ? 'w-5 h-5 text-amber-500' : 'w-4 h-4 text-amber-400'" />
+            <span class="font-medium">Edit</span>
           </button>
 
           <!-- Copy Selected Text (only if text is selected) -->
           <button
             v-if="hasSelectedText"
             @click="handleCopySelectedText"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Copy class="w-4 h-4 text-[#3390ec]" />
-            <span>Copy Selected Text</span>
+            <Copy :class="isMobile ? 'w-5 h-5 text-[#3390ec]' : 'w-4 h-4 text-[#3390ec]'" />
+            <span class="font-medium">Copy Selected Text</span>
           </button>
 
           <!-- Copy Text -->
           <button
             v-if="post.message"
             @click="handleCopy"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Copy class="w-4 h-4 text-[#7f91a4]" />
-            <span>Copy Text</span>
+            <Copy :class="isMobile ? 'w-5 h-5 text-[#7f91a4]' : 'w-4 h-4 text-[#7f91a4]'" />
+            <span class="font-medium">Copy Text</span>
           </button>
 
           <!-- Copy Link -->
           <button
             @click="handleCopyLink"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors cursor-pointer"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Link class="w-4 h-4 text-[#3390ec]" />
-            <span>Copy Link</span>
+            <Link :class="isMobile ? 'w-5 h-5 text-[#3390ec]' : 'w-4 h-4 text-[#3390ec]'" />
+            <span class="font-medium">Copy Link</span>
           </button>
 
           <!-- Pin / Unpin -->
           <button
             @click="handleTogglePin"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+            class="w-full flex items-center text-[#111827] dark:text-[#f5f5f5] hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] active:bg-[#e4ecf2] dark:active:bg-[#242f3d] text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Pin class="w-4 h-4 text-[#7f91a4]" />
-            <span>{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
+            <Pin :class="isMobile ? 'w-5 h-5 text-[#7f91a4]' : 'w-4 h-4 text-[#7f91a4]'" />
+            <span class="font-medium">{{ post.is_pinned ? 'Unpin' : 'Pin' }}</span>
           </button>
 
           <!-- Delete (if allowed) -->
           <button
             v-if="canDelete"
             @click="handleDelete"
-            class="w-full px-3.5 py-2 flex items-center gap-3 text-red-400 hover:bg-[#f1f1f1] dark:hover:bg-[#202b36] text-left transition-colors"
+            class="w-full flex items-center text-red-500 hover:bg-red-500/10 active:bg-red-500/20 text-left transition-colors cursor-pointer"
+            :class="isMobile ? 'px-4 py-2.5 gap-3.5' : 'px-3.5 py-2 gap-3'"
           >
-            <Trash2 class="w-4 h-4 text-red-400" />
-            <span>Delete</span>
+            <Trash2 :class="isMobile ? 'w-5 h-5 text-red-500' : 'w-4 h-4 text-red-400'" />
+            <span class="font-medium">Delete</span>
           </button>
         </div>
       </div>
@@ -589,7 +491,7 @@ onUnmounted(() => {
       <div
         v-if="showReactionPicker"
         class="fixed pointer-events-auto z-[60]"
-        :class="isMobile ? 'inset-x-2 bottom-3 max-w-sm mx-auto' : ''"
+        :class="isMobile ? 'inset-x-3 top-1/2 -translate-y-1/2 max-w-sm mx-auto' : ''"
         :style="isMobile ? {} : pickerStyle"
       >
         <ReactionPicker

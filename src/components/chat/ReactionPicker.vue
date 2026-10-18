@@ -97,7 +97,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="pickerRef"
-    class="w-72 sm:w-80 bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col overflow-hidden select-none z-50 animate-in fade-in zoom-in-95 duration-150 tg-reaction-picker"
+    class="w-[300px] sm:w-80 bg-white dark:bg-[#17212b] rounded-2xl shadow-2xl border border-[#dfe1e5] dark:border-[#202b36] flex flex-col overflow-hidden select-none z-50 animate-in fade-in zoom-in-95 duration-150 tg-reaction-picker"
     :style="{ borderRadius: `${uiStore.menuRadius}px` }"
     :class="alignRight ? 'origin-top-right' : 'origin-top-left'"
     @click.stop
@@ -105,12 +105,12 @@ onUnmounted(() => {
     <!-- Search Bar -->
     <div class="p-2 border-b border-[#dfe1e5] dark:border-[#202b36] bg-[#0e1621]/40">
       <div class="relative flex items-center">
-        <Search class="w-3.5 h-3.5 text-[#7f91a4] absolute left-2.5 pointer-events-none" />
+        <Search class="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[#7f91a4] absolute left-2.5 pointer-events-none" />
         <input
           v-model="searchQuery"
           type="text"
           placeholder="Search reaction..."
-          class="w-full bg-gray-100 dark:bg-[#0e1621] border border-gray-300 dark:border-[#202b36] text-gray-800 dark:text-white text-xs rounded-xl pl-8 pr-7 py-1.5 outline-none focus:border-[#3390ec] transition-colors"
+          class="w-full bg-gray-100 dark:bg-[#0e1621] border border-gray-300 dark:border-[#202b36] text-gray-800 dark:text-white text-sm sm:text-xs rounded-xl pl-8 pr-7 py-2 sm:py-1.5 outline-none focus:border-[#3390ec] transition-colors"
           autofocus
         />
         <button
@@ -169,7 +169,7 @@ onUnmounted(() => {
             :key="item.char + item.name"
             @click="handlePick(item.char)"
             :title="item.name"
-            class="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-lg transition-transform hover:scale-125 cursor-pointer active:scale-95"
+            class="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-xl sm:text-lg hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-xl transition-transform hover:scale-125 cursor-pointer active:scale-95"
           >
             {{ item.char }}
           </button>
@@ -194,7 +194,7 @@ onUnmounted(() => {
             :key="item.char"
             @click="handlePick(item.char)"
             :title="item.name || item.char"
-            class="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-lg transition-transform hover:scale-125 cursor-pointer active:scale-95"
+            class="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-xl sm:text-lg hover:bg-gray-100 dark:hover:bg-[#202b36] rounded-xl transition-transform hover:scale-125 cursor-pointer active:scale-95"
           >
             {{ item.char }}
           </button>
