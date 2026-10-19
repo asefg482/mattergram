@@ -164,64 +164,81 @@ onUnmounted(() => {
       <div
         v-if="preview.isOpen"
         class="fixed inset-0 z-50 flex flex-col items-center justify-between p-2 sm:p-4 bg-black/90 backdrop-blur-md select-none"
-        style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));"
+        style="
+          padding-top: max(0.75rem, calc(0.5rem + env(safe-area-inset-top, 0px)));
+          padding-bottom: max(0.75rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
+          padding-left: max(0.75rem, calc(0.5rem + env(safe-area-inset-left, 0px)));
+          padding-right: max(0.75rem, calc(0.5rem + env(safe-area-inset-right, 0px)));
+        "
         @click.self="handleClose"
       >
     <!-- Top Action Bar -->
-    <div class="w-full max-w-5xl flex items-center justify-between text-white z-30 pointer-events-none px-2 py-1">
-      <div class="flex items-center gap-2 pointer-events-auto bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-xs">
-        <span class="font-semibold text-sm">{{ preview.name }}</span>
-        <span class="text-xs text-white/60">Profile photo</span>
+    <div class="w-full max-w-5xl flex items-center justify-between gap-2 text-white z-30 pointer-events-none px-1 py-1">
+      <div class="flex items-center gap-1.5 sm:gap-2 min-w-0 max-w-[50%] sm:max-w-md pointer-events-auto bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-xs shadow-md">
+        <span class="font-semibold text-xs sm:text-sm truncate">{{ preview.name }}</span>
+        <span class="text-[11px] sm:text-xs text-white/60 shrink-0 hidden xs:inline">Profile photo</span>
       </div>
 
-      <div class="flex items-center gap-1 sm:gap-2 pointer-events-auto bg-black/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 text-xs">
-        <!-- Zoom Controls -->
-        <button
-          @click="zoomOut"
-          :disabled="scale <= MIN_SCALE"
-          class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Zoom out (-)"
-        >
-          <ZoomOut class="w-4 h-4" />
-        </button>
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0 pointer-events-auto bg-black/50 backdrop-blur-md p-1 sm:px-2 sm:py-1 rounded-full border border-white/10 text-xs shadow-md">
+        <!-- Zoom Controls (Desktop / Wider Screens) -->
+        <div class="hidden sm:flex items-center gap-1">
+          <button
+            @click="zoomOut"
+            :disabled="scale <= MIN_SCALE"
+            class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            title="Zoom out (-)"
+          >
+            <ZoomOut class="w-4 h-4" />
+          </button>
 
-        <button
-          @click="resetZoom"
-          class="px-2 py-0.5 min-w-[50px] text-center font-mono text-[11px] font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-          title="Reset zoom to 100%"
-        >
-          {{ Math.round(scale * 100) }}%
-        </button>
+          <button
+            @click="resetZoom"
+            class="px-2 py-0.5 min-w-[50px] text-center font-mono text-[11px] font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+            title="Reset zoom to 100%"
+          >
+            {{ Math.round(scale * 100) }}%
+          </button>
 
-        <button
-          @click="zoomIn"
-          :disabled="scale >= MAX_SCALE"
-          class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Zoom in (+)"
-        >
-          <ZoomIn class="w-4 h-4" />
-        </button>
+          <button
+            @click="zoomIn"
+            :disabled="scale >= MAX_SCALE"
+            class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            title="Zoom in (+)"
+          >
+            <ZoomIn class="w-4 h-4" />
+          </button>
 
+          <button
+            v-if="scale > 1"
+            @click="resetZoom"
+            class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+            title="Reset size"
+          >
+            <RotateCcw class="w-4 h-4" />
+          </button>
+
+          <div class="w-px h-3.5 bg-white/20 mx-1"></div>
+        </div>
+
+        <!-- Quick Reset button when zoomed on mobile -->
         <button
           v-if="scale > 1"
           @click="resetZoom"
-          class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          title="Reset size"
+          class="sm:hidden p-1.5 text-white/90 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
+          title="Reset zoom"
         >
           <RotateCcw class="w-4 h-4" />
         </button>
-
-        <div class="w-px h-3.5 bg-white/20 mx-1"></div>
 
         <!-- View Profile Button (if user exists) -->
         <button
           v-if="user"
           @click="handleViewProfile"
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+          class="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
           title="View user profile"
         >
           <User class="w-4 h-4" />
-          <span class="hidden sm:inline">View Profile</span>
+          <span class="hidden sm:inline">Profile</span>
         </button>
 
         <!-- Download Button -->
@@ -229,7 +246,7 @@ onUnmounted(() => {
           :href="preview.url"
           :download="`${preview.name}-avatar.png`"
           target="_blank"
-          class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+          class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
           title="Download photo"
         >
           <Download class="w-4 h-4" />
@@ -238,10 +255,10 @@ onUnmounted(() => {
         <!-- Close Button -->
         <button
           @click="handleClose"
-          class="p-1.5 text-white/80 hover:text-white hover:bg-red-500/20 hover:text-red-400 rounded-full transition-colors"
+          class="w-8 h-8 flex items-center justify-center text-white/90 hover:text-white bg-white/10 hover:bg-red-500/30 hover:text-red-300 rounded-full transition-colors cursor-pointer shrink-0"
           title="Close (Esc)"
         >
-          <X class="w-4 h-4" />
+          <X class="w-4.5 h-4.5" />
         </button>
       </div>
     </div>
